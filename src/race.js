@@ -22,7 +22,8 @@ export function arcadeMotion(car,input,dt){
  }
  const {throttle,steer,brake,boost,onDirt,engine=0,tires=0,ai=false,opponent=0}=input;
  const max=(ai?21.4+opponent*.35:23+engine*1.5)*(boost?1.42:1);
- car.speed+=(throttle*(boost?38:23)-(brake?36:0))*dt;
+ // Progressive braking gives the truck a longer run-out; braking overrides throttle.
+ car.speed+=(brake?-12:throttle*(boost?38:23))*dt;
  car.speed*=Math.exp(-dt*(onDirt?.55:1.6));
  car.speed=clamp(car.speed,-8,onDirt?max:max*.65);
  const yaw=(ai?3.2:3.65+tires*.12)*clamp(Math.abs(car.speed)/3,0,1);

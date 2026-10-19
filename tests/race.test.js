@@ -10,7 +10,7 @@ import {arcadeMotion,fitCircuitView} from '../src/race.js';
 const car=()=>({speed:0,heading:0,height:0,vx:0,vz:0,x:0,z:0});
 const drive={throttle:1,steer:0,brake:false,boost:false,onDirt:true};
 function simulate(c,input,seconds,hz=60){for(let i=0;i<seconds*hz;i++)arcadeMotion(c,input,1/hz);return c;}
-test('arcade truck reaches race pace quickly and brakes to reverse',()=>{const c=simulate(car(),drive,1);assert.ok(c.speed>17);simulate(c,{...drive,throttle:0,brake:true},.75);assert.ok(c.speed<0);});
+test('arcade truck reaches race pace quickly and slows progressively before reversing',()=>{const c=simulate(car(),drive,1);assert.ok(c.speed>17);simulate(c,{...drive,throttle:0,brake:true},.75);assert.ok(c.speed>0);simulate(c,{...drive,throttle:0,brake:true},1);assert.ok(c.speed<0);});
 test('steering responds immediately while retaining a short dirt slide',()=>{const c=simulate(car(),drive,1.5);const heading=c.heading;simulate(c,{...drive,steer:1},.25);assert.ok(c.heading-heading>.8);assert.ok(c.vx< -8);assert.ok(c.vz<0);});
 test('handling is stable at 60 and 120 physics updates per second',()=>{const a=simulate(car(),drive,1.5,60),b=simulate(car(),drive,1.5,120);assert.ok(Math.abs(a.speed-b.speed)<.15);assert.ok(Math.hypot(a.x-b.x,a.z-b.z)<.3);});
 test('both circuit edges fit on portrait, desktop and ultrawide viewports',()=>{const bounds={minX:-45,maxX:43,minY:-28,maxY:30};for(const aspect of [.5,1,1.7,2.5]){const view=fitCircuitView(bounds,aspect);assert.ok(view.left<bounds.minX&&view.right>bounds.maxX);assert.ok(view.bottom<bounds.minY&&view.top>bounds.maxY);assert.ok(Math.abs((view.right-view.left)/(view.top-view.bottom)-aspect)<1e-10);}});
@@ -39,4 +39,23 @@ test('a jump above barrier height is not pulled sideways along the course',()=>{
  const c={...car(),airborne:true,height:3,speed:20,x:8,z:0,vx:20};
  containOnTrack(c,{point:{x:0,z:0},distance:8,ground:0},6.2);
  assert.equal(c.x,8);assert.equal(c.vx,20);
+});
+
+test('braking from cruising speed takes a longer, consistent stopping path',()=>{
+ const results=[];
+ for(const hz of [60,120]){
+   const c={...car(),speed:23,vz:-23};let time=0;
+   while(c.speed>0&&time<3){arcadeMotion(c,{...drive,throttle:0,brake:true},1/hz);time+=1/hz;}
+   const distance=-c.z;
+   assert.ok(time>1.2&&time<1.5,`stop time ${time}`);
+   assert.ok(distance>13&&distance<17,`stop distance ${distance}`);
+   results.push(distance);
+ }
+ assert.ok(Math.abs(results[0]-results[1])<.25);
+});
+test('braking still slows the truck when throttle or nitro is held',()=>{
+ const brakeOnly=simulate({...car(),speed:23,vz:-23},{...drive,throttle:0,brake:true},.5);
+ const pedalsHeld=simulate({...car(),speed:23,vz:-23},{...drive,brake:true,boost:true},.5);
+ assert.equal(pedalsHeld.speed,brakeOnly.speed);
+ assert.equal(pedalsHeld.z,brakeOnly.z);
 });

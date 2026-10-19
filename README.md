@@ -104,3 +104,19 @@ the heading captures pointer input; the readout lets touches/clicks pass through
 ## Credits and trademarks
 
 © 2026 PUFFY CLOUDS · USING AI TECHNOLOGY. The supplied Puffy Clouds logo appears in the game menu. Bronco® is a registered trademark of Ford Motor Company. This independent project is not affiliated with, sponsored by or endorsed by Ford Motor Company. Third-party assets retain their original licenses; see [audio credits](public/audio/CREDITS.md).
+
+### Free Ride — desert
+
+Choose **Menu → FREE RIDE · PUSTYNIA**, then **JEDŹ NA PUSTYNIĘ** (or close the
+menu and use the central start button). `?mode=desert` opens the desert setup
+directly. **WYŚCIG** in the same menu returns to the selected racing circuit.
+Switching mode resets the session.
+
+The desert is a 600 × 600 m playground with broad dunes, sharper crests,
+uneven sand, plants and a shaded elevation minimap. It uses one player vehicle,
+with the same drivetrain, wheel contacts, suspension, rollovers, sound, nitro,
+developer tuning and FPS panel. There are no opponents, laps, finish condition,
+rewards or time limit; the HUD timer only records session duration. F rights
+the truck in place; R returns to the starting basin. The raised outer rim has
+a solid boundary, so the finite map cannot be driven off. Track/ramp sliders
+apply to race circuits; desert dunes have their own fixed procedural layout.

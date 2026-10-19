@@ -3,7 +3,7 @@ import {minimapTransform} from './view.js';
 export function createMinimap(canvas){
  const ctx=canvas.getContext('2d');
  const background=document.createElement('canvas'),bg=background.getContext('2d');
- let points=[],halfWidth=0,transform,width=0,height=0,density=1,features=[],length=1;
+ let points=[],halfWidth=0,transform,width=0,height=0,density=1,features=[],length=1,desert=null;
  function project(p){return {x:p.x*transform.scale+transform.offsetX,y:p.z*transform.scale+transform.offsetZ};}
  function rebuild(){
    if(!points.length)return;
@@ -12,6 +12,10 @@ export function createMinimap(canvas){
    canvas.width=background.width=Math.round(width*density);canvas.height=background.height=Math.round(height*density);
    transform=minimapTransform(points,halfWidth,width,height);
    bg.setTransform(density,0,0,density,0,0);bg.clearRect(0,0,width,height);
+   if(desert){
+    const step=10;for(let z=desert.bounds.min.z;z<desert.bounds.max.z;z+=step)for(let x=desert.bounds.min.x;x<desert.bounds.max.x;x+=step){const q=project({x,z}),h=desert.heightAt(x,z);bg.fillStyle=`hsl(39 45% ${44+Math.min(20,h*2)}%)`;bg.fillRect(q.x,q.y,step*transform.scale+1,step*transform.scale+1);}
+    bg.strokeStyle='#e1cd93';bg.lineWidth=1;const a=project({x:desert.bounds.min.x,z:desert.bounds.min.z}),b=project({x:desert.bounds.max.x,z:desert.bounds.max.z});bg.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y);return;
+   }
    const path=new Path2D();points.forEach((p,i)=>{const q=project(p);if(!i)path.moveTo(q.x,q.y);else path.lineTo(q.x,q.y);});path.closePath();
    bg.lineJoin='round';bg.lineCap='round';bg.strokeStyle='#a59b78';bg.lineWidth=halfWidth*2*transform.scale+2;bg.stroke(path);
    bg.strokeStyle='#655640';bg.lineWidth=halfWidth*2*transform.scale;bg.stroke(path);
@@ -26,7 +30,8 @@ export function createMinimap(canvas){
    }
  }
  return {
-   setTrack(samples,width,trackFeatures=[],trackLength=1){points=samples;halfWidth=width;features=trackFeatures;length=trackLength;rebuild();},
+   setDesert(ground){desert=ground;points=[ground.bounds.min,ground.bounds.max];halfWidth=0;features=[];rebuild();},
+   setTrack(samples,width,trackFeatures=[],trackLength=1){desert=null;points=samples;halfWidth=width;features=trackFeatures;length=trackLength;rebuild();},
    resize:rebuild,
    render(cars,color,viewCorners=[]){
      if(!transform)return;

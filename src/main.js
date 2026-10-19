@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import './style.css';
+import {createBronco} from './vehicle.js';
 import {TRACKS,ROAD_WIDTH,createCircuit,terrainHeight,nearestPoint,opponentInput} from './tracks.js';
 import {clamp,angleDelta,advanceProgress,formatTime,arcadeMotion,fitCircuitView,updateSuspension,containOnTrack} from './race.js';
 const $=s=>document.querySelector(s),canvas=$('#scene'),game=$('#game'),menuDialog=$('#game-menu');
@@ -55,12 +56,10 @@ function makeWorld(){
  const beam=box(.35,.5,17.5,cream,p.x,7,p.z);beam.rotation.y=-a;
  for(let k=0;k<16;k++){const x=(rand()-.5)*150,z=-60-rand()*15;const hill=new THREE.Mesh(new THREE.ConeGeometry(8+rand()*12,6+rand()*13,5),mat('#a9976c'));hill.position.set(x,1,z);world.add(hill);}
 }
-function makeTruck(color,num){const g=new THREE.Group(),body=mat(color),wheels=[];
- box(1.7,.45,3.1,dark,0,.65,0,g);box(1.8,.5,3,body,0,1.02,0,g);box(1.55,.8,1.35,body,0,1.6,-.08,g);box(1.4,.55,.035,mat('#263e3b',{metalness:.2,roughness:.35}),0,1.65,-.78,g);box(1.38,.035,.85,cream,0,2.02,-.08,g);box(1.36,.1,1.05,dark,0,1.3,1.02,g);box(1.92,.2,.22,cream,0,.9,-1.57,g);
- for(const x of [-.62,.62])box(.35,.17,.04,mat('#fff2bd',{emissive:'#bba255',emissiveIntensity:.3}),x,1.2,-1.52,g);
- for(const x of [-1,1])for(const z of [-.95,1]){const w=new THREE.Mesh(new THREE.CylinderGeometry(.53,.53,.43,12),dark);w.rotation.z=Math.PI/2;w.position.set(x,.56,z);w.castShadow=true;g.add(w);const hub=new THREE.Mesh(new THREE.CylinderGeometry(.25,.25,.45,10),cream);hub.rotation.z=Math.PI/2;hub.position.copy(w.position);g.add(hub);wheels.push(w);}
- const c=document.createElement('canvas');c.width=128;c.height=128;const ctx=c.getContext('2d');ctx.fillStyle=color;ctx.fillRect(0,0,128,128);ctx.fillStyle='#1b2419';ctx.font='bold 85px sans-serif';ctx.textAlign='center';ctx.fillText(num,64,95);const number=new THREE.Mesh(new THREE.PlaneGeometry(1,.8),new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(c)}));number.rotation.x=-Math.PI/2;number.position.set(0,2.045,0);g.add(number);g.scale.setScalar(1.4);scene.add(g);
- return {mesh:g,body,wheels,x:0,z:0,vx:0,vz:0,heading:0,speed:0,index:0,checkpoint:0,lap:0,height:0,vertical:0,nitro:100,boosting:false,finish:false};}
+function makeTruck(color,num){
+ const {mesh,body,wheels}=createBronco(color,num);scene.add(mesh);
+ return {mesh,body,wheels,x:0,z:0,vx:0,vz:0,heading:0,speed:0,index:0,checkpoint:0,lap:0,height:0,vertical:0,nitro:100,boosting:false,finish:false};
+}
 makeWorld();['#f3bf42','#e6644c','#5ca9ba','#ece9cf'].forEach((c,i)=>trucks.push(makeTruck(c,['07','12','28','03'][i])));
 const keys=new Set();let phase='ready',previousPhase='racing',elapsed=0,count=0,selectedColor='#f3bf42',cash=0,levels={engine:0,grip:0},lastTime=0,muted=true,audio,osc,gain;
 try{const save=JSON.parse(localStorage.getItem('dust-runner-save'));if(save){cash=Math.max(0,Number(save.cash)||0);levels.engine=clamp(Number(save.engine)||0,0,3);levels.grip=clamp(Number(save.grip)||0,0,3);}}catch{}

@@ -29,7 +29,7 @@ Rapier runs rigid-body physics at 120 Hz. The rendered terrain and collision sur
 
 Separated stacks of worn tires and orange-white traffic cones mark both road edges. These are movable props: light cones tip over, and stacks break into separate 10 kg tires that slide or tumble when hit. Trucks can break through them and drive back up the graded shoulder without using recovery. Nearby props activate for physics; distant ones stay inactive to keep the long circuits fast. Race reset restores their original positions. The desert contains saguaro cacti, agave, scrub and dry grass, with 18 animated rattlesnakes per circuit roaming safely outside the road. Plants use instanced geometry.
 
-The race fills the browser window by default. The compact HUD shows position, lap, time, speed, and nitro. Open **Menu** for truck selection, tracks, upgrades, sound, and controls; opening the menu pauses an active race and closing it resumes. The fullscreen button is optional. **Menu → Bronco® History & Performance** opens a five-generation field guide with model years, factory engine layouts, fuel systems and source links. Select a generation to read its history and filter engine profiles. A shared-chassis drivetrain benchmark runs the longitudinal engine model for 60 seconds with stock engines and no nitro: modeled kW/hp, torque, 0–50 km/h and final speed. Choose compact or full-size mass, then use FIT to install an engine between races. These are ideal flat-ground drivetrain benchmarks; 3D suspension, terrain, tire slip and impacts affect actual lap performance. They are not historical factory performance figures.
+The race fills the browser window by default. The compact HUD shows position, lap, time, speed, and nitro. Open **Menu** for truck selection, tracks, upgrades, sound, and controls; opening the menu pauses an active race and closing it resumes. The fullscreen button is optional. **Menu → Bronco® History & Performance** opens a five-generation field guide with model years, factory engine layouts, fuel systems and source links. Select a generation to read its history and filter engine profiles. A shared-chassis drivetrain benchmark runs the longitudinal engine model for 60 seconds with stock engines and no nitro: modeled kW/hp, torque, 0–50 km/h and final speed. Choose compact or full-size mass, then use FIT to hot-swap an engine at any time. These are ideal flat-ground drivetrain benchmarks; 3D suspension, terrain, tire slip and impacts affect actual lap performance. They are not historical factory performance figures.
 
 ## Controls
 
@@ -132,3 +132,12 @@ Race numbers move onto the hood so the open cabin stays visible. Individual
 cage tubes provide rollover contacts in place of the solid hardtop collider.
 Changing the body restarts the current race/free-ride session to rebuild its
 collision shape; the selected engine and upgrades remain installed.
+
+### Engine hot-swap
+
+The menu engine selector and history table FIT buttons work during races,
+countdowns and Free Ride. Opening the menu pauses driving; changing the engine
+updates its torque, sound, mass, center of mass and suspension force limits
+without resetting position, velocity, steering, nitro, lap progress or timer.
+The transmission selects a speed-appropriate gear/RPM, retaining reverse
+when reversing. Close the menu to continue. The engine choice saves locally.

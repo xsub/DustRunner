@@ -9,7 +9,7 @@ import {followCameraStep} from './view.js';
 import {createMinimap} from './minimap.js';
 import {TRACKS,TRACK_VARIANTS,ROAD_WIDTH,refreshTracks,createCircuit,terrainHeight,nearestPoint,opponentInput} from './tracks.js';
 import {ENGINES,engineById,defaultEngine} from './engines.js';
-import {resetPowertrain} from './powertrain.js';
+import {resetPowertrain,swapEngine} from './powertrain.js';
 import {createHistoryPanel} from './history-panel.js';
 import {EngineAudio} from './engine-audio.js';
 import {clamp,angleDelta,advanceProgress,formatTime} from './race.js';
@@ -119,7 +119,7 @@ function reset(){physics.resetBarriers();scenery.resetBarriers();elapsed=0;count
 function start(){if(phase==='racing'||phase==='countdown')return;audioPreviewTime=0;reset();phase=freeRide?'racing':'countdown';count=3.4;$('#message').style.display='none';$('#race-status').textContent=freeRide?'FREE RIDE · PUSTYNIA':'GET READY';canvas.focus({preventScroll:true});initAudio();}
 function pause(){if(!['racing','countdown','paused'].includes(phase))return;if(phase==='paused'){phase=previousPhase;$('#countdown').textContent='';$('#pause').textContent='Ⅱ';}else{previousPhase=phase;phase='paused';$('#countdown').textContent='PAUSED';$('#pause').textContent='▶';engineAudio.silence();}keys.clear();canvas.focus({preventScroll:true});}
 let menuPaused=false;
-function updateMenu(){$('#menu-play').textContent=freeRide?(phase==='paused'?'WRÓĆ NA PUSTYNIĘ ↗':'JEDŹ NA PUSTYNIĘ ↗'):(phase==='paused'?'RESUME RACE ↗':'START RACE ↗');$('#engine-select').disabled=['racing','countdown','paused'].includes(phase);}
+function updateMenu(){$('#menu-play').textContent=freeRide?(phase==='paused'?'WRÓĆ NA PUSTYNIĘ ↗':'JEDŹ NA PUSTYNIĘ ↗'):(phase==='paused'?'RESUME RACE ↗':'START RACE ↗');}
 function openMenu(){if(menuDialog.open)return;menuPaused=phase==='racing'||phase==='countdown';if(menuPaused)pause();keys.clear();updateMenu();menuDialog.showModal();}
 function closeMenu(){menuDialog.close();if(menuPaused&&phase==='paused')pause();menuPaused=false;canvas.focus({preventScroll:true});}
 $('#menu').onclick=openMenu;$('#menu-close').onclick=closeMenu;
@@ -157,12 +157,12 @@ function updateEngineMenu(){
  $('#torque-line').setAttribute('points',points);$('#torque-chart').setAttribute('aria-label',`${e.name}: modeled torque curve, ${peak} newton meters peak`);
 }
 engineSelect.onchange=()=>{
- if(['racing','countdown','paused'].includes(phase)){updateEngineMenu();return;}
- trucks[0].engineId=engineSelect.value;resetPowertrain(trucks[0]);audioPreviewTime=0;updateEngineMenu();save();
+ if(engineSelect.value===trucks[0].engineId)return;
+ swapEngine(trucks[0],engineSelect.value);physics.refreshMass(trucks[0]);audioPreviewTime=0;engineAudio.silence();updateEngineMenu();save();
 };
 $('#engine-preview').onclick=async()=>{muted=false;updateSoundLabels();await initAudio();if(!muted)audioPreviewTime=3.4;};
 updateEngineMenu();updateSoundLabels();
-const historyPanel=createHistoryPanel({getPlayer:()=>trucks[0],canFit:()=>!['racing','countdown','paused'].includes(phase),fitEngine:id=>{engineSelect.value=id;engineSelect.onchange();}});
+const historyPanel=createHistoryPanel({getPlayer:()=>trucks[0],canFit:()=>true,fitEngine:id=>{engineSelect.value=id;engineSelect.onchange();}});
 $('#open-history').onclick=()=>{audioPreviewTime=0;engineAudio.silence();historyPanel.open();};
 function updateEngineSound(dt){
  const e=engineById(trucks[0].engineId);let state=trucks[0].powertrain,preview=audioPreviewTime>0&&!['racing','countdown'].includes(phase);

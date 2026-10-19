@@ -51,8 +51,7 @@ export function createPhysics(terrain,bounds){
   v.body.setLinvel({x:0,y:0,z:0},true);v.body.setAngvel({x:0,y:0,z:0},true);v.steer=0;v.controls={brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false};car.rolloverTime=0;car.rollover=false;
   for(let i=0;i<4;i++){v.controller.setWheelEngineForce(i,0);v.controller.setWheelBrake(i,0);v.controller.setWheelSteering(i,0);}
  }
- function input(car,input,dt){
-  activateBarriers(car);
+ function refreshMass(car){
   const v=car.physics,c=v.controller;
   const properties=vehicleMassProperties(car.style,car.engineId),{mass}=properties;
   const massKey=`${car.style}:${car.engineId}:${tuningRevision()}`;
@@ -60,6 +59,10 @@ export function createPhysics(terrain,bounds){
    v.body.setAdditionalMassProperties(mass,properties.centerOfMass,properties.principalAngularInertia,properties.angularInertiaLocalFrame,true);v.body.recomputeMassPropertiesFromColliders();
    v.mass=mass;v.massKey=massKey;for(let i=0;i<4;i++)c.setWheelMaxSuspensionForce(i,mass*cfg.suspensionForce);
   }
+ }
+ function input(car,input,dt){
+  activateBarriers(car);refreshMass(car);
+  const v=car.physics,c=v.controller;
   q.copy(v.body.rotation());forward.set(0,0,-1).applyQuaternion(q);
   const controls=drivingControls(v.controls,{...input,airborne:car.airborne},car.speed,dt);
   const drive=powertrainStep(car,{...input,...controls,slope:forward.y},dt);
@@ -102,7 +105,7 @@ export function createPhysics(terrain,bounds){
   car.suspensionLengths=WHEEL_LAYOUT.map((_,i)=>c.wheelSuspensionLength(i)??cfg.restLength);
   v.tireColliders.forEach((collider,i)=>{const w=WHEEL_LAYOUT[i];collider.setTranslationWrtParent({x:w.x*1.4,y:-.15-car.suspensionLengths[i],z:w.z*1.4});});
  }
- return {world,add,reset,input,sync,addBoundary(x,z,hx,hz,height){world.createCollider(RAPIER.ColliderDesc.cuboid(hx,height,hz).setTranslation(x,height,z).setFriction(.8));},getStats(){let awake=vehicles.size;for(const prop of barriers)if(prop.active&&!prop.body.isSleeping())awake++;return {awake,bodies:vehicles.size+barriers.length};},step(){world.step();},dispose(){for(const car of vehicles)delete car.physics;world.free();},
+ return {world,add,reset,input,sync,refreshMass,addBoundary(x,z,hx,hz,height){world.createCollider(RAPIER.ColliderDesc.cuboid(hx,height,hz).setTranslation(x,height,z).setFriction(.8));},getStats(){let awake=vehicles.size;for(const prop of barriers)if(prop.active&&!prop.body.isSleeping())awake++;return {awake,bodies:vehicles.size+barriers.length};},step(){world.step();},dispose(){for(const car of vehicles)delete car.physics;world.free();},
   resetBarriers(){for(const prop of barriers){const {body,origin}=prop;prop.active=false;body.setTranslation(origin,true);body.setRotation({x:0,y:0,z:0,w:1},true);body.setLinvel({x:0,y:0,z:0},true);body.setAngvel({x:0,y:0,z:0},true);body.sleep();body.setEnabled(false);}},
   addBarrier(x,y,z,{kind='tires',layers=2}={}){
    const makeBody=(height)=>world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(x,height,z).setLinearDamping(cfg.propLinearDamping).setAngularDamping(cfg.propAngularDamping).setCcdEnabled(true));

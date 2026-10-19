@@ -278,3 +278,9 @@ test('open bodies have tube contacts instead of an invisible solid roof',()=>{
   assert.ok(Math.abs(body.mass()-vehicleMass('classic','302'))<.01);assert.equal(f.car.airborne,false);f.physics.dispose();
  }
 });
+
+test('paused engine mass refresh preserves the rigid body pose, velocity and steering',()=>{
+ const f=fixture();step(f,{},180);const body=f.car.physics.body;body.setLinvel({x:2,y:1,z:-20},true);f.car.physics.steer=.22;
+ const position=body.translation(),rotation=body.rotation(),velocity=body.linvel();f.car.engineId='400';f.physics.refreshMass(f.car);
+ assert.ok(Math.abs(body.mass()-vehicleMass('classic','400'))<.01);assert.deepEqual(body.translation(),position);assert.deepEqual(body.rotation(),rotation);assert.deepEqual(body.linvel(),velocity);assert.equal(f.car.physics.steer,.22);f.physics.dispose();
+});

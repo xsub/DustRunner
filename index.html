@@ -32,9 +32,9 @@
 <section class="steering-setup" aria-labelledby="steering-title"><div class="section-label"><h2 id="steering-title">DRIVING CONTROLS</h2></div><label for="steering-mode">STEERING MODE</label><select id="steering-mode" aria-describedby="steering-help"><option value="return">AUTO CENTER · release to straighten</option><option value="hold">HOLD STEERING ANGLE · release to keep angle</option></select><p id="steering-help">Hold an arrow to steer. Release to center automatically. Steering becomes gentler at speed.</p></section>
 <section class="engine-setup" aria-labelledby="engine-title">
 <div class="section-label">03 <h2 id="engine-title">CHOOSE YOUR ENGINE</h2></div>
-<label for="engine-select">ENGINE SWAP · AVAILABLE BETWEEN RACES</label>
+<label for="engine-select">ENGINE HOT-SWAP · ALSO WHILE DRIVING</label>
 <select id="engine-select" aria-describedby="engine-character engine-spec"></select>
-<p id="engine-character"></p><p id="engine-spec"></p>
+<p class="engine-swap-help">Zmieniaj silnik także podczas jazdy. Menu pauzuje symulację; po zamknięciu kontynuujesz z nowym silnikiem, bez resetu sesji.</p><p id="engine-character"></p><p id="engine-spec"></p>
 <svg id="torque-chart" viewBox="0 0 300 80" role="img" aria-label="Modeled torque curve"><path d="M10 8V70H290" fill="none" stroke="#61704e"/><polyline id="torque-line" fill="none" stroke="#f4cf58" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
 <small>LOW RPM → HIGH RPM · Representative game tunes</small>
 <div class="engine-audio-controls"><button id="engine-preview">LISTEN · REV ENGINE ↗</button><label for="engine-volume">VOLUME <input id="engine-volume" type="range" min="0" max="100" value="55"></label></div>

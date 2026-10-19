@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ENGINES,engineById,engineTorque} from '../src/engines.js';
-import {powertrainStep,resetPowertrain} from '../src/powertrain.js';
+import {powertrainStep,resetPowertrain,swapEngine} from '../src/powertrain.js';
 import {arcadeMotion} from '../src/race.js';
 const drive={throttle:1,steer:0,brake:false,boost:false,onDirt:true};
 const car=(engineId='302')=>({engineId,style:'classic',speed:0,heading:0,x:0,z:0,vx:0,vz:0});
@@ -98,4 +98,15 @@ test('closed governor and overrun reduce audible engine load',()=>{
   powertrainStep(pulling,drive,1/120);powertrainStep(governed,drive,1/120);powertrainStep(coast,{...drive,throttle:0},1/120);
  }
  assert.ok(pulling.powertrain.load>.7);assert.ok(governed.powertrain.load<.01);assert.ok(coast.powertrain.load<.01);
+});
+
+test('hot-swap matches gear and RPM at speed without resetting race or control state',()=>{
+ const c={...car('302'),speed:22,x:13,z:40,nitro:37,lap:2,index:1700};resetPowertrain(c);
+ const state=swapEngine(c,'170');assert.equal(c.engineId,'170');assert.equal(state.gear,3);assert.ok(state.rpm>1000&&state.rpm<=engineById('170').redline);
+ assert.deepEqual([c.speed,c.x,c.z,c.nitro,c.lap,c.index],[22,13,40,37,2,1700]);assert.equal(state.shiftTime,0);
+});
+test('hot-swap preserves reverse, handles a stationary vehicle and rejects an invalid engine',()=>{
+ const c=car();resetPowertrain(c);c.powertrain.gear=-1;c.speed=-3;assert.equal(swapEngine(c,'400').gear,-1);
+ c.speed=0;c.powertrain.gear=1;assert.equal(swapEngine(c,'200').rpm,engineById('200').idle);assert.equal(c.powertrain.gear,1);
+ assert.throws(()=>swapEngine(c,'not-an-engine'));assert.equal(c.engineId,'200');
 });

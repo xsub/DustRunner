@@ -9,6 +9,19 @@ export function resetPowertrain(car){
  car.powertrain={engineId:engine.id,rpm:engine.idle,gear:1,shiftTime:0,cooldown:0,load:0,throttle:0,torque:0,limiter:false,grade:0,roadLoad:0};
  return car.powertrain;
 }
+// Match the replacement engine to current road speed without resetting motion.
+export function swapEngine(car,engineId){
+ const engine=engineById(engineId);if(engine.id!==engineId)throw new Error('Unknown engine');
+ const reverse=car.powertrain?.gear<0||car.physics?.controls.reverseTravel;
+ const old=car.powertrain,previousEngine=engineById(car.engineId);
+ car.engineId=engineId;const state=resetPowertrain(car),ratios=[cfg.gear1,cfg.gear2,cfg.gear3];
+ const wheelRpm=Math.abs(car.speed??0)/cfg.driveRadius*60/(2*Math.PI)*cfg.finalDrive;
+ state.gear=reverse?-1:Math.max(1,ratios.findIndex(ratio=>wheelRpm*ratio<=engine.redline*cfg.shiftRpm)+1);
+ if(!reverse&&ratios.every(ratio=>wheelRpm*ratio>engine.redline*cfg.shiftRpm))state.gear=3;
+ state.rpm=clamp(car.airborne&&old?old.rpm/previousEngine.redline*engine.redline:wheelRpm*(reverse?3.1:ratios[state.gear-1]),engine.idle,engine.redline);
+ state.cooldown=.35;state.grade=old?.grade??0;state.roadLoad=old?.roadLoad??0;
+ return state;
+}
 export function powertrainStep(car,input,dt){
  const RATIOS=[cfg.gear1,cfg.gear2,cfg.gear3],FINAL_DRIVE=cfg.finalDrive,ROLLING_RADIUS=cfg.driveRadius;
  const e=engineById(car.engineId),state=car.powertrain?.engineId===e.id?car.powertrain:resetPowertrain(car);

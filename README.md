@@ -24,3 +24,4 @@ Open the local address printed by Vite. `npm run build` produces a static site i
 - R: reset race
 
 Touch controls appear on touch devices. Sound is opt-in. Best in a modern browser with WebGL and hardware acceleration. Progress stays in the browser's local storage. No licensed game assets are used.
+# DustRunner

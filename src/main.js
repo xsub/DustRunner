@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import './style.css';
 import {createRoadSurface,wheelContacts,bodyAttitude,updateWheel,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
+import {resolveCarCollision,advanceCollisionRotation} from './collision.js';
 import {createScenery} from './scenery.js';
 import {createBronco} from './vehicle.js';
 import {followCameraStep} from './view.js';
@@ -74,7 +75,7 @@ function save(){try{localStorage.setItem('dust-runner-save',JSON.stringify({cash
 function updateGarage(){$('#cash').textContent=cash;for(const type of ['engine','grip']){$(`#${type}-level`).textContent=levels[type];const b=$(`[data-upgrade="${type}"]`);b.disabled=levels[type]>=3;b.title=levels[type]>=3?'Fully upgraded':'Buy upgrade for $300';}}
 updateGarage();
 function reset(){elapsed=0;count=0;phase='ready';$('#race-status').textContent='FREE PRACTICE';$('#countdown').textContent='';$('#pause').textContent='Ⅱ';$('#message').style.display='block';$('#message').innerHTML='<span>DUST RUNNER</span><strong>'+(trackIndex?'RATTLESNAKE':'DUSTBOWL')+'</strong><p>Three laps. Four trucks. All dirt.</p><button id="start">RACE <span>↗</span></button><button class="setup-link" id="open-setup">TRUCK · TRACK · PIT STOP</button><small>ENTER TO RACE · WASD / ARROWS TO DRIVE</small>';$('#start').onclick=start;$('#open-setup').onclick=openMenu;updateMenu();
- trucks.forEach((c,i)=>{const j=N-20-(i>1?25:0),p=samples[j],t=curve.getTangentAt(j/N),side=(i%2?1:-1)*2.1;Object.assign(c,{x:p.x-t.z*side,z:p.z+t.x*side,vx:0,vz:0,heading:Math.atan2(-t.x,-t.z),speed:0,index:j,checkpoint:-1,lap:0,height:terrain(j),vertical:0,airborne:false,lastGround:terrain(j),suspension:0,suspensionVelocity:0,rampRiseVelocity:0,nitro:100,boosting:false,finish:false});c.mesh.position.set(c.x,0,c.z);c.mesh.rotation.set(0,c.heading,0);c.wheels.forEach(w=>{w.previousX=undefined;w.previousHeading=undefined;w.angle=0;w.steer=0;w.angularVelocity=0;});poseTruck(c,0,true);});
+ trucks.forEach((c,i)=>{const j=N-20-(i>1?25:0),p=samples[j],t=curve.getTangentAt(j/N),side=(i%2?1:-1)*2.1;Object.assign(c,{x:p.x-t.z*side,z:p.z+t.x*side,vx:0,vz:0,heading:Math.atan2(-t.x,-t.z),speed:0,index:j,checkpoint:-1,lap:0,height:terrain(j),vertical:0,airborne:false,lastGround:terrain(j),suspension:0,suspensionVelocity:0,rampRiseVelocity:0,collisionYaw:0,nitro:100,boosting:false,finish:false});c.mesh.position.set(c.x,0,c.z);c.mesh.rotation.set(0,c.heading,0);c.wheels.forEach(w=>{w.previousX=undefined;w.previousHeading=undefined;w.angle=0;w.steer=0;w.angularVelocity=0;});poseTruck(c,0,true);});
  for(const p of particles){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();}particles.length=0;updateCamera(0,true);}
 function start(){if(phase==='racing'||phase==='countdown')return;reset();phase='countdown';count=3.4;$('#message').style.display='none';$('#race-status').textContent='GET READY';canvas.focus({preventScroll:true});initAudio();}
 function pause(){if(!['racing','countdown','paused'].includes(phase))return;if(phase==='paused'){phase=previousPhase;$('#countdown').textContent='';$('#pause').textContent='Ⅱ';}else{previousPhase=phase;phase='paused';$('#countdown').textContent='PAUSED';$('#pause').textContent='▶';}keys.clear();canvas.focus({preventScroll:true});}
@@ -109,7 +110,7 @@ function poseTruck(c,dt,snap=false){
  c.chassis.rotation.x=THREE.MathUtils.lerp(c.chassis.rotation.x,pitch,blend);
  c.chassis.rotation.z=THREE.MathUtils.lerp(c.chassis.rotation.z,roll,blend);
  // Only the sprung body compresses; tire contact is independent of body bounce.
- c.chassis.position.y=clamp(c.suspension??0,-.14,.16)/VEHICLE_SCALE;
+ c.chassis.position.y=clamp(c.suspension??0,-.045,.16)/VEHICLE_SCALE;
  c.wheels.forEach((w,i)=>{
   const contact=contacts[i];
   w.pivot.position.y=TIRE_RADIUS+(c.airborne?Math.max(0,contact.ground-ground):contact.ground-ground)/VEHICLE_SCALE;
@@ -123,6 +124,7 @@ function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=
  if(i===0){throttle=keys.has('ArrowUp')||keys.has('KeyW')?1:0;brake=keys.has('ArrowDown')||keys.has('KeyS');steer=(keys.has('ArrowLeft')||keys.has('KeyA')?1:0)-(keys.has('ArrowRight')||keys.has('KeyD')?1:0);boost=keys.has('Space')&&c.nitro>0&&throttle>0;}else{({throttle,steer,brake,boost}=opponentInput(c,near,curve,samples));}
  boost=boost&&!c.airborne;
  c.boosting=boost;if(boost)c.nitro=Math.max(0,c.nitro-dt*32);else c.nitro=Math.min(100,c.nitro+dt*7);
+ advanceCollisionRotation(c,dt);
  arcadeMotion(c,{throttle,steer,brake,boost,onDirt,engine:i===0?levels.engine:0,tires:i===0?levels.grip:0,ai:i!==0,opponent:i},dt);
  // Keep the enlarged trucks inside the barriers without trapping them on contact.
  const edge=nearest(c.x,c.z);containOnTrack(c,{...edge,ground:terrain(edge.index)},roadWidth);
@@ -136,7 +138,11 @@ function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=
  if(contact.landed&&Math.abs(c.speed)>10){for(let n=0;n<5;n++)dust(c);}
  if(Math.abs(c.speed)>5)dust(c);
  });
- for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){const a=trucks[i],b=trucks[j],dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz);if(d<3.2&&d>.001&&Math.abs(a.height-b.height)<1){const push=(3.2-d)*.5;a.x-=dx/d*push;a.z-=dz/d*push;b.x+=dx/d*push;b.z+=dz/d*push;a.speed*=.98;b.speed*=.98;}}
+ // Iterative oriented contacts resolve bumpers, sides and packs before posing.
+ for(let pass=0;pass<5;pass++){
+  for(let i=0;i<trucks.length;i++)for(let j=i+1;j<trucks.length;j++)resolveCarCollision(trucks[i],trucks[j]);
+  trucks.forEach(c=>{const edge=nearest(c.x,c.z);containOnTrack(c,{...edge,ground:terrain(edge.index)},roadWidth);});
+ }
  trucks.forEach(c=>poseTruck(c,dt));
  if(trucks[0].lap>=3)finish();
  }

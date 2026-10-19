@@ -1,3 +1,4 @@
+import {carOutline} from './collision.js';
 export const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function angleDelta(target,current){return Math.atan2(Math.sin(target-current),Math.cos(target-current));}
 export function advanceProgress(previous,next,checkpoint,lap,samples=600){
@@ -78,9 +79,10 @@ export function containOnTrack(car,edge,halfWidth){
  // Airborne trucks can clear low barriers; never guide them around a corner
  // with the track boundary when their tires are above the barrier tops.
  if(car.airborne&&car.height>(edge.ground??0)+.7)return;
- const limit=halfWidth-1.7;
- if(edge.distance<=limit)return;
  const nx=(car.x-edge.point.x)/(edge.distance||1),nz=(car.z-edge.point.z)/(edge.distance||1);
+ const reach=Math.max(...carOutline(car).map(p=>(p.x-car.x)*nx+(p.z-car.z)*nz));
+ const limit=halfWidth-reach-.08;
+ if(edge.distance<=limit)return;
  car.x=edge.point.x+nx*limit;car.z=edge.point.z+nz*limit;
  const outward=car.vx*nx+car.vz*nz;
  if(outward>0){car.vx-=nx*outward;car.vz-=nz*outward;car.speed*=.9;}

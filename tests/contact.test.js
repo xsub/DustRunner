@@ -69,3 +69,13 @@ test('outside wheels travel farther than inside wheels through a turn',()=>{
  for(let i=0;i<2;i++)updateWheel(wheels[i],car,contacts[i*2+1],.1);
  assert.ok(Math.abs(wheels[1].angularVelocity)>Math.abs(wheels[0].angularVelocity));
 });
+
+import {createOffroadWheel} from '../src/wheel.js';
+test('detailed tire and tread fit inside the terrain contact radius',()=>{
+ const wheel=createOffroadWheel();let radius=0;
+ for(const mesh of wheel.children){
+  const positions=mesh.geometry.attributes.position;
+  for(let i=0;i<positions.count;i++)radius=Math.max(radius,Math.hypot(positions.getY(i),positions.getZ(i)));
+ }
+ assert.ok(radius<=TIRE_RADIUS&&radius>TIRE_RADIUS-.01);
+});

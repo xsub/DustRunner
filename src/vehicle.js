@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createOffroadWheel} from './wheel.js';
 import {VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 
@@ -27,7 +28,7 @@ export function createBronco(color,number){
  box(1.24,.3,2.78,trim,0,.75,0);
  box(1.69,.23,3.02,body,0,1.36,0);
  roundedBox(1.75,.15,1.2,.045,body,0,1.51,-.94);
- const panel=new THREE.Shape(),archRadius=.63,archAngle=Math.asin(.2/archRadius);
+ const panel=new THREE.Shape(),archRadius=.71,archAngle=Math.asin(.2/archRadius);
  panel.moveTo(1.52,.78);panel.lineTo(1.52,1.46);panel.lineTo(-1.52,1.46);panel.lineTo(-1.52,.78);
  panel.lineTo(-.91-archRadius*Math.cos(archAngle),.78);
  panel.absarc(-.91,.58,archRadius,Math.PI-archAngle,archAngle,true);
@@ -39,7 +40,7 @@ export function createBronco(color,number){
    const flank=new THREE.Mesh(panelGeometry,body);flank.rotation.y=Math.PI/2;
    flank.position.x=side>0?.85:-.905;flank.castShadow=true;flank.receiveShadow=true;chassis.add(flank);
    for(const z of [-.88,.91]){
-     const lip=new THREE.Mesh(new THREE.TorusGeometry(.65,.045,6,20,Math.PI),body);
+     const lip=new THREE.Mesh(new THREE.TorusGeometry(.74,.035,6,20,Math.PI),body);
      lip.rotation.y=Math.PI/2;lip.position.set(side*.925,.58,z);lip.castShadow=true;chassis.add(lip);
    }
  }
@@ -74,27 +75,14 @@ export function createBronco(color,number){
  for(const x of [-.57,.57])box(.09,.32,.13,metal,x,.91,-1.66);
  roundedBox(1.92,.16,.18,.035,metal,0,.79,1.55);
  for(const x of [-.76,.76])box(.15,.3,.05,material('#c34d39',{emissive:'#8b2317',emissiveIntensity:.15}),x,1.17,1.53);
- // Wheel groups rotate around the axle so the rims and tread roll together.
+ // Steering pivots and axle spin remain independent of suspension travel.
  for(const x of [-1,1])for(const z of [-.88,.91]){
-   const pivot=new THREE.Group(),wheel=new THREE.Group();pivot.position.set(x,TIRE_RADIUS,z);pivot.add(wheel);mesh.add(pivot);
-   cylinder(.56,.43,rubber,0,0,0,'z',wheel);
-   cylinder(.29,.46,metal,0,0,0,'z',wheel);
-   cylinder(.13,.48,trim,0,0,0,'z',wheel);
-   for(let i=0;i<12;i++){
-     const angle=i*Math.PI/6;
-     const tread=box(.46,.08,.17,trim,0,Math.cos(angle)*.55,Math.sin(angle)*.55,wheel);
-     tread.rotation.x=angle;
-   }
-   for(let i=0;i<5;i++){
-     const a=i*Math.PI*2/5;
-     for(const side of [-1,1])box(.025,.045,.045,trim,side*.236,Math.cos(a)*.21,Math.sin(a)*.21,wheel);
-   }
+   const pivot=new THREE.Group(),wheel=createOffroadWheel();
+   pivot.position.set(x,TIRE_RADIUS,z);pivot.add(wheel);mesh.add(pivot);
    wheels.push({pivot,spin:wheel,x,z});
  }
- // Rear-mounted spare is fixed to the tailgate, not part of the rolling wheels.
- cylinder(.51,.32,rubber,.16,1.4,1.65,'x');
- cylinder(.27,.34,metal,.16,1.4,1.66,'x');
- cylinder(.11,.36,trim,.16,1.4,1.67,'x');
+ const spare=createOffroadWheel();spare.rotation.y=Math.PI/2;
+ spare.scale.setScalar(.9);spare.position.set(.16,1.4,1.69);chassis.add(spare);
  const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;
  const ctx=canvas.getContext('2d');ctx.fillStyle='#f2ead2';ctx.fillRect(0,0,128,128);
  ctx.fillStyle='#243024';ctx.font='900 83px sans-serif';ctx.textAlign='center';ctx.fillText(number,64,94);

@@ -84,3 +84,19 @@ test('slow trucks follow the ramp and flat-ground trucks do not hop',()=>{
  for(let i=0;i<120;i++)updateSuspension(flat,2,1/60);
  assert.equal(flat.airborne,false);assert.equal(flat.height,2);
 });
+
+for(let track=0;track<TRACKS.length;track++)test(`${TRACKS[track].name}: installed I6 and V8 powertrains complete AI laps`,()=>{
+ const n=900,curve=createCircuit(track),samples=Array.from({length:n},(_,i)=>curve.getPointAt(i/n));
+ for(const engineId of ['170','400','300efi','302efi']){
+  const p=samples[0],t=curve.getTangentAt(0),c={engineId,style:'ranger',x:p.x,z:p.z,heading:Math.atan2(-t.x,-t.z),speed:0,vx:0,vz:0,height:0,vertical:0,nitro:100,index:0,checkpoint:0,lap:0};
+  for(let frame=0;frame<60*120&&c.lap<2;frame++){
+   const near=nearestPoint(samples,c.x,c.z),input=opponentInput(c,near,curve,samples);input.boost=input.boost&&!c.airborne&&!input.brake;
+   c.nitro=Math.max(0,Math.min(100,c.nitro+(input.boost?-32:7)/60));
+   arcadeMotion(c,{...input,ai:true,onDirt:true,opponent:1},1/60);
+   const edge=nearestPoint(samples,c.x,c.z);containOnTrack(c,{...edge,ground:terrainHeight(edge.index/n,track)},ROAD_WIDTH);
+   const next=nearestPoint(samples,c.x,c.z).index;Object.assign(c,advanceProgress(c.index,next,c.checkpoint,c.lap,n));c.index=next;
+   updateSuspension(c,nearestPoint(samples,c.x,c.z).distance<=ROAD_WIDTH?terrainHeight(next/n,track):0,1/60);
+  }
+  assert.equal(c.lap,2,`${engineId} stalled at ${c.index}`);
+ }
+});

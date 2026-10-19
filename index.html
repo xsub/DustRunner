@@ -10,6 +10,7 @@
 <div class="hud-box timer"><span>TIME</span><strong id="time">00:00.00</strong></div>
 </div>
 <nav class="game-tools" aria-label="Game controls">
+<button id="quick-sound" aria-label="Toggle engine sound" aria-pressed="false" title="Engine sound">♪ OFF</button>
 <button id="pause" aria-label="Pause game" title="Pause (P)">Ⅱ</button>
 <button id="fullscreen" aria-label="Fullscreen game" title="Fullscreen">⛶</button>
 <button id="menu" aria-label="Open game menu" title="Truck, track and upgrades">☰ <span>MENU</span></button>
@@ -18,13 +19,24 @@
 <div id="countdown" aria-live="polite"></div>
 <div class="track-info"><b id="race-status">FREE PRACTICE</b><span id="track-name">01 — DUSTBOWL</span></div>
 <aside class="minimap" aria-label="Course overview"><div><span>COURSE</span><small>➤ YOU</small></div><canvas id="minimap" aria-label="Full circuit with all four racers and the camera view"></canvas></aside>
-<div class="speed"><div class="speed-readout"><strong id="speed">0</strong><span>KM/H</span></div><div class="nitro-label">NITRO <span id="nitro-text">100%</span></div><div class="nitro-track"><div id="nitro-fill"></div></div></div>
+<div class="speed"><div class="speed-readout"><strong id="speed">0</strong><span>KM/H</span></div><div class="engine-readout"><b id="gear">D1</b><span><span id="rpm">700</span> RPM</span></div><div class="nitro-label">NITRO <span id="nitro-text">100%</span></div><div class="nitro-track"><div id="nitro-fill"></div></div></div>
 <div class="drive-hint">WASD / ARROWS <span>DRIVE</span> &nbsp; SPACE <span>NITRO</span> &nbsp; P <span>PAUSE</span> &nbsp; R <span>RESET</span></div>
 <div id="touch" aria-label="Touch driving controls"><div><button data-key="ArrowLeft" aria-label="Steer left">◀</button><button data-key="ArrowRight" aria-label="Steer right">▶</button></div><div><button data-key="Space" aria-label="Nitro boost">N₂O</button><button data-key="ArrowDown" aria-label="Brake and reverse">▼</button><button data-key="ArrowUp" aria-label="Accelerate">▲</button></div></div>
 </section>
 <dialog id="game-menu" aria-labelledby="menu-title">
 <div class="menu-heading"><div><span class="section-label">DUST RUNNER</span><h1 id="menu-title">PIT STOP</h1></div><button id="menu-close" aria-label="Close game menu">✕</button></div>
 <section class="setup"><div class="truck-select"><div class="section-label">01 <h2>CHOOSE YOUR RIDE</h2><span>YOU’RE THE ONE IN</span></div><div class="trucks"><button class="truck-option selected" data-model="classic" data-color="#087a50" style="--truck:#087a50"><span class="truck-drawing">▰<i></i></span><span>HERITAGE · EMERALD<small>ROUND HEADLAMPS <b>SELECTED ↗</b></small></span></button><button class="truck-option" data-model="ranger" data-color="#d9581e" style="--truck:#d9581e"><span class="truck-drawing">▰<i></i></span><span>RANGER · TANGERINE<small>TWO-TONE <b>SELECT ↗</b></small></span></button><button class="truck-option" data-model="sunset" data-color="#172433" style="--truck:#172433"><span class="truck-drawing">▰<i></i></span><span>SUNSET · MIDNIGHT<small>SUNSET STRIPES <b>SELECT ↗</b></small></span></button></div></div><div class="track-select"><div class="section-label">02 <h2>PICK YOUR PLAYGROUND</h2></div><div class="track-buttons"><button class="active" data-track="0"><span>01</span> DUSTBOWL <small>4 JUMPS · WHOOPS ↗</small></button><button data-track="1"><span>02</span> RATTLESNAKE <small>4 JUMPS · HAIRPINS ↗</small></button></div></div></section>
+<section class="engine-setup" aria-labelledby="engine-title">
+<div class="section-label">03 <h2 id="engine-title">CHOOSE YOUR ENGINE</h2></div>
+<label for="engine-select">ENGINE SWAP · AVAILABLE BETWEEN RACES</label>
+<select id="engine-select" aria-describedby="engine-character engine-spec"></select>
+<p id="engine-character"></p><p id="engine-spec"></p>
+<svg id="torque-chart" viewBox="0 0 300 80" role="img" aria-label="Modeled torque curve"><path d="M10 8V70H290" fill="none" stroke="#61704e"/><polyline id="torque-line" fill="none" stroke="#f4cf58" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<small>LOW RPM → HIGH RPM · Representative game tunes</small>
+<div class="engine-audio-controls"><button id="engine-preview">LISTEN · REV ENGINE ↗</button><label for="engine-volume">VOLUME <input id="engine-volume" type="range" min="0" max="100" value="55"></label></div>
+<p id="audio-status" role="status">Recorded V8 layers + cylinder-timed combustion.</p>
+<details class="audio-credits"><summary>Audio credits &amp; engine profiles</summary><p>Ford V8 recording by <a href="https://freesound.org/people/noiseloop/sounds/455925/" target="_blank" rel="noopener">noiseloop</a> (<a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>); V8 rev by <a href="https://freesound.org/people/overmedium/sounds/651534/" target="_blank" rel="noopener">overmedium</a> (CC0); Rover V8 by <a href="https://commons.wikimedia.org/wiki/File:Rover-v8-rr79.ogg" target="_blank" rel="noopener">Collard</a> (public domain). Edited into loops; pitch and EQ vary with engine load. I6 sounds are resynthesized approximations, not original Ford I6 recordings. Torque curves and rev limits are game calibrations.</p></details>
+</section>
 <section class="garage"><div><span class="section-label">THE PIT STOP</span><h2>A LITTLE EDGE GOES A LONG WAY.</h2><p>Race for cash. Build a faster truck.</p></div><div class="wallet">$<span id="cash">0</span><small>RACE EARNINGS</small></div><button class="upgrade" data-upgrade="engine">ENGINE <span>$300 · LV <b id="engine-level">0</b></span></button><button class="upgrade" data-upgrade="grip">TIRES <span>$300 · LV <b id="grip-level">0</b></span></button><p id="garage-note" role="status">Finish a race to earn your first upgrade.</p></section>
 
 <div class="menu-footer"><button id="sound" aria-label="Toggle sound">SOUND OFF <span>◖))</span></button><button id="menu-play" class="primary">BACK TO RACE ↗</button></div>

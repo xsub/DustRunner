@@ -1,3 +1,4 @@
+import {powertrainStep} from './powertrain.js';
 import {carOutline} from './collision.js';
 export const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 export function angleDelta(target,current){return Math.atan2(Math.sin(target-current),Math.cos(target-current));}
@@ -14,6 +15,7 @@ export function formatTime(t){return `${String(Math.floor(t/60)).padStart(2,'0')
 // Fast throttle and yaw response, with a short, controllable lateral slide.
 // World units and seconds keep the handling independent of rendering frame rate.
 export function arcadeMotion(car,input,dt){
+ const drivetrain=car.engineId?powertrainStep(car,input,dt):null;
  // Tire forces require contact: steering, throttle, braking and nitro cannot
  // bend or accelerate a jump. Carry the actual takeoff velocity until landing.
  if(car.airborne){
@@ -22,11 +24,13 @@ export function arcadeMotion(car,input,dt){
    return;
  }
  const {throttle,steer,brake,boost,onDirt,engine=0,tires=0,ai=false,opponent=0}=input;
- const max=(ai?21.4+opponent*.35:23+engine*1.5)*(boost?1.42:1);
+ const max=(drivetrain?drivetrain.topSpeed:(ai?21.4+opponent*.35:23+engine*1.5))*(boost?1.42:1);
  // Progressive braking gives the truck a longer run-out; braking overrides throttle.
- car.speed+=(brake?-12:throttle*(boost?38:23))*dt;
- car.speed*=Math.exp(-dt*(onDirt?.55:1.6));
- car.speed=clamp(car.speed,-8,onDirt?max:max*.65);
+ car.speed+=(drivetrain?(brake&&car.speed>.05?-12:drivetrain.acceleration):(brake?-12:throttle*(boost?38:23)))*dt;
+ car.speed*=Math.exp(-dt*(drivetrain?(onDirt?.16:.9):(onDirt?.55:1.6)));
+ const speedLimit=onDirt?max:max*.65;
+ // Installed engines limit wheel force rather than clipping forward momentum.
+ car.speed=drivetrain?Math.max(-8,car.speed):clamp(car.speed,-8,speedLimit);
  const yaw=(ai?3.2:3.65+tires*.12)*clamp(Math.abs(car.speed)/3,0,1);
  car.heading+=steer*yaw*dt*(car.speed<0?-1:1);
  const grip=1-Math.exp(-dt*((ai?10:9.5+tires*1.1)));

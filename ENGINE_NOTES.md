@@ -1,4 +1,4 @@
-# Bronco engine profiles and audio
+# Bronco® engine profiles and audio
 
 The selectable engines cover 170/200 I6, 289/302 Windsor V8, 351M/400 V8,
 and the later 300 I6 / 302 / 351W families, including separate carbureted
@@ -7,7 +7,7 @@ Default profiles: Heritage 302, Ranger 351M, Sunset 302 EFI, Trail 300 EFI.
 
 ## Historical references
 
-- [Ford Bronco powertrain history](https://en.wikipedia.org/wiki/Ford_Bronco)
+- [Ford Bronco® powertrain history](https://en.wikipedia.org/wiki/Ford_Bronco)
 - [Factory engine options, 1966–1996 — Wild Horses 4x4](https://www.wildhorses4x4.com/know-your-bronco-factory-engine-options-from-1966-1996)
 - [Engine options across generations — Formula Ford Lincoln](https://formulafordlincoln.com/blog/ford-bronco-engine-options-across-every-generation/)
 
@@ -62,7 +62,7 @@ V8 bank amplitude variation produces an uneven exhaust texture. These are
 simplified acoustic profiles, not a full manifold or pressure-wave simulation.
 
 The V8 base includes **a real Ford 5-litre V8 recording**. It is not a set of
-separate, verified recordings of each historical Bronco engine. **I6 profiles
+separate, verified recordings of each historical Bronco® engine. **I6 profiles
 are resynthesized approximations** using six-cylinder timing and a reduced,
 repitched recorded texture; they are not recordings of a Ford 170/200/300.
 

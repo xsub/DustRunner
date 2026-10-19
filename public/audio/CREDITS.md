@@ -6,7 +6,7 @@ Source: https://freesound.org/people/noiseloop/sounds/455925/
 License: **Creative Commons Attribution 3.0** — https://creativecommons.org/licenses/by/3.0/
 Changes: excerpt 2.50–5.40 s of the public HQ preview, mono conversion, DC removal,
 level adjustment, loop crossfade; pitch/EQ varied during gameplay.
-This is a recording of a Ford 5-litre V8, not a verified recording of each historical Bronco engine.
+This is a recording of a Ford 5-litre V8, not a verified recording of each historical Bronco® engine.
 
 ## v8-pull.wav
 Derived from **v8 engine rev.wav** by **overmedium**.

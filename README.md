@@ -1,6 +1,6 @@
 # Dust Runner
 
-An original Three.js arcade off-road racer inspired by Super Off Road. Procedural 3D assets, two dirt circuits with tighter corners, four jumps per lap, repeated whoop sections, four detailed Bronco-inspired SUVs, AI opponents, drifting, jumps, collisions, rechargeable nitro, race rewards, and persistent engine/tire upgrades.
+An original Three.js arcade off-road racer inspired by Super Off Road. Procedural 3D assets, two dirt circuits with tighter corners, four jumps per lap, repeated whoop sections, four detailed Bronco®-inspired SUVs, AI opponents, drifting, jumps, collisions, rechargeable nitro, race rewards, and persistent engine/tire upgrades.
 
 ## Play online
 
@@ -21,7 +21,7 @@ Open the local address printed by Vite. `npm run build` produces a static site i
 
 Three selectable bodies take their shapes and colors from the supplied vehicle references: short Heritage in emerald with an ivory cap and round headlights, wider Ranger in orange/ivory with rectangular lights, and Midnight Sunset with a lower raked cap and layered yellow/orange/red stripes. The olive Trail opponent has a utility bumper. Cabins have real window openings, tinted glass, seats and dashboards; exterior details include hood stampings, chrome belt lines, mirrors, markers, live axles and dampers. Outdoor sky/sand reflections support paint and chrome without external assets. All variants retain the shared racing wheelbase and collision envelope.
 
-Both circuits now have laps exactly **four times their previous length** (Dustbowl about 1.33 km), with the existing 15.5-unit road width and unchanged Bronco scale. A long straight leads up a 3.5-unit canyon ramp, across a 10-unit gap and onto two landing lanes with different heights. A 40-unit split landing catches the jump. Four low whoop sections provide 34 crests (0.10–0.175 units high), plus gentler rolling hills, ruts, four 0.65-unit humps and changing cross slopes. The outer shoulder now grades down over 14 units. The north-up minimap marks the big jump; a smooth camera looks ahead while keeping the truck close.
+Both circuits now have laps exactly **four times their previous length** (Dustbowl about 1.33 km), with the existing 15.5-unit road width and unchanged Bronco® scale. A long straight leads up a 3.5-unit canyon ramp, across a 10-unit gap and onto two landing lanes with different heights. A 40-unit split landing catches the jump. Four low whoop sections provide 34 crests (0.10–0.175 units high), plus gentler rolling hills, ruts, four 0.65-unit humps and changing cross slopes. The outer shoulder now grades down over 14 units. The north-up minimap marks the big jump; a smooth camera looks ahead while keeping the truck close.
 
 **Menu → Pick your playground** has two independent mirror toggles: **REVERSE TRACK** reflects left/right across map OY, and **FLIP TRACK** reflects up/down across map OX. Both off gives the original; either alone or both together gives four layouts per circuit. These reflect the course geometry, banks, split landing, collision surface, grid, barriers, AI route and minimap. Driving progress still follows the ramp approach and landing in their original order. The selected mirrors carry over when switching circuits; changing the layout restarts the race.
 
@@ -29,7 +29,7 @@ Rapier runs rigid-body physics at 120 Hz. The rendered terrain and collision sur
 
 Separated stacks of worn tires and orange-white traffic cones mark both road edges. These are movable props: light cones tip over, and stacks break into separate 10 kg tires that slide or tumble when hit. Trucks can break through them and drive back up the graded shoulder without using recovery. Nearby props activate for physics; distant ones stay inactive to keep the long circuits fast. Race reset restores their original positions. The desert contains saguaro cacti, agave, scrub and dry grass, with 18 animated rattlesnakes per circuit roaming safely outside the road. Plants use instanced geometry.
 
-The race fills the browser window by default. The compact HUD shows position, lap, time, speed, and nitro. Open **Menu** for truck selection, tracks, upgrades, sound, and controls; opening the menu pauses an active race and closing it resumes. The fullscreen button is optional. **Menu → Bronco History & Performance** opens a five-generation field guide with model years, factory engine layouts, fuel systems and source links. Select a generation to read its history and filter engine profiles. A shared-chassis drivetrain benchmark runs the longitudinal engine model for 60 seconds with stock engines and no nitro: modeled kW/hp, torque, 0–50 km/h and final speed. Choose compact or full-size mass, then use FIT to install an engine between races. These are ideal flat-ground drivetrain benchmarks; 3D suspension, terrain, tire slip and impacts affect actual lap performance. They are not historical factory performance figures.
+The race fills the browser window by default. The compact HUD shows position, lap, time, speed, and nitro. Open **Menu** for truck selection, tracks, upgrades, sound, and controls; opening the menu pauses an active race and closing it resumes. The fullscreen button is optional. **Menu → Bronco® History & Performance** opens a five-generation field guide with model years, factory engine layouts, fuel systems and source links. Select a generation to read its history and filter engine profiles. A shared-chassis drivetrain benchmark runs the longitudinal engine model for 60 seconds with stock engines and no nitro: modeled kW/hp, torque, 0–50 km/h and final speed. Choose compact or full-size mass, then use FIT to install an engine between races. These are ideal flat-ground drivetrain benchmarks; 3D suspension, terrain, tire slip and impacts affect actual lap performance. They are not historical factory performance figures.
 
 ## Controls
 
@@ -100,3 +100,7 @@ Drag the heading, collapse to FPS only with **−**, or hide with **×**. Restor
 via **Menu → FPS i statystyki podczas jazdy**. Small screens start collapsed.
 Visibility, collapse state and position persist locally in the browser. Only
 the heading captures pointer input; the readout lets touches/clicks pass through.
+
+## Credits and trademarks
+
+© 2026 PUFFY CLOUDS · USING AI TECHNOLOGY. The supplied Puffy Clouds logo appears in the game menu. Bronco® is a registered trademark of Ford Motor Company. This independent project is not affiliated with, sponsored by or endorsed by Ford Motor Company. Third-party assets retain their original licenses; see [audio credits](public/audio/CREDITS.md).

@@ -1,6 +1,5 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import {Quaternion,Vector3} from 'three';
-import {engineById} from './engines.js';
 import {powertrainStep} from './powertrain.js';
 import {WHEEL_LAYOUT,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 export const GRAVITY=9.81,CHASSIS_HEIGHT=1.5,REST_LENGTH=.55;
@@ -39,10 +38,7 @@ export function createPhysics(terrain,bounds){
   const mass=car.style==='classic'?1650:2050;
   if(mass!==v.mass){v.body.collider(0).setMass(mass*.86);v.body.collider(1).setMass(mass*.14);v.mass=mass;for(let i=0;i<4;i++)c.setWheelMaxSuspensionForce(i,mass*24);}
   q.copy(v.body.rotation());forward.set(0,0,-1).applyQuaternion(q);
-  const state=car.powertrain;
-  // Kick down under climbing load rather than lugging a high gear up the ramp.
-  if(!car.airborne&&forward.y>.12&&input.throttle>.5&&state?.gear>1&&state.cooldown<=0&&state.rpm<engineById(car.engineId).redline*.6){state.gear--;state.cooldown=.8;state.shiftTime=.12;}
-  const drive=powertrainStep(car,input,dt);
+  const drive=powertrainStep(car,{...input,slope:forward.y},dt);
   // Player input retains the requested one-fifth steering sensitivity.
   const desired=(input.steer??0)*(input.ai?.38:.4);
   v.steer+=(desired-v.steer)*(1-Math.exp(-dt*9));

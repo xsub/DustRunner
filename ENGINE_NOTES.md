@@ -39,9 +39,23 @@ but tire forces and steering cannot redirect or accelerate the jump.
 
 ## Audio sources and limitations
 
-The old single sawtooth oscillator has been removed. Three real recorded V8
-layers crossfade with RPM and throttle/overrun. Pitch, low-pass brightness,
-low-frequency EQ and procedural combustion respond to the selected engine.
+The recorded V8 layers are converted at load time into phase-matched,
+DC-corrected sustained four-stroke cycles. The original clips contain their
+own rev/level changes; looping the whole clips caused an audible recurring
+rev sweep even when the simulated engine held a steady speed. The sustained
+cycles remove that independent timeline. Playback pitch follows simulated RPM
+through the full rev range, without the old 2.5× high-RPM ceiling. Cycle
+reference RPMs are acoustic game calibrations, not measured factory values.
+
+Recorded pull and overrun layers, low-pass brightness, bass and procedural
+combustion respond to delivered torque, governor position and estimated road
+resistance. Road grade is filtered to reject short suspension bobbles. The
+automatic gearbox compares next-gear torque capacity to climbing resistance,
+holds a useful lower gear and uses hysteresis/dwell to avoid repeated 2↔3
+hunting. A steady speed in a fixed gear produces steady engine RPM; lifting
+the accelerator keeps wheel-coupled RPM with an overrun sound. The manual rev
+audition is cleared on race start and cannot override the racing engine.
+
 An AudioWorklet supplies sample-timed six/eight-cylinder combustion events;
 V8 bank amplitude variation produces an uneven exhaust texture. These are
 simplified acoustic profiles, not a full manifold or pressure-wave simulation.

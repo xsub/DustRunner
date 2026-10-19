@@ -44,3 +44,27 @@ test('switching live between I6 and V8 never creates an invalid fractional-cylin
  const voice=new CombustionVoice(44100);
  for(const count of [8,7.5,7,6.5,6,8])for(let i=0;i<5000;i++)assert.ok(Number.isFinite(voice.sample(2200,.8,count,4.9)));
 });
+
+import {RECORDING_LAYERS,steadyEngineLoop} from '../src/engine-loops.js';
+test('recorded revs become steady four-stroke cycles with a clean, normalized join',()=>{
+ for(const layer of RECORDING_LAYERS){
+  const file=readFileSync(new URL(`../public/audio/${layer.name}.wav`,import.meta.url));
+  const samples=Float32Array.from({length:(file.length-44)/2},(_,i)=>file.readInt16LE(44+i*2)/32768);
+  const loop=steadyEngineLoop(samples,44100,layer);
+  assert.ok(Math.abs(loop.length/44100-120/layer.rpm)<1/44100);
+  let energy=0,peak=0,mean=0;
+  for(const x of loop){assert.ok(Number.isFinite(x));energy+=x*x;peak=Math.max(peak,Math.abs(x));mean+=x;}
+  assert.ok(Math.sqrt(energy/loop.length)>.18&&Math.sqrt(energy/loop.length)<.24);
+  assert.ok(peak<=.881);assert.ok(Math.abs(mean/loop.length)<1e-6);
+  assert.ok(Math.abs(loop[0]-loop.at(-1))<.08,`${layer.name}: clicking loop join`);
+ }
+});
+test('constant RPM gives constant audio parameters, and loaded-loop pitch keeps rising to redline',()=>{
+ for(const engine of ENGINES){
+  const a=audioMix(engine,3000,.8);
+  for(let i=0;i<600;i++)assert.deepEqual(audioMix(engine,3000,.8),a);
+  assert.ok(audioMix(engine,engine.redline,1).rates[1]>audioMix(engine,engine.redline*.75,1).rates[1]);
+ }
+ const e=engineById('302'),coast=audioMix(e,3000,0),pull=audioMix(e,3000,1);
+ assert.ok(pull.gains[1]>coast.gains[1]*3);assert.ok(pull.cutoff>coast.cutoff+2000);
+});

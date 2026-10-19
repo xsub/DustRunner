@@ -27,3 +27,9 @@ recorded V8 timbre; I6 profiles use six-cylinder pulse timing with a reduced,
 repitched recorded texture. Those are approximate resynthesized I6 profiles,
 not original recordings of a Ford 170/200/300. No claim is made that this is a
 factory acoustic measurement of every engine, exhaust or model year.
+
+During playback these edited recordings are further processed into short,
+phase-matched sustained engine-cycle loops, with DC correction and normalized
+level. Playback rate follows the simulated engine RPM. This removes the
+original recordings’ own repeated rev sweeps; load controls the pull/overrun
+mix, filtering and bass. No additional recordings have been introduced.

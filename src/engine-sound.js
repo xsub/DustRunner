@@ -1,14 +1,16 @@
+import {RECORDING_LAYERS} from './engine-loops.js';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 export function audioMix(engine,rpm,load){
  const six=engine.cylinders===6,rateScale=six?.75:1;
- const body=Math.pow(4.9/engine.liters,.12);
  const rev=clamp((rpm-engine.idle)/(engine.redline-engine.idle),0,1);
- const idle=Math.cos(clamp((rpm-1100)/1200,0,1)*Math.PI/2);
+ const idle=Math.cos(clamp((rpm-1000)/1100,0,1)*Math.PI/2),running=Math.sqrt(1-idle*idle);
  return {
-  rates:[clamp(rpm/850*rateScale*body,.55,2.6),clamp(rpm/2400*rateScale*body,.4,2.5),clamp(rpm/1800*rateScale*body,.45,2.6)],
-  gains:[idle*(.52-load*.18),(Math.sqrt(1-idle*idle)*.48+load*.5)*(six?.32:1),(.12+rev*.35)*(1-load)*(six?.3:1)],
-  cutoff:(six?700:900)+load*2400+rev*900,
-  bass:six?1:4+(engine.liters-4.9)*1.1,
-  combustion:six?.62:.27
+  // The cycle length fixes the reference pitch. Do not cap high-RPM V8s at
+  // the old 2.5x rate or the recording sounds like a slow engine at redline.
+  rates:RECORDING_LAYERS.map(layer=>clamp(rpm/layer.rpm*rateScale,.45,10)),
+  gains:[idle*(.48-load*.14),running*(.20+load*.68)*(six?.3:1),running*(.10+(1-load)*.38)*(six?.3:1)],
+  cutoff:(six?850:1100)+load*3000+rev*1300,
+  bass:six?1:3.5+(engine.liters-4.9)*1.1+load*1.5,
+  combustion:six?.62:.24
  };
 }

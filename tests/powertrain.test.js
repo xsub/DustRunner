@@ -72,3 +72,30 @@ test('ending nitro preserves momentum instead of snapping to the engine speed ce
  arcadeMotion(c,{...drive,throttle:0},1/60);
  assert.ok(before>25);assert.ok(c.speed>before-.2);
 });
+
+test('sustained climbing load kicks down and holds the lower gear without hunting',()=>{
+ const flat={...car(),speed:17},hill={...car(),speed:17};
+ for(const c of [flat,hill]){resetPowertrain(c);c.powertrain.gear=3;c.powertrain.rpm=2244;}
+ let changes=0,last=3;
+ for(let i=0;i<120*15;i++){
+  powertrainStep(flat,{...drive,slope:0},1/120);powertrainStep(hill,{...drive,slope:.3},1/120);
+  if(hill.powertrain.gear!==last){changes++;last=hill.powertrain.gear;}
+ }
+ assert.equal(flat.powertrain.gear,3);assert.equal(hill.powertrain.gear,2);assert.equal(changes,1);
+ assert.ok(hill.powertrain.rpm>flat.powertrain.rpm+1200);
+ assert.ok(hill.powertrain.load>flat.powertrain.load);assert.ok(hill.powertrain.roadLoad>flat.powertrain.roadLoad+2);
+});
+test('constant road speed stays at a steady RPM rather than sweeping between idle and redline',()=>{
+ const c={...car(),speed:22};resetPowertrain(c);c.powertrain.gear=3;
+ for(let i=0;i<600;i++)powertrainStep(c,{...drive,slope:0},1/120);
+ const rpm=c.powertrain.rpm;
+ for(let i=0;i<1200;i++){powertrainStep(c,{...drive,slope:0},1/120);assert.equal(c.powertrain.gear,3);assert.ok(Math.abs(c.powertrain.rpm-rpm)<.01);}
+});
+test('closed governor and overrun reduce audible engine load',()=>{
+ const pulling={...car(),speed:17},governed={...car(),speed:30},coast={...car(),speed:17};
+ for(const c of [pulling,governed,coast]){resetPowertrain(c);c.powertrain.gear=3;}
+ for(let i=0;i<360;i++){
+  powertrainStep(pulling,drive,1/120);powertrainStep(governed,drive,1/120);powertrainStep(coast,{...drive,throttle:0},1/120);
+ }
+ assert.ok(pulling.powertrain.load>.7);assert.ok(governed.powertrain.load<.01);assert.ok(coast.powertrain.load<.01);
+});

@@ -46,12 +46,14 @@ for(let track=0;track<TRACKS.length;track++){
    let airborneFrames=0;
    for(let frame=0;frame<60*90&&c.lap<2;frame++){
      const near=nearestPoint(samples,c.x,c.z),input=opponentInput(c,near,curve,samples);
+     input.boost=input.boost&&!c.airborne;
      c.nitro=Math.max(0,Math.min(100,c.nitro+(input.boost?-32:7)/60));
      arcadeMotion(c,{...input,ai:true,onDirt:true,opponent:1},1/60);
-     containOnTrack(c,nearestPoint(samples,c.x,c.z),ROAD_WIDTH);
+     const edge=nearestPoint(samples,c.x,c.z);
+     containOnTrack(c,{...edge,ground:terrainHeight(edge.index/n,track)},ROAD_WIDTH);
      const next=nearestPoint(samples,c.x,c.z).index;
      Object.assign(c,advanceProgress(c.index,next,c.checkpoint,c.lap,n));c.index=next;
-     updateSuspension(c,terrainHeight(next/n,track),1/60);
+     updateSuspension(c,nearestPoint(samples,c.x,c.z).distance<=ROAD_WIDTH?terrainHeight(next/n,track):0,1/60);
      if(c.airborne)airborneFrames++;
    }
    assert.equal(c.lap,2,`AI stalled at index ${c.index}, checkpoint ${c.checkpoint}, lap ${c.lap}`);

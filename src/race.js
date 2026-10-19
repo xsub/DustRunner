@@ -13,14 +13,21 @@ export function formatTime(t){return `${String(Math.floor(t/60)).padStart(2,'0')
 // Fast throttle and yaw response, with a short, controllable lateral slide.
 // World units and seconds keep the handling independent of rendering frame rate.
 export function arcadeMotion(car,input,dt){
+ // Tire forces require contact: steering, throttle, braking and nitro cannot
+ // bend or accelerate a jump. Carry the actual takeoff velocity until landing.
+ if(car.airborne){
+   car.x+=car.vx*dt;car.z+=car.vz*dt;
+   car.speed=(car.speed<0?-1:1)*Math.hypot(car.vx,car.vz);
+   return;
+ }
  const {throttle,steer,brake,boost,onDirt,engine=0,tires=0,ai=false,opponent=0}=input;
  const max=(ai?21.4+opponent*.35:23+engine*1.5)*(boost?1.42:1);
  car.speed+=(throttle*(boost?38:23)-(brake?36:0))*dt;
  car.speed*=Math.exp(-dt*(onDirt?.55:1.6));
  car.speed=clamp(car.speed,-8,onDirt?max:max*.65);
  const yaw=(ai?3.2:3.65+tires*.12)*clamp(Math.abs(car.speed)/3,0,1);
- car.heading+=steer*yaw*dt*(car.speed<0?-1:1)*((car.airborne??car.height>.6)?.8:1);
- const grip=1-Math.exp(-dt*((ai?10:9.5+tires*1.1)*((car.airborne??car.height>.6)?.65:1)));
+ car.heading+=steer*yaw*dt*(car.speed<0?-1:1);
+ const grip=1-Math.exp(-dt*((ai?10:9.5+tires*1.1)));
  car.vx+=(-Math.sin(car.heading)*car.speed-car.vx)*grip;
  car.vz+=(-Math.cos(car.heading)*car.speed-car.vz)*grip;
  car.x+=car.vx*dt;car.z+=car.vz*dt;
@@ -65,6 +72,9 @@ export function updateSuspension(car,ground,dt) {
 }
 
 export function containOnTrack(car,edge,halfWidth){
+ // Airborne trucks can clear low barriers; never guide them around a corner
+ // with the track boundary when their tires are above the barrier tops.
+ if(car.airborne&&car.height>(edge.ground??0)+.7)return;
  const limit=halfWidth-1.7;
  if(edge.distance<=limit)return;
  const nx=(car.x-edge.point.x)/(edge.distance||1),nz=(car.z-edge.point.z)/(edge.distance||1);

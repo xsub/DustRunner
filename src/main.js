@@ -96,21 +96,22 @@ function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=
  elapsed+=dt;
  trucks.forEach((c,i)=>{const near=nearest(c.x,c.z),onDirt=near.distance<roadWidth;let throttle=0,steer=0,brake=false,boost=false;
  if(i===0){throttle=keys.has('ArrowUp')||keys.has('KeyW')?1:0;brake=keys.has('ArrowDown')||keys.has('KeyS');steer=(keys.has('ArrowLeft')||keys.has('KeyA')?1:0)-(keys.has('ArrowRight')||keys.has('KeyD')?1:0);boost=keys.has('Space')&&c.nitro>0&&throttle>0;}else{({throttle,steer,brake,boost}=opponentInput(c,near,curve,samples));}
+ boost=boost&&!c.airborne;
  c.boosting=boost;if(boost)c.nitro=Math.max(0,c.nitro-dt*32);else c.nitro=Math.min(100,c.nitro+dt*7);
  arcadeMotion(c,{throttle,steer,brake,boost,onDirt,engine:i===0?levels.engine:0,tires:i===0?levels.grip:0,ai:i!==0,opponent:i},dt);
  // Keep the enlarged trucks inside the barriers without trapping them on contact.
- containOnTrack(c,nearest(c.x,c.z),roadWidth);
+ const edge=nearest(c.x,c.z);containOnTrack(c,{...edge,ground:terrain(edge.index)},roadWidth);
  const next=nearest(c.x,c.z).index;
  // Crossing the line once arms quarter checkpoints; a full circuit is required for every lap.
  if(c.checkpoint===-1){if(c.index>N*.75&&next<N*.25)c.checkpoint=0;}else{const p=advanceProgress(c.index,next,c.checkpoint,c.lap,N);c.checkpoint=p.checkpoint;c.lap=p.lap;}
  c.index=next;
- const ground=terrain(next),tangent=curve.getTangentAt(next/N),spacing=curve.getLength()/N;
+ const ground=nearest(c.x,c.z).distance<=roadWidth?terrain(next):0,tangent=curve.getTangentAt(next/N),spacing=curve.getLength()/N;
  const alignment=-Math.sin(c.heading)*tangent.x-Math.cos(c.heading)*tangent.z;
  const slope=(terrain((next+3)%N)-terrain((next-3+N)%N))/(6*spacing)*alignment;
  const contact=updateSuspension(c,ground,dt);
  if(contact.landed&&Math.abs(c.speed)>10){for(let n=0;n<5;n++)dust(c);}
  const pitch=c.airborne?clamp(-c.vertical*.035,-.3,.3):-Math.atan(slope);
- c.mesh.position.set(c.x,c.height+.04+c.suspension,c.z);c.mesh.rotation.y=c.heading;c.mesh.rotation.z=THREE.MathUtils.lerp(c.mesh.rotation.z,-steer*Math.abs(c.speed)*.003,dt*8);c.mesh.rotation.x=THREE.MathUtils.lerp(c.mesh.rotation.x,clamp(pitch,-.4,.4),dt*10);c.wheels.forEach(w=>w.rotation.x-=c.speed*dt*1.4);
+ c.mesh.position.set(c.x,c.height+.04+c.suspension,c.z);c.mesh.rotation.y=c.heading;c.mesh.rotation.z=THREE.MathUtils.lerp(c.mesh.rotation.z,c.airborne?0:-steer*Math.abs(c.speed)*.003,dt*8);c.mesh.rotation.x=THREE.MathUtils.lerp(c.mesh.rotation.x,clamp(pitch,-.4,.4),dt*10);c.wheels.forEach(w=>w.rotation.x-=c.speed*dt*1.4);
  if(Math.abs(c.speed)>5)dust(c);
  });
  for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){const a=trucks[i],b=trucks[j],dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz);if(d<3.2&&d>.001&&Math.abs(a.height-b.height)<1){const push=(3.2-d)*.5;a.x-=dx/d*push;a.z-=dz/d*push;b.x+=dx/d*push;b.z+=dz/d*push;a.speed*=.98;b.speed*=.98;}}

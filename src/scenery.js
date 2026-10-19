@@ -4,10 +4,12 @@ import * as THREE from 'three';
 export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()=>-.25,addBarrier=()=>{},nearest,bounds,random}){
  const material=color=>new THREE.MeshStandardMaterial({color,roughness:1});
  const rubber=material('#30322b'),worn=material('#45463a'),orange=material('#ee792e'),white=material('#f4ebd8');
- const barrierBatches=new Map(),barrierMatrix=new THREE.Object3D();
+ const barrierBatches=new Map(),barrierMatrix=new THREE.Object3D(),barrierBindings=[];let currentBarrier;
  const barrier=(geometry,mat,x,y,z,rx=0,ry=0,rz=0)=>{
   let byMaterial=barrierBatches.get(geometry);if(!byMaterial){byMaterial=new Map();barrierBatches.set(geometry,byMaterial);}if(!byMaterial.has(mat))byMaterial.set(mat,[]);
-  barrierMatrix.position.set(x,y,z);barrierMatrix.rotation.set(rx,ry,rz);barrierMatrix.updateMatrix();byMaterial.get(mat).push(barrierMatrix.matrix.clone());
+  barrierMatrix.position.set(x,y,z);barrierMatrix.rotation.set(rx,ry,rz);barrierMatrix.updateMatrix();const matrix=barrierMatrix.matrix.clone(),local=matrix.clone();
+  if(currentBarrier){local.elements[12]-=currentBarrier.origin.x;local.elements[13]-=currentBarrier.origin.y;local.elements[14]-=currentBarrier.origin.z;}
+  byMaterial.get(mat).push({matrix,local,body:currentBarrier?.body});
  };
  const mesh=(geometry,mat,parent=world)=>{const m=new THREE.Mesh(geometry,mat);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;};
  // Circular, separated tires replace overlapping rectangular barrier segments.
@@ -24,19 +26,25 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
    if(first&&i>samples.length*.9&&Math.hypot(x-first.x,z-first.z)<2.1)continue;
    last={x,z};first??=last;
    const y=heightAt(x,z)+.01;
-   addBarrier(x,y,z);
-   if(count++%4===2){
+   const cone=count++%4===2,layers=2+(count%7===0?1:0);
+   currentBarrier={origin:{x,y,z},body:addBarrier(x,y,z,{kind:cone?'cone':'tires',layers})};
+   if(cone){
     barrier(coneBase,rubber,x,y+.06,z,0,Math.atan2(t.x,t.z));
     let bottom=y+.12;
     coneSections.forEach((g,k)=>{const h=[.42,.32,.5][k];barrier(g,k===1?white:orange,x,bottom+h/2,z);bottom+=h;});
    }else{
-    for(let layer=0;layer<2+(count%7===0?1:0);layer++){
+    for(let layer=0;layer<layers;layer++){
      barrier(tireGeometry,(count+layer)%3?worn:rubber,x,y+.17+layer*.32,z,Math.PI/2,0,count*.7+layer);
     }
    }
   }
  }
- for(const [geometry,byMaterial] of barrierBatches)for(const [mat,matrices] of byMaterial){const batch=new THREE.InstancedMesh(geometry,mat,matrices.length);matrices.forEach((m,i)=>batch.setMatrixAt(i,m));batch.castShadow=true;batch.receiveShadow=true;batch.computeBoundingSphere();world.add(batch);}
+ for(const [geometry,byMaterial] of barrierBatches)for(const [mat,entries] of byMaterial){
+  const batch=new THREE.InstancedMesh(geometry,mat,entries.length);
+  entries.forEach((entry,index)=>{batch.setMatrixAt(index,entry.matrix);if(entry.body)barrierBindings.push({batch,index,body:entry.body,local:entry.local,sleeping:true});});
+  batch.castShadow=true;batch.receiveShadow=true;batch.frustumCulled=false;world.add(batch);
+ }
+ const propPose=new THREE.Matrix4(),propMatrix=new THREE.Matrix4(),propPosition=new THREE.Vector3(),propRotation=new THREE.Quaternion(),unitScale=new THREE.Vector3(1,1,1);
  const matrix=new THREE.Object3D();
  const plantBatches=[];
  const batch=(geometry,color,capacity)=>{const m=new THREE.InstancedMesh(geometry,material(color),capacity);m.castShadow=true;m.receiveShadow=true;m.count=0;world.add(m);plantBatches.push(m);return m;};
@@ -87,7 +95,15 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
   snakes.push({group,segments,head,tail,x,z,phase:random()*Math.PI*2});
  }
  let time=0;
- return {update(dt){
+ return {resetBarriers(){for(const binding of barrierBindings)binding.sleeping=false;},update(dt){
+  const dirty=new Set();
+  for(const binding of barrierBindings){
+   const sleeping=binding.body.isSleeping();if(sleeping&&binding.sleeping)continue;binding.sleeping=sleeping;
+   propPosition.copy(binding.body.translation());propRotation.copy(binding.body.rotation());
+   propPose.compose(propPosition,propRotation,unitScale);propMatrix.multiplyMatrices(propPose,binding.local);
+   binding.batch.setMatrixAt(binding.index,propMatrix);dirty.add(binding.batch);
+  }
+  for(const batch of dirty)batch.instanceMatrix.needsUpdate=true;
   time+=dt;
   for(const snake of snakes){
    const a=snake.phase+time*.12;

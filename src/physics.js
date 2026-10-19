@@ -11,7 +11,13 @@ export function createPhysics(terrain,bounds){
  const world=new RAPIER.World({x:0,y:-GRAVITY,z:0});world.timestep=1/120;world.numSolverIterations=8;
  world.createCollider(RAPIER.ColliderDesc.trimesh(terrain.positions,terrain.indices).setFriction(.75).setRestitution(.03));
  world.createCollider(RAPIER.ColliderDesc.cuboid((bounds.max.x-bounds.min.x)/2+80,.5,(bounds.max.z-bounds.min.z)/2+80).setTranslation((bounds.min.x+bounds.max.x)/2,-.75,(bounds.min.z+bounds.max.z)/2).setFriction(.8));
- const vehicles=new Set();
+ const vehicles=new Set(),barriers=[],barrierBodies=new Set(),barrierGrid=new Map(),cellSize=12;
+ function activateBarriers(car){
+  const reach=12+Math.min(12,Math.abs(car.speed??0)*.4);
+  for(let x=Math.floor((car.x-reach)/cellSize);x<=Math.floor((car.x+reach)/cellSize);x++)for(let z=Math.floor((car.z-reach)/cellSize);z<=Math.floor((car.z+reach)/cellSize);z++){
+   for(const prop of barrierGrid.get(`${x},${z}`)??[])if(!prop.active&&(prop.origin.x-car.x)**2+(prop.origin.z-car.z)**2<reach*reach){prop.active=true;prop.body.setEnabled(true);prop.body.wakeUp();}
+  }
+ }
  function add(car){
   const properties=vehicleMassProperties(car.style,car.engineId),{mass}=properties;
   const body=world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setCanSleep(false).setCcdEnabled(true).setLinearDamping(.025).setAngularDamping(.9));
@@ -38,6 +44,7 @@ export function createPhysics(terrain,bounds){
   for(let i=0;i<4;i++){v.controller.setWheelEngineForce(i,0);v.controller.setWheelBrake(i,0);v.controller.setWheelSteering(i,0);}
  }
  function input(car,input,dt){
+  activateBarriers(car);
   const v=car.physics,c=v.controller;
   const properties=vehicleMassProperties(car.style,car.engineId),{mass}=properties;
   const massKey=`${car.style}:${car.engineId}`;
@@ -75,7 +82,7 @@ export function createPhysics(terrain,bounds){
    c.setWheelFrictionSlip(i,(input.onDirt?1.35:.8)+(input.tires??0)*.08);
   }
   // Only actual wheel contacts can transfer engine/brake/steering forces.
-  c.updateVehicle(dt,undefined,undefined,collider=>collider.parent()?.handle!==v.body.handle);
+  c.updateVehicle(dt,undefined,undefined,collider=>collider.parent()?.handle!==v.body.handle&&!barrierBodies.has(collider.parent()?.handle));
  }
  function sync(car,dt){
   const v=car.physics,b=v.body,c=v.controller,p=b.translation(),velocity=b.linvel();q.copy(b.rotation());
@@ -88,5 +95,17 @@ export function createPhysics(terrain,bounds){
   v.tireColliders.forEach((collider,i)=>{const w=WHEEL_LAYOUT[i];collider.setTranslationWrtParent({x:w.x*1.4,y:-.15-car.suspensionLengths[i],z:w.z*1.4});});
  }
  return {world,add,reset,input,sync,step(){world.step();},dispose(){for(const car of vehicles)delete car.physics;world.free();},
-  addBarrier(x,y,z){world.createCollider(RAPIER.ColliderDesc.cylinder(.38,.48).setTranslation(x,y+.38,z).setFriction(.8).setRestitution(.1));}};
+  resetBarriers(){for(const prop of barriers){const {body,origin}=prop;prop.active=false;body.setTranslation(origin,true);body.setRotation({x:0,y:0,z:0,w:1},true);body.setLinvel({x:0,y:0,z:0},true);body.setAngvel({x:0,y:0,z:0},true);body.sleep();body.setEnabled(false);}},
+  addBarrier(x,y,z,{kind='tires',layers=2}={}){
+   // Light, sleeping props wake on impact; they are never immovable walls.
+   const origin={x,y,z},body=world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setLinearDamping(.35).setAngularDamping(.45).setCcdEnabled(true));
+   const collider=desc=>world.createCollider(desc.setFriction(.65).setRestitution(.12),body);
+   if(kind==='cone'){
+    collider(RAPIER.ColliderDesc.cuboid(.425,.06,.425).setTranslation(0,.06,0).setMass(1.8));
+    collider(RAPIER.ColliderDesc.cone(.62,.38).setTranslation(0,.74,0).setMass(1.2));
+   }else for(let layer=0;layer<layers;layer++)collider(RAPIER.ColliderDesc.cylinder(.16,.55).setTranslation(0,.17+layer*.32,0).setMass(10));
+   const prop={body,origin,active:false},key=`${Math.floor(x/cellSize)},${Math.floor(z/cellSize)}`;
+   barriers.push(prop);if(!barrierGrid.has(key))barrierGrid.set(key,[]);barrierGrid.get(key).push(prop);
+   barrierBodies.add(body.handle);body.sleep();body.setEnabled(false);return body;
+  }};
 }

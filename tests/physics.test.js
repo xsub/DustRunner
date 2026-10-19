@@ -188,3 +188,32 @@ test('held steering persists at the wheel contacts after release and centers on 
   f.physics.reset(f.car);assert.equal(f.car.physics.steer,0);
  }finally{f.physics.dispose();}
 });
+
+for(const kind of ['cone','tires'])test(`Bronco pushes through ${kind} and the displaced barriers reset for the next race`,()=>{
+ const f=fixture(()=>0,60);step(f,{},180);
+ const props=[-2.1,-.7,.7,2.1].map(x=>f.physics.addBarrier(x,0,-6,{kind,layers:3}));
+ let maxShift=0;
+ try{
+  assert.ok(props.every(body=>body.isSleeping()));
+  for(let i=0;i<120*4;i++){
+   step(f,{throttle:.5});
+   for(const body of props)maxShift=Math.max(maxShift,Math.abs(body.translation().z+6));
+   assert.equal(f.car.rollover,false);
+  }
+  assert.ok(f.car.z<-15,`truck must get past props: ${f.car.z}`);
+  assert.ok(maxShift>1,`props must visibly move: ${maxShift}`);
+  assert.ok(props.every(body=>body.mass()<35),'props must be much lighter than a Bronco');
+  f.physics.resetBarriers();
+  props.forEach((body,i)=>{const p=body.translation();assert.ok(Math.abs(p.x-[-2.1,-.7,.7,2.1][i])<1e-5&&Math.abs(p.z+6)<1e-5);assert.equal(body.isSleeping(),true);});
+ }finally{f.physics.dispose();}
+});
+
+test('distant markers remain inactive until a truck approaches',()=>{
+ const f=fixture(()=>0,100),prop=f.physics.addBarrier(50,0,0,{kind:'cone'});
+ try{
+  step(f,{},120);assert.equal(prop.isEnabled(),false);
+  f.car.x=45;f.car.z=0;f.physics.reset(f.car);step(f);
+  assert.equal(prop.isEnabled(),true);
+  f.physics.resetBarriers();assert.equal(prop.isEnabled(),false);
+ }finally{f.physics.dispose();}
+});

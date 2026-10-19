@@ -34,7 +34,8 @@ The race fills the browser window by default. The compact HUD shows position, la
 ## Controls
 
 - W / Up: accelerate
-- A / D or Left / Right: steer relative to the truck (hold for a tight low-speed turn; gentler at speed)
+- A / D or Left / Right: steer relative to the truck
+- C or both steering directions together: center the wheels
 - S / Down: brake progressively; hold after stopping to reverse
 - Space: nitro (recharges when released)
 - Enter: start or race again
@@ -43,3 +44,7 @@ The race fills the browser window by default. The compact HUD shows position, la
 - R: reset race
 
 Touch controls appear on touch devices. Sound is opt-in via ♪ ON or the menu. The pit stop offers 11 selectable engine profiles, a torque-curve preview, a rev audition and volume control. The speed HUD shows RPM and the automatic transmission gear. Torque, gearing, flywheel response, engine braking and limits affect driving and the recorded/procedural engine sound. Sustained engine-cycle loops follow RPM continuously, with no independent recorded rev sweep. Delivered torque and road resistance control the pull/overrun mix; uphill gear selection holds a lower gear without repeated hunting. See [engine model and sound notes](ENGINE_NOTES.md) for calibration limits and sources. Best in a modern browser with WebGL and hardware acceleration. Progress stays in the browser's local storage. No proprietary game assets are used. Engine recordings are credited in [audio credits](public/audio/CREDITS.md).
+
+### Steering modes
+
+**Menu → Driving controls → Steering mode** switches between **Auto center** (the default, smooth steering with speed-dependent lock) and **Hold steering angle**. In held-angle mode, a tap adjusts the steering rack, a longer press turns it farther, and releasing keeps that exact angle even as speed changes. The opposite direction unwinds the steering. **C**, or both steering directions together on keyboard/touch controls, centers the wheels. Recovery and race reset also center them. The choice is saved locally, can be changed while paused without restarting the race, and does not affect AI drivers.

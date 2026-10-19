@@ -19,9 +19,12 @@ export function drivingControls(state,input,speed,dt){
 }
 
 // Full lock for parking turns; reduce steering lock progressively at race pace.
-export function steeringStep(current,input,speed,dt,ai=false){
+export function steeringStep(current,input,speed,dt,ai=false,mode='return',center=false){
  const steer=Math.max(-1,Math.min(1,input??0));
  if(ai)return current+(steer*.38-current)*(1-Math.exp(-dt*9));
+ if(center)return 0;
+ // Held-angle mode moves the steering rack; release leaves it exactly there.
+ if(mode==='hold')return Math.max(-.56,Math.min(.56,current+steer*.7*dt));
  const t=Math.max(0,Math.min(1,(Math.abs(speed)-4)/18)),blend=t*t*(3-2*t);
  const lock=.56+(.12-.56)*blend,target=steer*lock;
  const returning=steer===0||target*current<0;

@@ -49,7 +49,7 @@ export function createPhysics(terrain,bounds){
   const controls=drivingControls(v.controls,{...input,airborne:car.airborne},car.speed,dt);
   const drive=powertrainStep(car,{...input,...controls,slope:forward.y},dt);
   // Keyboard presses build toward full parking lock, with less lock at speed.
-  v.steer=steeringStep(v.steer,input.steer,car.speed,dt,input.ai);
+  v.steer=steeringStep(v.steer,input.steer,car.speed,dt,input.ai,input.steeringMode,input.centerSteering);
   const drag=-Math.sign(car.speed)*rollingResistance(car.speed,input.onDirt);
   // Loose dirt cannot turn every extra engine/nitro torque into thrust.
   // Limit longitudinal traction, preserving physical weight transfer and

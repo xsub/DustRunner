@@ -32,3 +32,22 @@ test('steering builds gradually to parking lock and reduces lock at racing speed
  assert.ok(steeringStep(.5,0,3,.3)<.05,'release centers the wheels');
  assert.ok(Math.abs(steeringStep(0,-1,3,1)+steeringStep(0,1,3,1))<1e-9);
 });
+
+test('held steering accumulates taps, holds exactly across speed changes and unwinds with the opposite arrow',()=>{
+ let angle=0;
+ const move=(input,frames=12)=>{for(let i=0;i<frames;i++)angle=steeringStep(angle,input,0,1/120,false,'hold');};
+ move(1);const first=angle;assert.ok(Math.abs(first-.07)<1e-9);
+ move(0,120);assert.equal(angle,first);
+ move(1);assert.ok(Math.abs(angle-2*first)<1e-9);
+ assert.equal(steeringStep(angle,0,28,1,false,'hold'),angle);
+ move(-1);assert.ok(Math.abs(angle-first)<1e-9);
+ move(-1,120);assert.equal(angle,-.56);
+ move(1,240);assert.equal(angle,.56);
+ assert.equal(steeringStep(angle,1,0,1/120,false,'hold',true),0);
+ assert.ok(steeringStep(angle,0,0,1,false,'return')<.001);
+});
+test('held steering increments are frame-rate independent and never change AI steering',()=>{
+ const run=hz=>{let angle=0;for(let i=0;i<hz/2;i++)angle=steeringStep(angle,-1,8,1/hz,false,'hold');return angle;};
+ assert.ok(Math.abs(run(60)-run(120))<1e-9);
+ assert.equal(steeringStep(.1,.8,10,1/120,true,'hold',true),steeringStep(.1,.8,10,1/120,true));
+});

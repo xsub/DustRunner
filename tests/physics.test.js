@@ -171,3 +171,20 @@ test('keyboard full lock makes a low-speed U-turn within the road width in both 
   }finally{f.physics.dispose();}
  }
 });
+
+test('held steering persists at the wheel contacts after release and centers on command or recovery',()=>{
+ const f=fixture(()=>0,60);step(f,{},180);
+ try{
+  step(f,{steer:1,steeringMode:'hold'},36);
+  const controller=f.car.physics.controller,angle=f.car.physics.steer,inside=controller.wheelSteering(0),outside=controller.wheelSteering(2),heading=f.car.heading;
+  assert.ok(angle>.2&&angle<.22);
+  step(f,{steeringMode:'hold',throttle:.4},240);
+  assert.equal(f.car.physics.steer,angle);
+  assert.equal(controller.wheelSteering(0),inside);assert.equal(controller.wheelSteering(2),outside);
+  assert.ok(Math.abs(f.car.heading-heading)>.1,'truck keeps turning after the arrow is released');
+  step(f,{steeringMode:'hold',centerSteering:true});
+  assert.equal(f.car.physics.steer,0);assert.equal(controller.wheelSteering(0),0);assert.equal(controller.wheelSteering(2),0);
+  step(f,{steeringMode:'hold',steer:-1},36);assert.ok(f.car.physics.steer<-.2);
+  f.physics.reset(f.car);assert.equal(f.car.physics.steer,0);
+ }finally{f.physics.dispose();}
+});

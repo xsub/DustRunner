@@ -86,10 +86,10 @@ function makeTruck(style,num){
  return {mesh,chassis,body,wheels,axles,dispose,number:num,style,engineId:defaultEngine(style),x:0,z:0,vx:0,vz:0,heading:0,speed:0,index:0,checkpoint:0,lap:0,height:0,vertical:0,nitro:100,boosting:false,finish:false};
 }
 makeWorld();['classic','ranger','sunset','expedition'].forEach((c,i)=>trucks.push(makeTruck(c,['07','12','28','03'][i])));
-const keys=new Set();let phase='ready',previousPhase='racing',elapsed=0,count=0,selectedColor='#087a50',cash=0,levels={engine:0,grip:0},lastTime=0,muted=true,volume=.55,audioPreviewTime=0;
+const keys=new Set();let phase='ready',previousPhase='racing',elapsed=0,count=0,selectedColor='#087a50',cash=0,levels={engine:0,grip:0},lastTime=0,muted=true,volume=.55,steeringMode='return',audioPreviewTime=0;
 const engineAudio=new EngineAudio();
-try{const save=JSON.parse(localStorage.getItem('dust-runner-save'));if(save){if(ENGINES.some(e=>e.id===save.engineId))trucks[0].engineId=save.engineId;if(Number.isFinite(save.volume))volume=clamp(save.volume,0,1);cash=Math.max(0,Number(save.cash)||0);levels.engine=clamp(Number(save.engine)||0,0,3);levels.grip=clamp(Number(save.grip)||0,0,3);}}catch{}
-function save(){try{localStorage.setItem('dust-runner-save',JSON.stringify({cash,...levels,engineId:trucks[0].engineId,volume}));}catch{}updateGarage();}
+try{const save=JSON.parse(localStorage.getItem('dust-runner-save'));if(save){if(['return','hold'].includes(save.steeringMode))steeringMode=save.steeringMode;if(ENGINES.some(e=>e.id===save.engineId))trucks[0].engineId=save.engineId;if(Number.isFinite(save.volume))volume=clamp(save.volume,0,1);cash=Math.max(0,Number(save.cash)||0);levels.engine=clamp(Number(save.engine)||0,0,3);levels.grip=clamp(Number(save.grip)||0,0,3);}}catch{}
+function save(){try{localStorage.setItem('dust-runner-save',JSON.stringify({cash,...levels,engineId:trucks[0].engineId,volume,steeringMode}));}catch{}updateGarage();}
 function updateGarage(){$('#cash').textContent=cash;for(const type of ['engine','grip']){$(`#${type}-level`).textContent=levels[type];const b=$(`[data-upgrade="${type}"]`);b.disabled=levels[type]>=3;b.title=levels[type]>=3?'Fully upgraded':'Buy upgrade for $300';}}
 updateGarage();
 function reset(){elapsed=0;count=0;phase='ready';$('#race-status').textContent='FREE PRACTICE';$('#countdown').textContent='';$('#pause').textContent='Ⅱ';$('#message').style.display='block';$('#message').innerHTML='<span>DUST RUNNER</span><strong>'+TRACKS[trackIndex].name+'</strong><p>Three laps · '+(curve.getLength()/1000).toFixed(2)+' km per lap · Split landing ahead.</p><button id="start">RACE <span>↗</span></button><button class="setup-link" id="open-setup">TRUCK · TRACK · PIT STOP</button><small>ENTER TO RACE · WASD / ARROWS TO DRIVE</small>';$('#start').onclick=start;$('#open-setup').onclick=openMenu;updateMenu();
@@ -117,6 +117,12 @@ async function initAudio(){
 }
 async function toggleSound(){muted=!muted;audioPreviewTime=0;updateSoundLabels();if(!muted)await initAudio();}
 $('#sound').onclick=toggleSound;$('#quick-sound').onclick=()=>{toggleSound();if(['racing','countdown'].includes(phase))canvas.focus({preventScroll:true});};
+const steeringSelect=$('#steering-mode');steeringSelect.value=steeringMode;
+function updateSteeringHelp(){
+ $('#steering-help').textContent=steeringMode==='hold'?'Tap to adjust the wheel angle; hold to turn farther. Release to keep the angle. Opposite arrow unwinds it. C or both steering arrows centers the wheels.':'Hold an arrow to steer. Release to center automatically. Steering becomes gentler at speed.';
+}
+steeringSelect.onchange=()=>{steeringMode=steeringSelect.value;keys.clear();updateSteeringHelp();save();};
+updateSteeringHelp();
 $('#engine-volume').value=Math.round(volume*100);
 $('#engine-volume').oninput=e=>{volume=Number(e.target.value)/100;save();};
 const engineSelect=$('#engine-select');
@@ -211,7 +217,7 @@ function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=
    else ({throttle,steer,brake,boost}=opponentInput(c,near,curve,samples));
    boost=boost&&!c.airborne&&!brake&&!c.rollover;c.boosting=boost;
    c.nitro=clamp(c.nitro+(boost?-32:7)*dt/2,0,100);
-   physics.input(c,{throttle,steer,brake,boost,onDirt,engine:i===0?levels.engine:0,tires:i===0?levels.grip:0,ai:i!==0},dt/2);
+   physics.input(c,{throttle,steer,brake,boost,onDirt,steeringMode:i===0?steeringMode:'return',centerSteering:i===0&&(keys.has('KeyC')||((keys.has('ArrowLeft')||keys.has('KeyA'))&&(keys.has('ArrowRight')||keys.has('KeyD')))),engine:i===0?levels.engine:0,tires:i===0?levels.grip:0,ai:i!==0},dt/2);
   });
   physics.step();trucks.forEach(c=>physics.sync(c,dt/2));
  }

@@ -1,9 +1,14 @@
 import * as THREE from 'three';
 
 // Shared geometries and instanced plants keep the desert inexpensive to draw.
-export function createScenery({world,samples,curve,roadWidth,terrain,nearest,bounds,random}){
+export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()=>-.25,addBarrier=()=>{},nearest,bounds,random}){
  const material=color=>new THREE.MeshStandardMaterial({color,roughness:1});
  const rubber=material('#30322b'),worn=material('#45463a'),orange=material('#ee792e'),white=material('#f4ebd8');
+ const barrierBatches=new Map(),barrierMatrix=new THREE.Object3D();
+ const barrier=(geometry,mat,x,y,z,rx=0,ry=0,rz=0)=>{
+  let byMaterial=barrierBatches.get(geometry);if(!byMaterial){byMaterial=new Map();barrierBatches.set(geometry,byMaterial);}if(!byMaterial.has(mat))byMaterial.set(mat,[]);
+  barrierMatrix.position.set(x,y,z);barrierMatrix.rotation.set(rx,ry,rz);barrierMatrix.updateMatrix();byMaterial.get(mat).push(barrierMatrix.matrix.clone());
+ };
  const mesh=(geometry,mat,parent=world)=>{const m=new THREE.Mesh(geometry,mat);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;};
  // Circular, separated tires replace overlapping rectangular barrier segments.
  const tireGeometry=new THREE.TorusGeometry(.38,.17,6,14);
@@ -14,22 +19,23 @@ export function createScenery({world,samples,curve,roadWidth,terrain,nearest,bou
   for(let i=0;i<samples.length;i++){
    const p=samples[i],t=curve.getTangentAt(i/samples.length);
    const x=p.x-t.z*(roadWidth+.06)*side,z=p.z+t.x*(roadWidth+.06)*side;
-   if(last&&Math.hypot(x-last.x,z-last.z)<1.65)continue;
-   if(first&&i>samples.length*.9&&Math.hypot(x-first.x,z-first.z)<1.65)continue;
+   if(last&&Math.hypot(x-last.x,z-last.z)<2.1)continue;
+   if(first&&i>samples.length*.9&&Math.hypot(x-first.x,z-first.z)<2.1)continue;
    last={x,z};first??=last;
-   const y=terrain(i)+.01;
+   const y=heightAt(x,z)+.01;
+   addBarrier(x,y,z);
    if(count++%4===2){
-    const base=mesh(coneBase,rubber);base.position.set(x,y+.06,z);base.rotation.y=Math.atan2(t.x,t.z);
+    barrier(coneBase,rubber,x,y+.06,z,0,Math.atan2(t.x,t.z));
     let bottom=y+.12;
-    coneSections.forEach((g,k)=>{const h=[.42,.32,.5][k],part=mesh(g,k===1?white:orange);part.position.set(x,bottom+h/2,z);bottom+=h;});
+    coneSections.forEach((g,k)=>{const h=[.42,.32,.5][k];barrier(g,k===1?white:orange,x,bottom+h/2,z);bottom+=h;});
    }else{
     for(let layer=0;layer<2+(count%7===0?1:0);layer++){
-     const tire=mesh(tireGeometry,(count+layer)%3?worn:rubber);
-     tire.rotation.set(Math.PI/2,0,(count*.7+layer));tire.position.set(x,y+.17+layer*.32,z);
+     barrier(tireGeometry,(count+layer)%3?worn:rubber,x,y+.17+layer*.32,z,Math.PI/2,0,count*.7+layer);
     }
    }
   }
  }
+ for(const [geometry,byMaterial] of barrierBatches)for(const [mat,matrices] of byMaterial){const batch=new THREE.InstancedMesh(geometry,mat,matrices.length);matrices.forEach((m,i)=>batch.setMatrixAt(i,m));batch.castShadow=true;batch.receiveShadow=true;batch.computeBoundingSphere();world.add(batch);}
  const matrix=new THREE.Object3D();
  const plantBatches=[];
  const batch=(geometry,color,capacity)=>{const m=new THREE.InstancedMesh(geometry,material(color),capacity);m.castShadow=true;m.receiveShadow=true;m.count=0;world.add(m);plantBatches.push(m);return m;};
@@ -43,7 +49,7 @@ export function createScenery({world,samples,curve,roadWidth,terrain,nearest,bou
  for(let i=0;i<1200;i++){
   const x=bounds.min.x-20+random()*(bounds.max.x-bounds.min.x+40),z=bounds.min.z-20+random()*(bounds.max.z-bounds.min.z+40);
   if(nearest(x,z).distance<roadWidth+2.6||z>bounds.max.z+roadWidth+3||z<bounds.min.z-roadWidth-3)continue;
-  const type=random(),size=.7+random()*.8,y=-.25;
+  const type=random(),size=.7+random()*.8,y=heightAt(x,z);
   if(type<.27){ // branching saguaro
    const h=(1.5+random()*2.2)*size;
    put(trunks,x,y+h/2,z,.22*size,h,.22*size);
@@ -84,7 +90,7 @@ export function createScenery({world,samples,curve,roadWidth,terrain,nearest,bou
   time+=dt;
   for(const snake of snakes){
    const a=snake.phase+time*.12;
-   snake.group.position.set(snake.x+Math.cos(a)*1.25,-.11,snake.z+Math.sin(a)*1.25);
+   snake.group.position.set(snake.x+Math.cos(a)*1.25,heightAt(snake.x+Math.cos(a)*1.25,snake.z+Math.sin(a)*1.25)+.14,snake.z+Math.sin(a)*1.25);
    snake.group.rotation.y=Math.PI-a;
    const point=u=>({x:Math.sin(u*8+time*4+snake.phase)*.19,z:1.1-u*2.2});
    snake.segments.forEach((part,j)=>{

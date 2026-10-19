@@ -45,20 +45,6 @@ test('front wheels steer into a turn and the inside wheel steers farther',()=>{
  for(const w of [left,right,rear])updateWheel(w,car,{worldX:0,worldZ:-1},.1);
  assert.ok(left.steer>right.steer&&right.steer>0);close(rear.steer,0);
 });
-test('both actual tracks have finite continuous tire support across ramps and corners',()=>{
- for(let track=0;track<2;track++){
-  const curve=createCircuit(track),n=900;
-  const samples=Array.from({length:n},(_,i)=>curve.getPointAt(i/n));
-  const tangents=samples.map((_,i)=>curve.getTangentAt(i/n));
-  const surface=createRoadSurface(samples,tangents,samples.map((_,i)=>terrainHeight(i/n,track)+.01),ROAD_WIDTH);
-  for(let i=0;i<n;i++){
-   const car={x:samples[i].x,z:samples[i].z,heading:Math.atan2(-tangents[i].x,-tangents[i].z)};
-   const contacts=wheelContacts(car,surface),support=bodyAttitude(contacts);
-   assert.ok(Number.isFinite(support.ground)&&Math.abs(support.pitch)<.8);
-   for(const w of contacts)assert.ok(w.ground>=surface(w.worldX,w.worldZ)-1e-8);
-  }
- }
-});
 test('outside wheels travel farther than inside wheels through a turn',()=>{
  const car={x:0,z:0,heading:0,vx:0,vz:-10,airborne:false};
  const wheels=[{x:-1,z:.91},{x:1,z:.91}];

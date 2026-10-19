@@ -14,7 +14,7 @@ export const BRONCO_STYLES={
 // All variants share the racing wheelbase and collision envelope.
 export function createBronco(style='classic',number='07'){
  const spec=BRONCO_STYLES[style]??BRONCO_STYLES.classic,later=spec.lights==='square',w=spec.width;
- const mesh=new THREE.Group(),chassis=new THREE.Group(),wheels=[];mesh.add(chassis);
+ const mesh=new THREE.Group(),chassis=new THREE.Group(),wheels=[],axles=[];mesh.add(chassis);
  const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.55,...extra});
  const body=new THREE.MeshPhysicalMaterial({color:spec.color,metalness:.22,roughness:style==='expedition'?.72:.38,clearcoat:style==='expedition'?.12:.45,clearcoatRoughness:.18});
  const rubber=material('#20231e'),trim=material('#292d28'),ivory=material(spec.roof,{roughness:.4});
@@ -35,8 +35,10 @@ export function createBronco(style='classic',number='07'){
  // Separate chassis rails, live axles, differential housings and red dampers.
  for(const side of [-1,1])box(.12,.14,2.85,trim,side*.48,.52,.04);
  for(const z of [-.88,.91]){
-  rod([-.99,.58,z],[.99,.58,z],.075,trim);
-  const diff=part(new THREE.SphereGeometry(.19,12,8),trim,0,.57,z);diff.scale.set(1,.8,1.1);
+  const group=new THREE.Group();group.position.set(0,TIRE_RADIUS,z);mesh.add(group);
+  const tube=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,2.0,12),trim);tube.rotation.z=Math.PI/2;tube.castShadow=true;group.add(tube);
+  const diff=new THREE.Mesh(new THREE.SphereGeometry(.19,12,8),trim);diff.scale.set(1,.8,1.1);diff.castShadow=true;group.add(diff);
+  axles.push({group,indices:z<0?[0,2]:[1,3]});
   for(const side of [-1,1]){rod([side*.69,.6,z],[side*.73,1.02,z+.12],.035,red);rod([side*.61,.55,z],[side*.62,.87,z-.38],.027,metal);}
  }
  box(1.38,.12,2.9,trim,0,.88,.02);box(1.5,.09,1.8,trim,0,1.34,.54);
@@ -130,7 +132,7 @@ export function createBronco(style='classic',number='07'){
  const roof=part(new THREE.PlaneGeometry(.6,.55),numberMaterial,0,roofY+.067,.64);roof.rotation.x=-Math.PI/2;
  for(const side of [-1,1]){const decal=part(new THREE.PlaneGeometry(.34,.24),numberMaterial,side*(w+.066),1.13,.02);decal.rotation.y=side*Math.PI/2;}
  mesh.scale.setScalar(VEHICLE_SCALE);mesh.userData.style=style;
- return {mesh,chassis,body,wheels,dispose(){
+ return {mesh,chassis,body,wheels,axles,dispose(){
   const geometries=new Set(),materials=new Set();mesh.traverse(o=>{if(o.userData.sharedWheel)return;if(o.geometry)geometries.add(o.geometry);if(o.material)materials.add(o.material);});
   geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());texture.dispose();
  }};

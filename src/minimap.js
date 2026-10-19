@@ -3,7 +3,7 @@ import {minimapTransform} from './view.js';
 export function createMinimap(canvas){
  const ctx=canvas.getContext('2d');
  const background=document.createElement('canvas'),bg=background.getContext('2d');
- let points=[],halfWidth=0,transform,width=0,height=0,density=1;
+ let points=[],halfWidth=0,transform,width=0,height=0,density=1,features=[],length=1;
  function project(p){return {x:p.x*transform.scale+transform.offsetX,y:p.z*transform.scale+transform.offsetZ};}
  function rebuild(){
    if(!points.length)return;
@@ -16,13 +16,17 @@ export function createMinimap(canvas){
    bg.lineJoin='round';bg.lineCap='round';bg.strokeStyle='#a59b78';bg.lineWidth=halfWidth*2*transform.scale+2;bg.stroke(path);
    bg.strokeStyle='#655640';bg.lineWidth=halfWidth*2*transform.scale;bg.stroke(path);
    bg.strokeStyle='#e1cd9366';bg.lineWidth=.6;bg.stroke(path);
-   const p=points[0],t=points[1],length=Math.hypot(t.x-p.x,t.z-p.z)||1;
-   const a=project({x:p.x-(t.z-p.z)/length*halfWidth,z:p.z+(t.x-p.x)/length*halfWidth});
-   const b=project({x:p.x+(t.z-p.z)/length*halfWidth,z:p.z-(t.x-p.x)/length*halfWidth});
+   const p=points[0],t=points[1],segmentLength=Math.hypot(t.x-p.x,t.z-p.z)||1;
+   const a=project({x:p.x-(t.z-p.z)/segmentLength*halfWidth,z:p.z+(t.x-p.x)/segmentLength*halfWidth});
+   const b=project({x:p.x+(t.z-p.z)/segmentLength*halfWidth,z:p.z-(t.x-p.x)/segmentLength*halfWidth});
    bg.beginPath();bg.moveTo(a.x,a.y);bg.lineTo(b.x,b.y);bg.strokeStyle='#f4f2dd';bg.lineWidth=2;bg.stroke();
+   for(const feature of features.filter(f=>f.kind==='canyon')){
+    const q=project(points[Math.round((feature.start+feature.runup/length)*points.length)%points.length]);
+    bg.fillStyle='#ffda63';bg.beginPath();bg.moveTo(q.x,q.y-4);bg.lineTo(q.x+4,q.y+3);bg.lineTo(q.x-4,q.y+3);bg.closePath();bg.fill();
+   }
  }
  return {
-   setTrack(samples,width){points=samples;halfWidth=width;rebuild();},
+   setTrack(samples,width,trackFeatures=[],trackLength=1){points=samples;halfWidth=width;features=trackFeatures;length=trackLength;rebuild();},
    resize:rebuild,
    render(cars,color,viewCorners=[]){
      if(!transform)return;

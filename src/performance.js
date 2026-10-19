@@ -15,7 +15,7 @@ export function curvePerformance(engine){
 }
 
 // A fresh car for every run: no persistent upgrades, nitro, steering or terrain
-// features. Use the actual driving step so the table follows handling updates.
+// features. This is the longitudinal drivetrain bench, not the full 3D vehicle.
 export function benchmarkEngine(engine,body='classic'){
  const car={engineId:engine.id,style:body==='classic'?'classic':'ranger',speed:0,heading:0,x:0,z:0,vx:0,vz:0};
  const dt=1/60,target=50/3.6;let zeroTo50=null;

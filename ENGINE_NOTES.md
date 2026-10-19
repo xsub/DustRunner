@@ -72,7 +72,8 @@ Sources include [Ford's history](https://corporate.ford.com/corporate/corporate/
 Factory availability varies by model year and market; a game profile stands
 in for its engine family, not every original carburetor, ECU or annual tune.
 
-Performance is computed on demand using `arcadeMotion`, with an independent
+The ideal longitudinal drivetrain benchmark is computed on demand using
+`arcadeMotion` (not the full Rapier suspension/contact simulation), with an independent
 fresh car per engine, zero upgrades, no nitro, flat dirt, 60 Hz for 60 seconds,
 and one common selected chassis mass. Acceleration is interpolated at the
 50 km/h crossing; the final speed is the 60-second reading, not a promised
@@ -80,3 +81,8 @@ maximum. Power is the maximum of RPM × interpolated torque / 9549 across
 the complete curve, including interior peaks. hp uses 0.745699872 kW per
 mechanical horsepower. Historical SAE gross/net claims are kept separate
 from these explicitly labeled game-calibration outputs.
+
+Racing now uses Rapier rigid bodies, four spring/damper wheel rays and 120 Hz
+contact integration. The shared torque model drives wheel forces. Climbing
+load can trigger a gearbox kickdown; terrain, grip and collisions change real
+acceleration and speed from the ideal flat-ground benchmark.

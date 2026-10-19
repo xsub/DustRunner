@@ -1,102 +1,67 @@
-import {test} from 'node:test';
+import {test,before} from 'node:test';
 import assert from 'node:assert/strict';
 import {TRACKS,ROAD_WIDTH,createCircuit,terrainHeight,nearestPoint,opponentInput} from '../src/tracks.js';
-import {arcadeMotion,updateSuspension,containOnTrack,advanceProgress} from '../src/race.js';
-
+import {buildTerrain} from '../src/terrain.js';
+import {initPhysics,createPhysics} from '../src/physics.js';
+import {advanceProgress} from '../src/race.js';
+before(async()=>await initPhysics());
+const n=3600,dt=1/120;
 for(let track=0;track<TRACKS.length;track++){
- test(`${TRACKS[track].name}: tight corners leave room for the inside road edge`,()=>{
-   const curve=createCircuit(track),n=900;
-   for(let i=0;i<n;i++){
-     const a=curve.getPointAt(i/n),b=curve.getPointAt(((i+1)%n)/n),c=curve.getPointAt(((i+2)%n)/n);
-     const ab=b.clone().sub(a),bc=c.clone().sub(b),ac=c.clone().sub(a);
-     const cross=Math.abs(ab.x*bc.z-ab.z*bc.x);
-     if(cross>1e-8)assert.ok(ab.length()*bc.length()*ac.length()/(2*cross)>ROAD_WIDTH+.3);
-   }
+ const curve=createCircuit(track),samples=Array.from({length:n},(_,i)=>curve.getPointAt(i/n));
+ const terrain=buildTerrain(samples,curve,track),bounds={min:{x:Math.min(...samples.map(p=>p.x)),z:Math.min(...samples.map(p=>p.z))},max:{x:Math.max(...samples.map(p=>p.x)),z:Math.max(...samples.map(p=>p.z))}};
+ test(`${TRACKS[track].name}: lap length is four times the previous track`,()=>{
+  assert.ok(Math.abs(curve.getLength()/TRACKS[track].previousLength-4)<.001);
  });
- test(`${TRACKS[track].name}: terrain is continuous, bounded and wraps at the line`,()=>{
-   let previous=terrainHeight(0,track);
-   for(let i=1;i<=20000;i++){
-     const height=terrainHeight(i/20000,track);
-     assert.ok(Number.isFinite(height)&&height>=0&&height<=3);
-     assert.ok(Math.abs(height-previous)<.06);
-     previous=height;
-   }
-   assert.equal(terrainHeight(0,track),terrainHeight(1,track));
-   assert.equal(TRACKS[track].features.filter(f=>f.kind==='jump').length,4);
+ test(`${TRACKS[track].name}: corners leave room for the inside road edge`,()=>{
+  for(let i=0;i<n;i++){
+   const a=samples[i],b=samples[(i+1)%n],c=samples[(i+2)%n],ab=b.clone().sub(a),bc=c.clone().sub(b),ac=c.clone().sub(a),cross=Math.abs(ab.x*bc.z-ab.z*bc.x);
+   if(cross>1e-8)assert.ok(ab.length()*bc.length()*ac.length()/(2*cross)>ROAD_WIDTH+.3);
+  }
  });
- test(`${TRACKS[track].name}: race-speed trucks take off and settle after ramps`,()=>{
-   const curve=createCircuit(track),length=curve.getLength();
-   const c={height:0,vertical:0,speed:23};let airtime=0,landings=0;
-   for(let t=0;t<length/23+2;t+=1/120){
-     const progress=Math.min(t*23/length,1);
-     const contact=updateSuspension(c,terrainHeight(progress,track),1/120);
-     if(contact.airborne)airtime+=1/120;
-     if(contact.landed)landings++;
-     assert.ok(c.height>=0&&c.height<8);
-   }
-   assert.ok(airtime>1,`airtime ${airtime}`);
-   assert.ok(landings>=4,`landings ${landings}`);
-   assert.equal(c.airborne,false);
-   assert.ok(Math.abs(c.suspension)<.01);
+ test(`${TRACKS[track].name}: high jump has a straight approach and two different landing heights`,()=>{
+  const f=TRACKS[track].features.find(f=>f.kind==='canyon'),length=curve.getLength();
+  const a=curve.getTangentAt(f.start-20/length),b=curve.getTangentAt(f.start+f.runup/length);
+  assert.ok(a.dot(b)>.99,'approach and takeoff must share a straight');
+  assert.ok(terrainHeight(f.start+(f.runup-.2)/length,track)>10);
+  const landing=f.start+(f.runup+f.gap+8)/length;
+  assert.ok(terrainHeight(landing,track,3.5)-terrainHeight(landing,track,-3.5)>2);
+  assert.ok(TRACKS[track].features.filter(f=>f.kind==='whoops').reduce((sum,f)=>sum+f.count,0)>=30);
  });
- test(`${TRACKS[track].name}: normal and nitro jumps stay low and short`,()=>{
-   const length=createCircuit(track).getLength(),dt=1/120;
-   for(const speed of [23,40]){
-     const c={height:0,vertical:0,speed};let flight=0,longest=0,peak=0,landings=0;
-     for(let t=0;t<length/speed+2;t+=dt){
-       const contact=updateSuspension(c,terrainHeight(Math.min(t*speed/length,1),track),dt);
-       peak=Math.max(peak,c.height);
-       if(contact.airborne)flight+=dt;
-       if(contact.landed){longest=Math.max(longest,flight);flight=0;landings++;}
-     }
-     assert.ok(landings>=4);
-     assert.ok(peak<2.1,`jump peak ${peak}`);
-     assert.ok(longest<.55,`airtime ${longest}`);
-     assert.ok(longest*speed<22,`travel distance ${longest*speed}`);
-   }
+ test(`${TRACKS[track].name}: sampled contact height matches rendered triangle vertices and banks`,()=>{
+  for(let i=0;i<terrain.positions.length;i+=387){const v=terrain.positions;assert.ok(Math.abs(terrain.heightAt(v[i],v[i+2])-v[i+1])<.002);}
+  for(let i=0;i<n;i+=7)for(const lateral of [-ROAD_WIDTH,0,ROAD_WIDTH]){
+   const t=curve.getTangentAt(i/n),x=samples[i].x-t.z*lateral,z=samples[i].z+t.x*lateral;
+   assert.ok(Math.abs(terrain.heightAt(x,z)-terrainHeight(i/n,track,lateral))<.003);
+  }
+  assert.equal(terrainHeight(0,track),terrainHeight(1,track));
  });
- test(`${TRACKS[track].name}: AI completes two laps through corners and jumps`,()=>{
-   const n=900,curve=createCircuit(track),samples=Array.from({length:n},(_,i)=>curve.getPointAt(i/n));
-   const p=samples[0],t=curve.getTangentAt(0);
-   const c={x:p.x,z:p.z,heading:Math.atan2(-t.x,-t.z),speed:0,vx:0,vz:0,height:0,vertical:0,nitro:100,index:0,checkpoint:0,lap:0};
-   let airborneFrames=0;
-   for(let frame=0;frame<60*90&&c.lap<2;frame++){
-     const near=nearestPoint(samples,c.x,c.z),input=opponentInput(c,near,curve,samples);
-     input.boost=input.boost&&!c.airborne;
-     c.nitro=Math.max(0,Math.min(100,c.nitro+(input.boost?-32:7)/60));
-     arcadeMotion(c,{...input,ai:true,onDirt:true,opponent:1},1/60);
-     const edge=nearestPoint(samples,c.x,c.z);
-     containOnTrack(c,{...edge,ground:terrainHeight(edge.index/n,track)},ROAD_WIDTH);
-     const next=nearestPoint(samples,c.x,c.z).index;
-     Object.assign(c,advanceProgress(c.index,next,c.checkpoint,c.lap,n));c.index=next;
-     updateSuspension(c,nearestPoint(samples,c.x,c.z).distance<=ROAD_WIDTH?terrainHeight(next/n,track):0,1/60);
-     if(c.airborne)airborneFrames++;
+ test(`${TRACKS[track].name}: real suspension launches a long ballistic jump and lands beyond the gap`,()=>{
+  const physics=createPhysics(terrain,bounds),car={x:0,z:0,heading:0,speed:0,engineId:'302',style:'classic',lane:-3.5,nitro:100};
+  const p=samples[0],t=curve.getTangentAt(0);car.x=p.x-t.z*car.lane;car.z=p.z+t.x*car.lane;car.heading=Math.atan2(-t.x,-t.z);physics.reset(car);
+  const f=TRACKS[track].features[0];let flight=0,longest=0,landing=0,peak=0;
+  for(let frame=0;frame<120*40;frame++){
+   const near=nearestPoint(samples,car.x,car.z);if(near.index/n>f.start+f.length+.025)break;
+   physics.input(car,{...opponentInput(car,near,curve,samples),boost:false,onDirt:true,ai:true},dt);physics.step();physics.sync(car,dt);peak=Math.max(peak,car.height);
+   if(car.airborne)flight+=dt;else{if(flight>longest){longest=flight;landing=nearestPoint(samples,car.x,car.z).index/n;}flight=0;}
+  }
+  assert.ok(longest>1&&longest<3.5,`flight ${longest}`);
+  assert.ok(peak>10&&peak<18,`peak ${peak}`);
+  assert.ok(landing>f.start+(f.runup+f.gap)/curve.getLength(),`landing ${landing}`);
+  physics.dispose();
+ });
+ test(`${TRACKS[track].name}: I6 and V8 opponents complete a full enlarged lap with physical recovery`,()=>{
+  for(const engineId of ['170','400','300efi','302efi']){
+   const physics=createPhysics(terrain,bounds),car={x:0,z:0,heading:0,speed:0,engineId,style:'classic',nitro:100,lane:-3.5,index:0,checkpoint:0,lap:0};
+   const recover=i=>{const p=samples[i],t=curve.getTangentAt(i/n);Object.assign(car,{x:p.x-t.z*car.lane,z:p.z+t.x*car.lane,heading:Math.atan2(-t.x,-t.z),speed:0});physics.reset(car);physics.sync(car,0);};
+   recover(0);let stuck=0,recoveries=0;
+   for(let frame=0;frame<120*240&&car.lap<1;frame++){
+    const near=nearestPoint(samples,car.x,car.z),input=opponentInput(car,near,curve,samples);
+    physics.input(car,{...input,boost:false,onDirt:near.distance<ROAD_WIDTH,ai:true},dt);physics.step();physics.sync(car,dt);
+    const next=nearestPoint(samples,car.x,car.z);Object.assign(car,advanceProgress(car.index,next.index,car.checkpoint,car.lap,n));car.index=next.index;
+    stuck=Math.abs(car.speed)<1?stuck+dt:0;
+    if(car.rolloverTime>3||next.distance>ROAD_WIDTH+12||stuck>6){recover((next.index+(stuck>6?Math.round(6*n/curve.getLength()):0))%n);stuck=0;recoveries++;}
    }
-   assert.equal(c.lap,2,`AI stalled at index ${c.index}, checkpoint ${c.checkpoint}, lap ${c.lap}`);
-   assert.ok(airborneFrames>0);
+   assert.equal(car.lap,1,`${engineId} stalled at ${car.index}`);assert.ok(recoveries<12,`${engineId}: ${recoveries} recoveries`);physics.dispose();
+  }
  });
 }
-
-test('slow trucks follow the ramp and flat-ground trucks do not hop',()=>{
- const c={height:0,vertical:0,speed:4};
- for(let i=0;i<1200;i++){updateSuspension(c,terrainHeight(i/1200,0),1/60);assert.equal(c.airborne,false);}
- const flat={height:2,vertical:0,lastGround:2,speed:23};
- for(let i=0;i<120;i++)updateSuspension(flat,2,1/60);
- assert.equal(flat.airborne,false);assert.equal(flat.height,2);
-});
-
-for(let track=0;track<TRACKS.length;track++)test(`${TRACKS[track].name}: installed I6 and V8 powertrains complete AI laps`,()=>{
- const n=900,curve=createCircuit(track),samples=Array.from({length:n},(_,i)=>curve.getPointAt(i/n));
- for(const engineId of ['170','400','300efi','302efi']){
-  const p=samples[0],t=curve.getTangentAt(0),c={engineId,style:'ranger',x:p.x,z:p.z,heading:Math.atan2(-t.x,-t.z),speed:0,vx:0,vz:0,height:0,vertical:0,nitro:100,index:0,checkpoint:0,lap:0};
-  for(let frame=0;frame<60*120&&c.lap<2;frame++){
-   const near=nearestPoint(samples,c.x,c.z),input=opponentInput(c,near,curve,samples);input.boost=input.boost&&!c.airborne&&!input.brake;
-   c.nitro=Math.max(0,Math.min(100,c.nitro+(input.boost?-32:7)/60));
-   arcadeMotion(c,{...input,ai:true,onDirt:true,opponent:1},1/60);
-   const edge=nearestPoint(samples,c.x,c.z);containOnTrack(c,{...edge,ground:terrainHeight(edge.index/n,track)},ROAD_WIDTH);
-   const next=nearestPoint(samples,c.x,c.z).index;Object.assign(c,advanceProgress(c.index,next,c.checkpoint,c.lap,n));c.index=next;
-   updateSuspension(c,nearestPoint(samples,c.x,c.z).distance<=ROAD_WIDTH?terrainHeight(next/n,track):0,1/60);
-  }
-  assert.equal(c.lap,2,`${engineId} stalled at ${c.index}`);
- }
-});

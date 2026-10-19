@@ -2,6 +2,12 @@
 
 An original Three.js arcade off-road racer inspired by Super Off Road. Procedural 3D assets, two dirt circuits, four trucks, AI opponents, drifting, jumps, collisions, rechargeable nitro, race rewards, and persistent engine/tire upgrades.
 
+## Play online
+
+[Play Dust Runner on GitHub Pages](https://xsub.github.io/DustRunner/)
+
+Pushes to `main` automatically run the tests, build the game, and deploy `dist/` using `.github/workflows/pages.yml`. GitHub Pages uses GitHub Actions as its publishing source. The workflow builds with `--base=/DustRunner/` so scripts and styles load correctly at the repository URL. Standard local and other-host builds keep the root base path.
+
 ## Run
 
 Requires Node.js 20.19+ or 22.12+.
@@ -26,4 +32,3 @@ The circuit automatically fills the playfield across window sizes. Trucks are en
 - R: reset race
 
 Touch controls appear on touch devices. Sound is opt-in. Best in a modern browser with WebGL and hardware acceleration. Progress stays in the browser's local storage. No licensed game assets are used.
-# DustRunner

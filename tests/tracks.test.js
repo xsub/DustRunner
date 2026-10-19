@@ -39,6 +39,22 @@ for(let track=0;track<TRACKS.length;track++){
    assert.equal(c.airborne,false);
    assert.ok(Math.abs(c.suspension)<.01);
  });
+ test(`${TRACKS[track].name}: normal and nitro jumps stay low and short`,()=>{
+   const length=createCircuit(track).getLength(),dt=1/120;
+   for(const speed of [23,40]){
+     const c={height:0,vertical:0,speed};let flight=0,longest=0,peak=0,landings=0;
+     for(let t=0;t<length/speed+2;t+=dt){
+       const contact=updateSuspension(c,terrainHeight(Math.min(t*speed/length,1),track),dt);
+       peak=Math.max(peak,c.height);
+       if(contact.airborne)flight+=dt;
+       if(contact.landed){longest=Math.max(longest,flight);flight=0;landings++;}
+     }
+     assert.ok(landings>=4);
+     assert.ok(peak<2.1,`jump peak ${peak}`);
+     assert.ok(longest<.55,`airtime ${longest}`);
+     assert.ok(longest*speed<22,`travel distance ${longest*speed}`);
+   }
+ });
  test(`${TRACKS[track].name}: AI completes two laps through corners and jumps`,()=>{
    const n=900,curve=createCircuit(track),samples=Array.from({length:n},(_,i)=>curve.getPointAt(i/n));
    const p=samples[0],t=curve.getTangentAt(0);

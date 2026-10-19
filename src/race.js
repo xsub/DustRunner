@@ -49,20 +49,22 @@ export function updateSuspension(car,ground,dt) {
  const wasAirborne=!!car.airborne;
  let landed=false;
  if(wasAirborne) {
-   car.vertical-=20*dt;
+   car.vertical-=28*dt;
    car.height+=car.vertical*dt;
    if(car.height<=ground) {
      const impact=Math.max(0,-car.vertical+groundVelocity);
-     car.height=ground;car.airborne=false;car.vertical=groundVelocity;
+     car.height=ground;car.airborne=false;car.vertical=groundVelocity;car.rampRiseVelocity=0;
      car.suspensionVelocity=-Math.min(impact*.2,2.6);
      car.speed*=1-Math.min(impact*.0025,.045);
      landed=true;
    }
- } else if((car.vertical??0)>1.2 && groundVelocity<car.vertical-20*dt && Math.abs(car.speed)>8) {
+ } else if((car.rampRiseVelocity??0)>1.2 && groundVelocity<=0 && (car.vertical??0)>0 && Math.abs(car.speed)>8) {
    car.airborne=true;
-   car.vertical=clamp(car.vertical*1.08+Math.abs(car.speed)*.045,2.8,8.5);
+   car.vertical=clamp(car.rampRiseVelocity*.55,1.2,3.2);
+   car.rampRiseVelocity=0;
    car.height=Math.max(car.height,ground);
  } else {
+   car.rampRiseVelocity=groundVelocity>0?Math.max(car.rampRiseVelocity??0,groundVelocity):0;
    car.height=ground;car.vertical=groundVelocity;car.airborne=false;
  }
  car.lastGround=ground;

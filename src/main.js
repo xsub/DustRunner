@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import './style.css';
+import {createRoadSurface,wheelContacts,bodyAttitude,updateWheel,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 import {createBronco} from './vehicle.js';
 import {followCameraStep} from './view.js';
 import {createMinimap} from './minimap.js';
@@ -19,7 +20,7 @@ scene.add(new THREE.HemisphereLight('#fff4d6','#69653e',2.6));const sun=new THRE
 const mat=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:1,...extra});
 const textureCanvas=document.createElement('canvas');textureCanvas.width=256;textureCanvas.height=256;const textureContext=textureCanvas.getContext('2d');textureContext.fillStyle='#a8784c';textureContext.fillRect(0,0,256,256);for(let i=0;i<18000;i++){textureContext.fillStyle=Math.random()>.5?'#93683b':'#be8d59';textureContext.globalAlpha=.25+Math.random()*.3;textureContext.fillRect(Math.random()*256,Math.random()*256,1+Math.random()*2,1+Math.random()*2);}const dirtTexture=new THREE.CanvasTexture(textureCanvas);dirtTexture.wrapS=dirtTexture.wrapT=THREE.RepeatWrapping;dirtTexture.colorSpace=THREE.SRGBColorSpace;
 const sand=mat('#b59b65'),dirt=mat('#c8a06f',{map:dirtTexture,side:THREE.DoubleSide}),dark=mat('#252b24'),cream=mat('#e8d7a1'),green=mat('#58633b');
-let world=new THREE.Group();scene.add(world);const trucks=[],particles=[];let samples=[],curve,trackIndex=0;
+let world=new THREE.Group();scene.add(world);const trucks=[],particles=[];let samples=[],curve,trackIndex=0,heightAt=()=>0;
 const N=900,roadWidth=ROAD_WIDTH;
 function box(w,h,d,material,x=0,y=0,z=0,parent=world){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
 function cylinder(r,h,material,x,y,z,parent=world,segments=10){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,segments),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
@@ -43,6 +44,7 @@ function sign(text,x,z,rotation=0){const c=document.createElement('canvas');c.wi
 function makeWorld(){
  for(const child of [...world.children]){world.remove(child);child.traverse(o=>{o.geometry?.dispose();});}seed=42+trackIndex;
  curve=createCircuit(trackIndex);samples=Array.from({length:N},(_,i)=>curve.getPointAt(i/N));
+ heightAt=createRoadSurface(samples,samples.map((_,i)=>curve.getTangentAt(i/N)),samples.map((_,i)=>terrain(i)+.01),roadWidth);
  const bounds=new THREE.Box3().setFromPoints(samples),pitZ=bounds.max.z+roadWidth+8,standZ=bounds.min.z-roadWidth-7;
  box(360,.7,300,sand,0,-.6,0);ribbon(0,roadWidth*2,dirt,.01);terrainSkirts();
  ribbon(-3.7,.12,mat('#c29a63'),.025);ribbon(3.7,.12,mat('#c29a63'),.025);
@@ -64,8 +66,8 @@ function makeWorld(){
  minimap.setTrack(samples,roadWidth);
 }
 function makeTruck(color,num){
- const {mesh,body,wheels}=createBronco(color,num);scene.add(mesh);
- return {mesh,body,wheels,x:0,z:0,vx:0,vz:0,heading:0,speed:0,index:0,checkpoint:0,lap:0,height:0,vertical:0,nitro:100,boosting:false,finish:false};
+ const {mesh,chassis,body,wheels}=createBronco(color,num);scene.add(mesh);
+ return {mesh,chassis,body,wheels,x:0,z:0,vx:0,vz:0,heading:0,speed:0,index:0,checkpoint:0,lap:0,height:0,vertical:0,nitro:100,boosting:false,finish:false};
 }
 makeWorld();['#f3bf42','#e6644c','#5ca9ba','#ece9cf'].forEach((c,i)=>trucks.push(makeTruck(c,['07','12','28','03'][i])));
 const keys=new Set();let phase='ready',previousPhase='racing',elapsed=0,count=0,selectedColor='#f3bf42',cash=0,levels={engine:0,grip:0},lastTime=0,muted=true,audio,osc,gain;
@@ -74,7 +76,7 @@ function save(){try{localStorage.setItem('dust-runner-save',JSON.stringify({cash
 function updateGarage(){$('#cash').textContent=cash;for(const type of ['engine','grip']){$(`#${type}-level`).textContent=levels[type];const b=$(`[data-upgrade="${type}"]`);b.disabled=levels[type]>=3;b.title=levels[type]>=3?'Fully upgraded':'Buy upgrade for $300';}}
 updateGarage();
 function reset(){elapsed=0;count=0;phase='ready';$('#race-status').textContent='FREE PRACTICE';$('#countdown').textContent='';$('#pause').textContent='Ⅱ';$('#message').style.display='block';$('#message').innerHTML='<span>DUST RUNNER</span><strong>'+(trackIndex?'RATTLESNAKE':'DUSTBOWL')+'</strong><p>Three laps. Four trucks. All dirt.</p><button id="start">RACE <span>↗</span></button><button class="setup-link" id="open-setup">TRUCK · TRACK · PIT STOP</button><small>ENTER TO RACE · WASD / ARROWS TO DRIVE</small>';$('#start').onclick=start;$('#open-setup').onclick=openMenu;updateMenu();
- trucks.forEach((c,i)=>{const j=N-20-(i>1?25:0),p=samples[j],t=curve.getTangentAt(j/N),side=(i%2?1:-1)*2.1;Object.assign(c,{x:p.x-t.z*side,z:p.z+t.x*side,vx:0,vz:0,heading:Math.atan2(-t.x,-t.z),speed:0,index:j,checkpoint:-1,lap:0,height:terrain(j),vertical:0,airborne:false,lastGround:terrain(j),suspension:0,suspensionVelocity:0,rampRiseVelocity:0,nitro:100,boosting:false,finish:false});c.mesh.position.set(c.x,0,c.z);c.mesh.rotation.set(0,c.heading,0);});
+ trucks.forEach((c,i)=>{const j=N-20-(i>1?25:0),p=samples[j],t=curve.getTangentAt(j/N),side=(i%2?1:-1)*2.1;Object.assign(c,{x:p.x-t.z*side,z:p.z+t.x*side,vx:0,vz:0,heading:Math.atan2(-t.x,-t.z),speed:0,index:j,checkpoint:-1,lap:0,height:terrain(j),vertical:0,airborne:false,lastGround:terrain(j),suspension:0,suspensionVelocity:0,rampRiseVelocity:0,nitro:100,boosting:false,finish:false});c.mesh.position.set(c.x,0,c.z);c.mesh.rotation.set(0,c.heading,0);c.wheels.forEach(w=>{w.previousX=undefined;w.previousHeading=undefined;w.angle=0;w.steer=0;w.angularVelocity=0;});poseTruck(c,0,true);});
  for(const p of particles){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();}particles.length=0;updateCamera(0,true);}
 function start(){if(phase==='racing'||phase==='countdown')return;reset();phase='countdown';count=3.4;$('#message').style.display='none';$('#race-status').textContent='GET READY';canvas.focus({preventScroll:true});initAudio();}
 function pause(){if(!['racing','countdown','paused'].includes(phase))return;if(phase==='paused'){phase=previousPhase;$('#countdown').textContent='';$('#pause').textContent='Ⅱ';}else{previousPhase=phase;phase='paused';$('#countdown').textContent='PAUSED';$('#pause').textContent='▶';}keys.clear();canvas.focus({preventScroll:true});}
@@ -98,6 +100,25 @@ document.querySelectorAll('[data-key]').forEach(b=>{b.onpointerdown=e=>{e.preven
 function dust(c){if(particles.length>130||Math.random()>.48)return;const mesh=new THREE.Mesh(new THREE.IcosahedronGeometry(.2+Math.random()*.3,0),new THREE.MeshBasicMaterial({color:c.boosting?'#ead38f':'#c5a477',transparent:true,opacity:.45,depthWrite:false}));mesh.position.set(c.x+Math.sin(c.heading)*2,.3,c.z+Math.cos(c.heading)*2);scene.add(mesh);particles.push({mesh,life:.6+Math.random()*.5,vx:(Math.random()-.5)*3,vz:(Math.random()-.5)*3});}
 function finish(){phase='finished';trucks[0].finish=true;const rank=ranking().indexOf(trucks[0])+1,reward=[900,600,400,300][rank-1];cash+=reward;save();$('#race-status').textContent='RACE COMPLETE';$('#message').style.display='block';$('#message').innerHTML=`<span>THE DUST HAS SETTLED</span><strong>${['FIRST PLACE!','SECOND PLACE','THIRD PLACE','KEEP ON TRUCKIN’'][rank-1]}</strong><p>${formatTime(elapsed)} · $${reward} earned · Visit the pit stop for upgrades.</p><button id="start">RACE AGAIN <span>↗</span></button><button class="setup-link" id="open-setup">PIT STOP · UPGRADES</button><small>OR PRESS ENTER</small>`;$('#start').onclick=start;$('#open-setup').onclick=openMenu;$('#garage-note').textContent=`$${reward} earned. Upgrade your truck and get back out there.`;}
 function ranking(){return [...trucks].sort((a,b)=>(b.lap*N+b.index+(b.checkpoint>=0?N:0))-(a.lap*N+a.index+(a.checkpoint>=0?N:0)));}
+function poseTruck(c,dt,snap=false){
+ const contacts=wheelContacts(c,heightAt),support=bodyAttitude(contacts);
+ if(snap){c.height=support.ground;c.lastGround=support.ground;}
+ const ground=c.airborne?c.height:support.ground;
+ c.mesh.position.set(c.x,ground+.025,c.z);c.mesh.rotation.set(0,c.heading,0);
+ const pitch=c.airborne?clamp(-c.vertical*.035,-.3,.3):support.pitch;
+ const roll=c.airborne?0:support.roll;
+ const blend=snap?1:1-Math.exp(-dt*18);
+ c.chassis.rotation.x=THREE.MathUtils.lerp(c.chassis.rotation.x,pitch,blend);
+ c.chassis.rotation.z=THREE.MathUtils.lerp(c.chassis.rotation.z,roll,blend);
+ // Only the sprung body compresses; tire contact is independent of body bounce.
+ c.chassis.position.y=clamp(c.suspension??0,-.14,.16)/VEHICLE_SCALE;
+ c.wheels.forEach((w,i)=>{
+  const contact=contacts[i];
+  w.pivot.position.y=TIRE_RADIUS+(c.airborne?Math.max(0,contact.ground-ground):contact.ground-ground)/VEHICLE_SCALE;
+  if(dt>0)updateWheel(w,c,contact,dt);
+  w.pivot.rotation.y=w.steer??0;w.spin.rotation.x=w.angle??0;
+ });
+}
 function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=count>.4?Math.ceil(count-.4):'GO!';if(count<=0){phase='racing';$('#countdown').textContent='';$('#race-status').textContent='RACE IN PROGRESS';}}if(phase==='racing'){
  elapsed+=dt;
  trucks.forEach((c,i)=>{const near=nearest(c.x,c.z),onDirt=near.distance<roadWidth;let throttle=0,steer=0,brake=false,boost=false;
@@ -111,16 +132,14 @@ function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=
  // Crossing the line once arms quarter checkpoints; a full circuit is required for every lap.
  if(c.checkpoint===-1){if(c.index>N*.75&&next<N*.25)c.checkpoint=0;}else{const p=advanceProgress(c.index,next,c.checkpoint,c.lap,N);c.checkpoint=p.checkpoint;c.lap=p.lap;}
  c.index=next;
- const ground=nearest(c.x,c.z).distance<=roadWidth?terrain(next):0,tangent=curve.getTangentAt(next/N),spacing=curve.getLength()/N;
- const alignment=-Math.sin(c.heading)*tangent.x-Math.cos(c.heading)*tangent.z;
- const slope=(terrain((next+3)%N)-terrain((next-3+N)%N))/(6*spacing)*alignment;
+ const contacts=wheelContacts(c,heightAt),support=bodyAttitude(contacts);
+ const ground=c.airborne?Math.max(...contacts.map(w=>w.ground)):support.ground;
  const contact=updateSuspension(c,ground,dt);
  if(contact.landed&&Math.abs(c.speed)>10){for(let n=0;n<5;n++)dust(c);}
- const pitch=c.airborne?clamp(-c.vertical*.035,-.3,.3):-Math.atan(slope);
- c.mesh.position.set(c.x,c.height+.04+c.suspension,c.z);c.mesh.rotation.y=c.heading;c.mesh.rotation.z=THREE.MathUtils.lerp(c.mesh.rotation.z,c.airborne?0:-steer*Math.abs(c.speed)*.003,dt*8);c.mesh.rotation.x=THREE.MathUtils.lerp(c.mesh.rotation.x,clamp(pitch,-.4,.4),dt*10);c.wheels.forEach(w=>w.rotation.x-=c.speed*dt*1.4);
  if(Math.abs(c.speed)>5)dust(c);
  });
  for(let i=0;i<4;i++)for(let j=i+1;j<4;j++){const a=trucks[i],b=trucks[j],dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz);if(d<3.2&&d>.001&&Math.abs(a.height-b.height)<1){const push=(3.2-d)*.5;a.x-=dx/d*push;a.z-=dz/d*push;b.x+=dx/d*push;b.z+=dz/d*push;a.speed*=.98;b.speed*=.98;}}
+ trucks.forEach(c=>poseTruck(c,dt));
  if(trucks[0].lap>=3)finish();
  }
  for(let i=particles.length-1;i>=0;i--){const p=particles[i];if(phase!=='paused'){p.life-=dt;p.mesh.position.x+=p.vx*dt;p.mesh.position.z+=p.vz*dt;p.mesh.position.y+=dt*.6;p.mesh.scale.multiplyScalar(1+dt*.7);p.mesh.material.opacity=Math.max(0,p.life*.35);}if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}

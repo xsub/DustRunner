@@ -1,25 +1,26 @@
 import * as THREE from 'three';
+import {VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 // A compact, early-Bronco-inspired two-door silhouette, built from original geometry.
 export function createBronco(color,number){
- const mesh=new THREE.Group(),wheels=[];
+ const mesh=new THREE.Group(),chassis=new THREE.Group(),wheels=[];mesh.add(chassis);
  const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.8,...extra});
  const body=material(color),rubber=material('#202622'),trim=material('#373f37');
  const ivory=material('#f2ead2'),metal=material('#b4b9ac',{metalness:.55,roughness:.45});
  const glass=material('#294b50',{metalness:.25,roughness:.28,side:THREE.DoubleSide});
  const light=material('#fff0bd',{emissive:'#e9ce84',emissiveIntensity:.6});
- function box(w,h,d,mat,x,y,z,parent=mesh){
+ function box(w,h,d,mat,x,y,z,parent=chassis){
    const part=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat);
    part.position.set(x,y,z);part.castShadow=true;part.receiveShadow=true;parent.add(part);return part;
  }
- function cylinder(radius,width,mat,x,y,z,axis,parent=mesh){
+ function cylinder(radius,width,mat,x,y,z,axis,parent=chassis){
    const part=new THREE.Mesh(new THREE.CylinderGeometry(radius,radius,width,16),mat);
    part.position.set(x,y,z);part.rotation[axis]=Math.PI/2;part.castShadow=true;parent.add(part);return part;
  }
  function roundedBox(w,h,d,radius,mat,x,y,z){
    const part=new THREE.Mesh(new RoundedBoxGeometry(w,h,d,3,radius),mat);
-   part.position.set(x,y,z);part.castShadow=true;part.receiveShadow=true;mesh.add(part);return part;
+   part.position.set(x,y,z);part.castShadow=true;part.receiveShadow=true;chassis.add(part);return part;
  }
  // The reference's continuous beltline and circular arches define the early body.
  // Real wheel cutouts replace the square fender blocks of the first model.
@@ -36,10 +37,10 @@ export function createBronco(color,number){
  const panelGeometry=new THREE.ExtrudeGeometry(panel,{depth:.055,bevelEnabled:true,bevelThickness:.012,bevelSize:.018,bevelSegments:2,curveSegments:12});
  for(const side of [-1,1]){
    const flank=new THREE.Mesh(panelGeometry,body);flank.rotation.y=Math.PI/2;
-   flank.position.x=side>0?.85:-.905;flank.castShadow=true;flank.receiveShadow=true;mesh.add(flank);
+   flank.position.x=side>0?.85:-.905;flank.castShadow=true;flank.receiveShadow=true;chassis.add(flank);
    for(const z of [-.88,.91]){
      const lip=new THREE.Mesh(new THREE.TorusGeometry(.65,.045,6,20,Math.PI),body);
-     lip.rotation.y=Math.PI/2;lip.position.set(side*.925,.58,z);lip.castShadow=true;mesh.add(lip);
+     lip.rotation.y=Math.PI/2;lip.position.set(side*.925,.58,z);lip.castShadow=true;chassis.add(lip);
    }
  }
  // Short, slightly raked windshield; long cream hardtop and large rear-quarter glass.
@@ -50,7 +51,7 @@ export function createBronco(color,number){
  for(const side of [-1,1]){
    const windowShape=new THREE.Shape();windowShape.moveTo(.35,1.61);windowShape.lineTo(.215,2.22);windowShape.lineTo(-.29,2.22);windowShape.lineTo(-.29,1.61);windowShape.closePath();
    const window=new THREE.Mesh(new THREE.ShapeGeometry(windowShape),glass);
-   window.rotation.y=Math.PI/2;window.position.x=side*.852;mesh.add(window);
+   window.rotation.y=Math.PI/2;window.position.x=side*.852;chassis.add(window);
    box(.035,.59,.86,glass,side*.852,1.92,.86);
    box(.045,.66,.09,ivory,side*.86,1.94,.35);
    box(.04,.07,.22,metal,side*.935,1.44,.15);
@@ -75,7 +76,7 @@ export function createBronco(color,number){
  for(const x of [-.76,.76])box(.15,.3,.05,material('#c34d39',{emissive:'#8b2317',emissiveIntensity:.15}),x,1.17,1.53);
  // Wheel groups rotate around the axle so the rims and tread roll together.
  for(const x of [-1,1])for(const z of [-.88,.91]){
-   const wheel=new THREE.Group();wheel.position.set(x,.58,z);mesh.add(wheel);
+   const pivot=new THREE.Group(),wheel=new THREE.Group();pivot.position.set(x,TIRE_RADIUS,z);pivot.add(wheel);mesh.add(pivot);
    cylinder(.56,.43,rubber,0,0,0,'z',wheel);
    cylinder(.29,.46,metal,0,0,0,'z',wheel);
    cylinder(.13,.48,trim,0,0,0,'z',wheel);
@@ -84,7 +85,11 @@ export function createBronco(color,number){
      const tread=box(.46,.08,.17,trim,0,Math.cos(angle)*.55,Math.sin(angle)*.55,wheel);
      tread.rotation.x=angle;
    }
-   wheels.push(wheel);
+   for(let i=0;i<5;i++){
+     const a=i*Math.PI*2/5;
+     for(const side of [-1,1])box(.025,.045,.045,trim,side*.236,Math.cos(a)*.21,Math.sin(a)*.21,wheel);
+   }
+   wheels.push({pivot,spin:wheel,x,z});
  }
  // Rear-mounted spare is fixed to the tailgate, not part of the rolling wheels.
  cylinder(.51,.32,rubber,.16,1.4,1.65,'x');
@@ -96,11 +101,11 @@ export function createBronco(color,number){
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
  const numberMaterial=new THREE.MeshStandardMaterial({map:texture,roughness:.9});
  const roof=new THREE.Mesh(new THREE.PlaneGeometry(1.07,.92),numberMaterial);
- roof.rotation.x=-Math.PI/2;roof.position.set(0,2.456,.54);mesh.add(roof);
+ roof.rotation.x=-Math.PI/2;roof.position.set(0,2.456,.54);chassis.add(roof);
  for(const side of [-1,1]){
    const decal=new THREE.Mesh(new THREE.PlaneGeometry(.49,.35),numberMaterial);
-   decal.rotation.y=side*Math.PI/2;decal.position.set(side*.927,1.16,-.02);mesh.add(decal);
+   decal.rotation.y=side*Math.PI/2;decal.position.set(side*.927,1.16,-.02);chassis.add(decal);
  }
- mesh.scale.setScalar(1.4);
- return {mesh,body,wheels};
+ mesh.scale.setScalar(VEHICLE_SCALE);
+ return {mesh,chassis,body,wheels};
 }

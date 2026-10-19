@@ -14,7 +14,8 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
  const tireGeometry=new THREE.TorusGeometry(.38,.17,6,14);
  const coneBase=new THREE.BoxGeometry(.85,.12,.85);
  const coneSections=[new THREE.CylinderGeometry(.28,.4,.42,10),new THREE.CylinderGeometry(.19,.28,.32,10),new THREE.CylinderGeometry(.045,.19,.5,10)];
- for(const side of [-1,1]){
+ for(const originalSide of [-1,1]){
+  const side=originalSide*(curve.lateralSign??1);
   let last=null,first=null,count=0;
   for(let i=0;i<samples.length;i++){
    const p=samples[i],t=curve.getTangentAt(i/samples.length);

@@ -4,6 +4,13 @@ import {angleDelta,clamp} from './race.js';
 export const TRACK_SCALE = 1.35;
 export const LENGTH_MULTIPLIER = 4;
 export const ROAD_WIDTH = 6.2 * 1.25;
+// Map axes: OX runs left/right (world X), OY runs up/down (world Z).
+export const TRACK_VARIANTS=[
+ {name:'ORIGINAL',x:1,z:1},
+ {name:'MIRROR OY',x:-1,z:1},
+ {name:'MIRROR OX',x:1,z:-1},
+ {name:'MIRROR OX + OY',x:-1,z:-1},
+];
 const BASE_TRACKS = [
   {
     name: 'DUSTBOWL',
@@ -65,13 +72,19 @@ class ShiftedCircuit extends THREE.Curve{
  getTangentAt(t,target){return this.getTangent(t,target);}
  getLength(){return this.path.getLength();}
 }
-export function createCircuit(index){
- const path=spline(TRACKS[index].points.map(([x,z])=>new THREE.Vector3(x,0,z)));
+export function createCircuit(index,variant=0){
+ const reflection=TRACK_VARIANTS[variant];
+ const path=spline(TRACKS[index].points.map(([x,z])=>new THREE.Vector3(x*reflection.x,0,z*reflection.z)));
  // Put the grid on the long straight, giving gentle steering a fair run-up.
- return new ShiftedCircuit(path,index===0?.04:0);
+ const circuit=new ShiftedCircuit(path,index===0?.04:0);
+ circuit.variant=variant;circuit.lateralSign=reflection.x*reflection.z;
+ return circuit;
 }
 const smooth=t=>t*t*(3-2*t);
-export function terrainHeight(progress,index=0,lateral=0){
+export function terrainHeight(progress,index=0,lateral=0,variant=0){
+ const reflection=TRACK_VARIANTS[variant];
+ // A single reflection swaps left/right, including banks and split landings.
+ lateral*=reflection.x*reflection.z;
  const t=((progress%1)+1)%1,track=TRACKS[index],s=t*track.length;
  // Broad rolling ground, bank changes and offset wheel ruts share one mesh.
  let height=3+.55*Math.sin(t*Math.PI*8)+.28*Math.sin(t*Math.PI*22);

@@ -20,11 +20,16 @@ export function buildTerrain(samples,curve,trackIndex){
    const reach=nominal*turn>0?Math.min(9,Math.max(.6,radius-ROAD_WIDTH-.8)):9;
    const lateral=Math.sign(nominal)*(Math.min(Math.abs(nominal),ROAD_WIDTH)+shoulder*reach);
    const edge=Math.max(-ROAD_WIDTH,Math.min(ROAD_WIDTH,lateral));
-   const h=terrainHeight(j/n,trackIndex,edge)*(1-shoulder)-.25*shoulder;
+   const h=terrainHeight(j/n,trackIndex,edge,curve.variant??0)*(1-shoulder)-.25*shoulder;
    positions.push(p.x-t.z*lateral,h,p.z+t.x*lateral);uv.push(i*curve.getLength()/n/8,lateral/8);
    colors.push(1-shoulder*.1,1-shoulder*.03,1-shoulder*.08);
   }
-  if(i<n)for(let c=0;c<cols-1;c++){const a=i*cols+c,b=a+cols;indices.push(a,a+1,b,a+1,b+1,b);}
+  if(i<n)for(let c=0;c<cols-1;c++){
+   const a=i*cols+c,b=a+cols;
+   // Reflect the triangle diagonal too, keeping the exact contact surface.
+   if(curve.lateralSign<0)indices.push(a,a+1,b+1,a,b+1,b);
+   else indices.push(a,a+1,b,a+1,b+1,b);
+  }
  }
  const vertices=new Float32Array(positions),triangles=new Uint32Array(indices);
  return {positions:vertices,indices:triangles,uv:new Float32Array(uv),colors:new Float32Array(colors),heightAt:triangleSampler(vertices,triangles)};

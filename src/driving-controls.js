@@ -17,3 +17,13 @@ export function drivingControls(state,input,speed,dt){
  if(state.brakePressure<.0001)state.brakePressure=0;
  return {reverse:Boolean(state.reverse),reverseThrottle:1-state.brakePressure,brakePressure:state.brakePressure};
 }
+
+// Full lock for parking turns; reduce steering lock progressively at race pace.
+export function steeringStep(current,input,speed,dt,ai=false){
+ const steer=Math.max(-1,Math.min(1,input??0));
+ if(ai)return current+(steer*.38-current)*(1-Math.exp(-dt*9));
+ const t=Math.max(0,Math.min(1,(Math.abs(speed)-4)/18)),blend=t*t*(3-2*t);
+ const lock=.56+(.12-.56)*blend,target=steer*lock;
+ const returning=steer===0||target*current<0;
+ return current+(target-current)*(1-Math.exp(-dt*(returning?8:3.8)));
+}

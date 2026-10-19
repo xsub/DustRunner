@@ -2,7 +2,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import {Quaternion,Vector3} from 'three';
 import {powertrainStep} from './powertrain.js';
 import {vehicleMassProperties} from './vehicle-mass.js';
-import {drivingControls,rollingResistance,BRAKE_DECELERATION} from './driving-controls.js';
+import {drivingControls,rollingResistance,BRAKE_DECELERATION,steeringStep} from './driving-controls.js';
 import {WHEEL_LAYOUT,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 export const GRAVITY=9.81,CHASSIS_HEIGHT=1.5,REST_LENGTH=.55;
 export const initPhysics=()=>RAPIER.init();
@@ -48,9 +48,8 @@ export function createPhysics(terrain,bounds){
   q.copy(v.body.rotation());forward.set(0,0,-1).applyQuaternion(q);
   const controls=drivingControls(v.controls,{...input,airborne:car.airborne},car.speed,dt);
   const drive=powertrainStep(car,{...input,...controls,slope:forward.y},dt);
-  // Player input retains the requested one-fifth steering sensitivity.
-  const desired=(input.steer??0)*(input.ai?.38:.4);
-  v.steer+=(desired-v.steer)*(1-Math.exp(-dt*9));
+  // Keyboard presses build toward full parking lock, with less lock at speed.
+  v.steer=steeringStep(v.steer,input.steer,car.speed,dt,input.ai);
   const drag=-Math.sign(car.speed)*rollingResistance(car.speed,input.onDirt);
   // Loose dirt cannot turn every extra engine/nitro torque into thrust.
   // Limit longitudinal traction, preserving physical weight transfer and
@@ -71,7 +70,7 @@ export function createPhysics(terrain,bounds){
   const force=Math.max(-traction,Math.min(traction,acceleration))*v.mass/4;
   for(let i=0;i<4;i++){
    const layout=WHEEL_LAYOUT[i];
-   let angle=0;if(layout.z<0&&Math.abs(v.steer)>.0001){const radius=2.506/Math.tan(v.steer);angle=Math.atan(2.506/(radius-layout.x*1.4));}
+   let angle=0;if(layout.z<0&&Math.abs(v.steer)>.0001){const radius=2.506/Math.tan(v.steer);angle=Math.atan(2.506/(radius+layout.x*1.4));}
    c.setWheelSteering(i,angle);c.setWheelEngineForce(i,car.rollover?0:-force);c.setWheelBrake(i,braking);
    c.setWheelFrictionSlip(i,(input.onDirt?1.35:.8)+(input.tires??0)*.08);
   }

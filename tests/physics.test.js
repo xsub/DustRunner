@@ -59,7 +59,7 @@ test('3D chassis collisions transfer momentum without cars passing through each 
 test('front-wheel steering uses different inside and outside angles; rear wheels remain straight',()=>{
  const f=fixture();step(f,{},180);step(f,{steer:.2,throttle:1},60);
  const c=f.car.physics.controller;
- assert.ok(c.wheelSteering(0)>0&&c.wheelSteering(2)>0);assert.notEqual(c.wheelSteering(0),c.wheelSteering(2));
+ assert.ok(c.wheelSteering(0)>0&&c.wheelSteering(2)>0);assert.ok(c.wheelSteering(0)>c.wheelSteering(2),'inside front wheel must steer farther than outside');
  assert.equal(c.wheelSteering(1),0);assert.equal(c.wheelSteering(3),0);
  f.physics.dispose();
 });
@@ -152,4 +152,22 @@ test('releasing the brake bleeds pressure and permits acceleration again',()=>{
  step(f,{throttle:1},120);
  assert.ok(f.car.physics.controls.brakePressure<pressure*.01);assert.ok(f.car.speed>speed);
  f.physics.dispose();
+});
+
+test('keyboard full lock makes a low-speed U-turn within the road width in both directions',()=>{
+ for(const steer of [-1,1]){
+  const f=fixture(()=>0,60);step(f,{},180);
+  let yaw=0,previous=f.car.heading,minX=0,maxX=0;
+  try{
+   for(let i=0;i<120*15&&Math.abs(yaw)<Math.PI;i++){
+    step(f,{steer,throttle:f.car.speed<4?.45:0});
+    const delta=Math.atan2(Math.sin(f.car.heading-previous),Math.cos(f.car.heading-previous));yaw+=delta;previous=f.car.heading;
+    minX=Math.min(minX,f.car.x);maxX=Math.max(maxX,f.car.x);
+    assert.equal(f.car.rollover,false);
+   }
+   assert.ok(Math.abs(yaw)>=Math.PI,`U-turn yaw ${yaw}`);
+   assert.ok(maxX-minX+3.2<15.5,`turning envelope ${maxX-minX+3.2}`);
+   assert.equal(Math.sign(yaw),steer);
+  }finally{f.physics.dispose();}
+ }
 });

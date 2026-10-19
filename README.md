@@ -17,9 +17,9 @@ npm install
 npm run dev
 ```
 
-Open the local address printed by Vite. `npm run build` produces a static site in `dist/`. `npm run preview` serves that build. `npm test` checks lap validation, steering angle wrapping, and the race timer.
+Open the local address printed by Vite. `npm run build` produces a static site in `dist/`. `npm run preview` serves that build. `npm test` checks racing physics, lap validation, terrain and AI laps, camera tracking, and minimap coverage.
 
-The circuit automatically fills the playfield across window sizes. Trucks are enlarged for readability, with quick arcade steering, acceleration, braking, and a short lateral slide. Collision clearance and the starting grid match the larger trucks. Terrain crests launch fast trucks into ballistic jumps; landings compress the suspension, and airborne trucks preserve their takeoff velocity: steering, throttle, brakes, and nitro only work with tire contact. AI opponents brake for tight corners and choose nitro on straights.
+Both circuits are scaled up by 35%, with 25% wider roads. The Broncos retain their physical size, steering, progressive braking, and short lateral slide. A smooth fixed-orientation camera follows the player with forward visibility and gently widens for corners and jumps. The close view makes vehicle details easier to see. A north-up minimap shows the whole course, start/finish line, all four racers, and the visible camera area. The outlined arrow identifies the player. Terrain crests launch fast trucks into ballistic jumps; landings compress the suspension, and airborne trucks preserve their takeoff velocity: steering, throttle, brakes, and nitro only work with tire contact. AI opponents brake for tight corners and choose nitro on straights.
 
 The race fills the browser window by default. The compact HUD shows position, lap, time, speed, and nitro. Open **Menu** for truck selection, tracks, upgrades, sound, and controls; opening the menu pauses an active race and closing it resumes. The fullscreen button is optional.
 

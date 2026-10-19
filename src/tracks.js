@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import {angleDelta,clamp} from './race.js';
 
-export const ROAD_WIDTH = 6.2;
-export const TRACKS = [
+export const TRACK_SCALE = 1.35;
+export const ROAD_WIDTH = 6.2 * 1.25;
+const BASE_TRACKS = [
   {
     name: 'DUSTBOWL',
     points: [[-38,-27],[-15,-30],[12,-30],[36,-26],[45,-12],[38,2],[27,9],[32,25],[12,31],[-6,23],[-21,29],[-41,24],[-48,9],[-40,-6]],
@@ -30,8 +31,11 @@ export const TRACKS = [
   },
 ];
 
+// Preserve the tuned physical ramp lengths when spacing the circuit farther apart.
+export const TRACKS=BASE_TRACKS.map(track=>({...track,features:track.features.map(f=>({...f,length:f.length/TRACK_SCALE}))}));
+
 export function createCircuit(index) {
-  const points=TRACKS[index].points.map(([x,z])=>new THREE.Vector3(x,0,z).multiplyScalar(index===1?1.06:1));
+  const points=TRACKS[index].points.map(([x,z])=>new THREE.Vector3(x,0,z).multiplyScalar(TRACK_SCALE*(index===1?1.06:1)));
   const path=new THREE.CurvePath();
   // A closed cubic B-spline rounds each hairpin without folding the inside road edge.
   for(let i=0;i<points.length;i++){

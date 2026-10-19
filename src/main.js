@@ -1,16 +1,21 @@
 import * as THREE from 'three';
 import './style.css';
 import {createBronco} from './vehicle.js';
+import {followCameraStep} from './view.js';
+import {createMinimap} from './minimap.js';
 import {TRACKS,ROAD_WIDTH,createCircuit,terrainHeight,nearestPoint,opponentInput} from './tracks.js';
-import {clamp,angleDelta,advanceProgress,formatTime,arcadeMotion,fitCircuitView,updateSuspension,containOnTrack} from './race.js';
+import {clamp,angleDelta,advanceProgress,formatTime,arcadeMotion,updateSuspension,containOnTrack} from './race.js';
 const $=s=>document.querySelector(s),canvas=$('#scene'),game=$('#game'),menuDialog=$('#game-menu');
 canvas.tabIndex=0;
+const minimap=createMinimap($('#minimap'));
+let cameraState={x:0,z:0,span:20};
+const viewCorners=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>new THREE.Vector3(x,y,-1)),viewDirection=new THREE.Vector3();
 const scene=new THREE.Scene();scene.background=new THREE.Color('#a99a70');scene.fog=new THREE.Fog('#a99a70',105,210);
 let renderer;
 try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}catch(e){$('#message p').textContent='WebGL is required. Please enable hardware acceleration and reload.';$('#start').disabled=true;throw e;}
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.setClearColor('#a99a70');renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
 const camera=new THREE.OrthographicCamera(-50,50,35,-35,.1,250);camera.position.set(12,88,62);camera.lookAt(0,0,0);
-scene.add(new THREE.HemisphereLight('#fff4d6','#69653e',2.6));const sun=new THREE.DirectionalLight('#fff0cb',3.2);sun.position.set(-30,55,20);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-65,right:65,top:60,bottom:-60,near:1,far:140});sun.shadow.normalBias=.04;scene.add(sun);
+scene.add(new THREE.HemisphereLight('#fff4d6','#69653e',2.6));const sun=new THREE.DirectionalLight('#fff0cb',3.2);sun.position.set(-30,55,20);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-55,right:55,top:55,bottom:-55,near:1,far:180});sun.shadow.normalBias=.04;scene.add(sun,sun.target);
 const mat=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:1,...extra});
 const textureCanvas=document.createElement('canvas');textureCanvas.width=256;textureCanvas.height=256;const textureContext=textureCanvas.getContext('2d');textureContext.fillStyle='#a8784c';textureContext.fillRect(0,0,256,256);for(let i=0;i<18000;i++){textureContext.fillStyle=Math.random()>.5?'#93683b':'#be8d59';textureContext.globalAlpha=.25+Math.random()*.3;textureContext.fillRect(Math.random()*256,Math.random()*256,1+Math.random()*2,1+Math.random()*2);}const dirtTexture=new THREE.CanvasTexture(textureCanvas);dirtTexture.wrapS=dirtTexture.wrapT=THREE.RepeatWrapping;dirtTexture.colorSpace=THREE.SRGBColorSpace;
 const sand=mat('#b59b65'),dirt=mat('#c8a06f',{map:dirtTexture,side:THREE.DoubleSide}),dark=mat('#252b24'),cream=mat('#e8d7a1'),green=mat('#58633b');
@@ -38,23 +43,25 @@ function sign(text,x,z,rotation=0){const c=document.createElement('canvas');c.wi
 function makeWorld(){
  for(const child of [...world.children]){world.remove(child);child.traverse(o=>{o.geometry?.dispose();});}seed=42+trackIndex;
  curve=createCircuit(trackIndex);samples=Array.from({length:N},(_,i)=>curve.getPointAt(i/N));
- box(180,.7,145,sand,0,-.6,0);ribbon(0,roadWidth*2,dirt,.01);terrainSkirts();
+ const bounds=new THREE.Box3().setFromPoints(samples),pitZ=bounds.max.z+roadWidth+8,standZ=bounds.min.z-roadWidth-7;
+ box(360,.7,300,sand,0,-.6,0);ribbon(0,roadWidth*2,dirt,.01);terrainSkirts();
  ribbon(-3.7,.12,mat('#c29a63'),.025);ribbon(3.7,.12,mat('#c29a63'),.025);
  const rampPaint=mat('#e4bb5c');
  for(const f of TRACKS[trackIndex].features){const count=f.kind==='whoops'?f.count:2;for(let k=0;k<count;k++){const u=f.kind==='whoops'?(k+.5)/count:.25+k*.13;const j=Math.round((f.start+u*f.length)*N)%N,p=samples[j],t=curve.getTangentAt(j/N);const stripe=box(roadWidth*1.65,.035,.16,rampPaint,p.x,terrain(j)+.05,p.z);stripe.rotation.y=Math.atan2(-t.x,-t.z);stripe.castShadow=false;}}
- for(let i=0;i<N;i+=5){const p=samples[i],t=curve.getTangentAt(i/N),n=new THREE.Vector3(-t.z,0,t.x);for(const side of [-1,1]){const q=p.clone().addScaledVector(n,side*(roadWidth+.3));const b=box(1.9,.7,.7,i%10===0?cream:mat('#ab5d3a'),q.x,.38+terrain(i),q.z);b.rotation.y=-Math.atan2(t.z,t.x);}}
+ for(let i=0;i<N;i+=5){const p=samples[i],t=curve.getTangentAt(i/N),n=new THREE.Vector3(-t.z,0,t.x);for(const side of [-1,1]){const q=p.clone().addScaledVector(n,side*(roadWidth+.3));const b=box(curve.getLength()/N*5+.12,.7,.7,i%10===0?cream:mat('#ab5d3a'),q.x,.38+terrain(i),q.z);b.rotation.y=-Math.atan2(t.z,t.x);}}
  // Tire stacks and scrub leave the racing surface clear.
- for(let i=0;i<150;i++){const x=(rand()-.5)*110,z=(rand()-.5)*85;if(nearest(x,z).distance<10)continue;if(rand()<.37){const r=.4+rand()*1.1;const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(r,0),mat(rand()>.5?'#8e8057':'#c0ac7b'));rock.position.set(x,r*.3,z);rock.scale.y=.7;rock.rotation.set(rand(),rand()*6,rand());rock.castShadow=true;world.add(rock);}else{const h=1+rand()*2.4;cylinder(.25,h,green,x,h/2,z,world,6);box(.8,.23,.23,green,x+.35,h*.6,z);box(.2,h*.4,.2,green,x+.7,h*.75,z);}}
+ for(let i=0;i<280;i++){const x=bounds.min.x-25+rand()*(bounds.max.x-bounds.min.x+50),z=bounds.min.z-25+rand()*(bounds.max.z-bounds.min.z+50);if(nearest(x,z).distance<roadWidth+4)continue;if(rand()<.37){const r=.4+rand()*1.1;const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(r,0),mat(rand()>.5?'#8e8057':'#c0ac7b'));rock.position.set(x,r*.3,z);rock.scale.y=.7;rock.rotation.set(rand(),rand()*6,rand());rock.castShadow=true;world.add(rock);}else{const h=1+rand()*2.4;cylinder(.25,h,green,x,h/2,z,world,6);box(.8,.23,.23,green,x+.35,h*.6,z);box(.2,h*.4,.2,green,x+.7,h*.75,z);}}
  for(let i=0;i<90;i++){let x=(rand()-.5)*120,z=(rand()-.5)*90;if(nearest(x,z).distance<9)continue;box(.08,.05,.45,green,x,.02,z);}
  // Grandstands, pit garages and warm desert details.
- for(let row=0;row<4;row++){box(26,.6,1.6,mat(row%2?'#69715b':'#827d61'),-3,1+row*.65,-47-row*1.3);for(let j=0;j<34;j++){const x=-15+j*.75;const colors=['#d6b663','#8b5540','#ece2ba','#394e48'];box(.33,.65,.35,mat(colors[Math.floor(rand()*4)]),x,1.7+row*.65,-47-row*1.3);}}
- for(let i=0;i<3;i++){box(8,3,5,mat('#beb191'),-20+i*10,1.5,47);box(8.7,.22,6,mat(['#a75f3c','#73816b','#b69a4c'][i]),-20+i*10,3.1,47);box(4.8,2.4,.1,dark,-20+i*10,1.2,44.44);}
- sign('DUST RUNNER',-1,-43);sign('GOOD TIMES. FULL THROTTLE.',0,43,Math.PI);
+ for(let row=0;row<4;row++){box(26,.6,1.6,mat(row%2?'#69715b':'#827d61'),-3,1+row*.65,standZ-row*1.3);for(let j=0;j<34;j++){const x=-15+j*.75;const colors=['#d6b663','#8b5540','#ece2ba','#394e48'];box(.33,.65,.35,mat(colors[Math.floor(rand()*4)]),x,1.7+row*.65,standZ-row*1.3);}}
+ for(let i=0;i<3;i++){box(8,3,5,mat('#beb191'),-20+i*10,1.5,pitZ);box(8.7,.22,6,mat(['#a75f3c','#73816b','#b69a4c'][i]),-20+i*10,3.1,pitZ);box(4.8,2.4,.1,dark,-20+i*10,1.2,pitZ-2.56);}
+ sign('DUST RUNNER',-1,standZ+4);sign('GOOD TIMES. FULL THROTTLE.',0,pitZ-5,Math.PI);
  // Checkered start strip follows the track's tangent.
- const p=samples[0],t=curve.getTangentAt(0),a=Math.atan2(t.z,t.x);for(let col=0;col<12;col++)for(let row=0;row<2;row++){const along=(row-.5)*.65,side=(col-5.5)*1.13;const tile=box(.65,.04,1.13,(row+col)%2?cream:dark,p.x+Math.cos(a)*along-Math.sin(a)*side,.055,p.z+Math.sin(a)*along+Math.cos(a)*side);tile.rotation.y=-a;}
- for(const side of [-1,1]){const q=p.clone().add(new THREE.Vector3(-t.z,0,t.x).multiplyScalar(side*8.5));box(.25,7,.25,dark,q.x,3.5,q.z);}
- const beam=box(.35,.5,17.5,cream,p.x,7,p.z);beam.rotation.y=-a;
- for(let k=0;k<16;k++){const x=(rand()-.5)*150,z=-60-rand()*15;const hill=new THREE.Mesh(new THREE.ConeGeometry(8+rand()*12,6+rand()*13,5),mat('#a9976c'));hill.position.set(x,1,z);world.add(hill);}
+ const p=samples[0],t=curve.getTangentAt(0),a=Math.atan2(t.z,t.x);for(let col=0;col<12;col++)for(let row=0;row<2;row++){const along=(row-.5)*.65,side=(col-5.5)*(roadWidth*2/12);const tile=box(.65,.04,roadWidth*2/12,(row+col)%2?cream:dark,p.x+Math.cos(a)*along-Math.sin(a)*side,.055,p.z+Math.sin(a)*along+Math.cos(a)*side);tile.rotation.y=-a;}
+ for(const side of [-1,1]){const q=p.clone().add(new THREE.Vector3(-t.z,0,t.x).multiplyScalar(side*(roadWidth+1.1)));box(.25,7,.25,dark,q.x,3.5,q.z);}
+ const beam=box(.35,.5,(roadWidth+1.1)*2,cream,p.x,7,p.z);beam.rotation.y=-a;
+ for(let k=0;k<16;k++){const x=(rand()-.5)*150,z=bounds.min.z-roadWidth-30-rand()*15;const hill=new THREE.Mesh(new THREE.ConeGeometry(8+rand()*12,6+rand()*13,5),mat('#a9976c'));hill.position.set(x,1,z);world.add(hill);}
+ minimap.setTrack(samples,roadWidth);
 }
 function makeTruck(color,num){
  const {mesh,body,wheels}=createBronco(color,num);scene.add(mesh);
@@ -68,7 +75,7 @@ function updateGarage(){$('#cash').textContent=cash;for(const type of ['engine',
 updateGarage();
 function reset(){elapsed=0;count=0;phase='ready';$('#race-status').textContent='FREE PRACTICE';$('#countdown').textContent='';$('#pause').textContent='Ⅱ';$('#message').style.display='block';$('#message').innerHTML='<span>DUST RUNNER</span><strong>'+(trackIndex?'RATTLESNAKE':'DUSTBOWL')+'</strong><p>Three laps. Four trucks. All dirt.</p><button id="start">RACE <span>↗</span></button><button class="setup-link" id="open-setup">TRUCK · TRACK · PIT STOP</button><small>ENTER TO RACE · WASD / ARROWS TO DRIVE</small>';$('#start').onclick=start;$('#open-setup').onclick=openMenu;updateMenu();
  trucks.forEach((c,i)=>{const j=N-20-(i>1?25:0),p=samples[j],t=curve.getTangentAt(j/N),side=(i%2?1:-1)*2.1;Object.assign(c,{x:p.x-t.z*side,z:p.z+t.x*side,vx:0,vz:0,heading:Math.atan2(-t.x,-t.z),speed:0,index:j,checkpoint:-1,lap:0,height:terrain(j),vertical:0,airborne:false,lastGround:terrain(j),suspension:0,suspensionVelocity:0,rampRiseVelocity:0,nitro:100,boosting:false,finish:false});c.mesh.position.set(c.x,0,c.z);c.mesh.rotation.set(0,c.heading,0);});
- for(const p of particles){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();}particles.length=0;}
+ for(const p of particles){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();}particles.length=0;updateCamera(0,true);}
 function start(){if(phase==='racing'||phase==='countdown')return;reset();phase='countdown';count=3.4;$('#message').style.display='none';$('#race-status').textContent='GET READY';canvas.focus({preventScroll:true});initAudio();}
 function pause(){if(!['racing','countdown','paused'].includes(phase))return;if(phase==='paused'){phase=previousPhase;$('#countdown').textContent='';$('#pause').textContent='Ⅱ';}else{previousPhase=phase;phase='paused';$('#countdown').textContent='PAUSED';$('#pause').textContent='▶';}keys.clear();canvas.focus({preventScroll:true});}
 let menuPaused=false;
@@ -119,14 +126,28 @@ function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=
  for(let i=particles.length-1;i>=0;i--){const p=particles[i];if(phase!=='paused'){p.life-=dt;p.mesh.position.x+=p.vx*dt;p.mesh.position.z+=p.vz*dt;p.mesh.position.y+=dt*.6;p.mesh.scale.multiplyScalar(1+dt*.7);p.mesh.material.opacity=Math.max(0,p.life*.35);}if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
  const c=trucks[0];$('#speed').textContent=Math.round(Math.abs(c.speed)*3.6);$('#time').textContent=formatTime(elapsed);$('#lap').innerHTML=`${String(Math.min(c.lap+1,3)).padStart(2,'0')}<small> / 03</small>`;$('#position').innerHTML=`${String(ranking().indexOf(c)+1).padStart(2,'0')}<small> / 04</small>`;$('#nitro-text').textContent=Math.round(c.nitro)+'%';$('#nitro-fill').style.width=c.nitro+'%';if(audio&&osc&&gain){osc.frequency.setTargetAtTime(45+Math.abs(c.speed)*5,audio.currentTime,.1);gain.gain.setTargetAtTime(muted||phase!=='racing'?0:.012+(c.boosting?.008:0),audio.currentTime,.1);}
 }
+function updateCamera(dt,snap=false){
+ const player=trucks[0];if(!player||(!snap&&phase==='paused'))return;
+ const w=game.clientWidth,h=game.clientHeight;if(!w||!h)return;
+ const look=Math.round(12/(curve.getLength()/N));
+ const now=curve.getTangentAt(player.index/N),ahead=curve.getTangentAt(((player.index+look)%N)/N);
+ const bend=Math.abs(angleDelta(Math.atan2(ahead.x,ahead.z),Math.atan2(now.x,now.z)));
+ cameraState=followCameraStep(cameraState,{...player,bend},{width:w,height:h},dt,snap);
+ const {x,z,span}=cameraState,aspect=w/h;
+ camera.left=-span*aspect;camera.right=span*aspect;camera.top=span;camera.bottom=-span;
+ camera.position.set(x,78,z+70);camera.lookAt(x,0,z);camera.updateProjectionMatrix();camera.updateMatrixWorld();
+ camera.getWorldDirection(viewDirection);
+ const ndc=[[-1,-1],[1,-1],[1,1],[-1,1]];
+ viewCorners.forEach((point,i)=>{point.set(ndc[i][0],ndc[i][1],-1).unproject(camera);point.addScaledVector(viewDirection,-point.y/viewDirection.y);});
+ // Keep shadow coverage around the visible race, with stable, snapped light motion.
+ const sx=Math.round(x*20)/20,sz=Math.round(z*20)/20;
+ sun.target.position.set(sx,0,sz);sun.position.set(sx-30,55,sz+20);
+}
 function resize(){
  const w=game.clientWidth,h=game.clientHeight;if(!w||!h)return;
- // Fit both circuit edges in camera space, reserving room for the HUD and airborne trucks.
- const elevation=clamp(1.3/(w/h),.42,.92);camera.position.set(0,110*elevation,110*Math.sqrt(1-elevation*elevation));camera.lookAt(0,0,0);camera.updateMatrixWorld();const bounds={minX:Infinity,maxX:-Infinity,minY:Infinity,maxY:-Infinity};
- for(let i=0;i<N;i+=3){const p=samples[i],t=curve.getTangentAt(i/N);for(const side of [-1,1]){const q=new THREE.Vector3(p.x-t.z*side*(roadWidth+1),terrain(i)+1.5,p.z+t.x*side*(roadWidth+1)).applyMatrix4(camera.matrixWorldInverse);bounds.minX=Math.min(bounds.minX,q.x);bounds.maxX=Math.max(bounds.maxX,q.x);bounds.minY=Math.min(bounds.minY,q.y);bounds.maxY=Math.max(bounds.maxY,q.y);}}
- Object.assign(camera,fitCircuitView(bounds,w/h));camera.updateProjectionMatrix();renderer.setSize(w,h,false);
+ renderer.setSize(w,h,false);minimap.resize();updateCamera(0,true);
 }
 new ResizeObserver(resize).observe(game);reset();resize();let accumulator=0;
-function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;accumulator+=dt;while(accumulator>=1/60){step(1/60);accumulator-=1/60;}renderer.render(scene,camera);}requestAnimationFrame(frame);
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;accumulator+=dt;while(accumulator>=1/60){step(1/60);accumulator-=1/60;}updateCamera(dt);minimap.render(trucks,selectedColor,viewCorners);renderer.render(scene,camera);}requestAnimationFrame(frame);
 // Read-only telemetry makes gameplay and rendering easy to inspect.
 window.__DUST_RUNNER__={getState:()=>({phase,elapsed,track:trackIndex,renderer:renderer.info.render,player:{x:trucks[0].x,z:trucks[0].z,speed:trucks[0].speed,lap:trucks[0].lap,nitro:trucks[0].nitro},trucks:trucks.map(c=>({lap:c.lap,index:c.index,x:c.x,z:c.z,airborne:c.airborne,height:c.height})),cash,levels:{...levels}})};

@@ -13,6 +13,8 @@ npm run dev
 
 Open the local address printed by Vite. `npm run build` produces a static site in `dist/`. `npm run preview` serves that build. `npm test` checks lap validation, steering angle wrapping, and the race timer.
 
+The circuit automatically fills the playfield across window sizes. Trucks are enlarged for readability, with quick arcade steering, acceleration, braking, and a short lateral slide. Collision clearance and the starting grid match the larger trucks.
+
 ## Controls
 
 - W / Up: accelerate

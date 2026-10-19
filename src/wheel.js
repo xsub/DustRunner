@@ -20,7 +20,7 @@ for(let i=0;i<8;i++){
  const a=i*Math.PI/4,hole=new THREE.Path();hole.absarc(Math.cos(a)*.207,Math.sin(a)*.207,.043,0,Math.PI*2,true);rimShape.holes.push(hole);
 }
 const faceGeometry=new THREE.ExtrudeGeometry(rimShape,{depth:.026,bevelEnabled:true,bevelSize:.006,bevelThickness:.006,bevelSegments:1,curveSegments:10}).rotateY(Math.PI/2);
-const hubGeometry=new THREE.CylinderGeometry(.084,.10,.12,12).rotateZ(Math.PI/2);
+const hubGeometry=new THREE.CylinderGeometry(.084,.10,.085,12).rotateZ(Math.PI/2);
 const boltGeometry=new THREE.CylinderGeometry(.021,.021,.022,6).rotateZ(Math.PI/2);
 const innerGeometry=new THREE.CylinderGeometry(.28,.28,.34,32).rotateZ(Math.PI/2);
 const tireMaterial=new THREE.MeshStandardMaterial({color:'#242720',roughness:.98});
@@ -30,15 +30,15 @@ const innerMaterial=new THREE.MeshStandardMaterial({color:'#34352c',roughness:.8
 const hubMaterial=new THREE.MeshStandardMaterial({color:'#66685d',metalness:.6,roughness:.55});
 export function createOffroadWheel(){
  const group=new THREE.Group();
- const add=(geometry,material,x=0,y=0,z=0)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m;};
+ const add=(geometry,material,x=0,y=0,z=0)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;m.userData.sharedWheel=true;group.add(m);return m;};
  add(tireGeometry,tireMaterial);add(treadGeometry,treadMaterial);add(innerGeometry,innerMaterial);
  for(const side of [-1,1]){
   add(ringGeometry,metalMaterial,side*.213);
   add(sideRingGeometry,treadMaterial,side*.236);
   const face=add(faceGeometry,metalMaterial,side*.2);if(side<0)face.rotation.y=Math.PI;
-  add(hubGeometry,hubMaterial,side*.23);
+  add(hubGeometry,hubMaterial,side*.205);
   for(let i=0;i<5;i++){
-   const a=i*Math.PI*2/5;add(boltGeometry,metalMaterial,side*.247,Math.cos(a)*.13,Math.sin(a)*.13);
+   const a=i*Math.PI*2/5;add(boltGeometry,metalMaterial,side*.235,Math.cos(a)*.13,Math.sin(a)*.13);
   }
  }
  return group;

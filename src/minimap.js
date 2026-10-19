@@ -29,10 +29,10 @@ export function createMinimap(canvas){
      ctx.setTransform(density,0,0,density,0,0);ctx.clearRect(0,0,width,height);ctx.drawImage(background,0,0,width,height);
      ctx.save();ctx.beginPath();ctx.rect(0,0,width,height);ctx.clip();
      if(viewCorners.length){ctx.beginPath();viewCorners.forEach((p,i)=>{const q=project(p);if(!i)ctx.moveTo(q.x,q.y);else ctx.lineTo(q.x,q.y);});ctx.closePath();ctx.fillStyle='#e7efcb10';ctx.fill();ctx.strokeStyle='#edf3d16b';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);}
-     const colors=[color,'#e6644c','#5ca9ba','#ece9cf'];
+     const colors=cars.map((car,i)=>i===0?color:'#'+car.body.color.getHexString());
      for(let i=cars.length-1;i>=0;i--){const car=cars[i],p=project(car);ctx.save();ctx.translate(p.x,p.y);
        if(i===0){ctx.rotate(-car.heading);ctx.beginPath();ctx.moveTo(0,-5);ctx.lineTo(3.6,4);ctx.lineTo(0,2);ctx.lineTo(-3.6,4);ctx.closePath();ctx.strokeStyle='#fffce5';ctx.lineWidth=2;ctx.fillStyle=color;ctx.fill();ctx.stroke();}
-       else{ctx.beginPath();ctx.arc(0,0,2.7,0,Math.PI*2);ctx.fillStyle=colors[i];ctx.fill();ctx.strokeStyle='#172016';ctx.lineWidth=1;ctx.stroke();}
+       else{ctx.beginPath();ctx.arc(0,0,2.7,0,Math.PI*2);ctx.fillStyle=colors[i];ctx.fill();ctx.strokeStyle='#e7dfc6';ctx.lineWidth=.8;ctx.stroke();}
        ctx.restore();
      }
      ctx.restore();

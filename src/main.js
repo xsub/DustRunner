@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createDesertReflections} from './lighting.js';
 import './style.css';
 import {createRoadSurface,wheelContacts,bodyAttitude,updateWheel,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 import {resolveCarCollision,advanceCollisionRotation} from './collision.js';
@@ -17,6 +18,7 @@ const scene=new THREE.Scene();scene.background=new THREE.Color('#a99a70');scene.
 let renderer;
 try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}catch(e){$('#message p').textContent='WebGL is required. Please enable hardware acceleration and reload.';$('#start').disabled=true;throw e;}
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.setClearColor('#a99a70');renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
+const reflections=createDesertReflections(renderer);scene.environment=reflections.texture;scene.environmentIntensity=.65;
 const camera=new THREE.OrthographicCamera(-50,50,35,-35,.1,250);camera.position.set(12,88,62);camera.lookAt(0,0,0);
 scene.add(new THREE.HemisphereLight('#fff4d6','#69653e',2.6));const sun=new THREE.DirectionalLight('#fff0cb',3.2);sun.position.set(-30,55,20);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-55,right:55,top:55,bottom:-55,near:1,far:180});sun.shadow.normalBias=.04;scene.add(sun,sun.target);
 const mat=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:1,...extra});
@@ -64,12 +66,12 @@ function makeWorld(){
  for(let k=0;k<16;k++){const x=(rand()-.5)*150,z=bounds.min.z-roadWidth-30-rand()*15;const hill=new THREE.Mesh(new THREE.ConeGeometry(8+rand()*12,6+rand()*13,5),mat('#a9976c'));hill.position.set(x,1,z);world.add(hill);}
  minimap.setTrack(samples,roadWidth);
 }
-function makeTruck(color,num){
- const {mesh,chassis,body,wheels}=createBronco(color,num);scene.add(mesh);
- return {mesh,chassis,body,wheels,x:0,z:0,vx:0,vz:0,heading:0,speed:0,index:0,checkpoint:0,lap:0,height:0,vertical:0,nitro:100,boosting:false,finish:false};
+function makeTruck(style,num){
+ const {mesh,chassis,body,wheels,dispose}=createBronco(style,num);scene.add(mesh);
+ return {mesh,chassis,body,wheels,dispose,number:num,style,x:0,z:0,vx:0,vz:0,heading:0,speed:0,index:0,checkpoint:0,lap:0,height:0,vertical:0,nitro:100,boosting:false,finish:false};
 }
-makeWorld();['#f3bf42','#e6644c','#5ca9ba','#ece9cf'].forEach((c,i)=>trucks.push(makeTruck(c,['07','12','28','03'][i])));
-const keys=new Set();let phase='ready',previousPhase='racing',elapsed=0,count=0,selectedColor='#f3bf42',cash=0,levels={engine:0,grip:0},lastTime=0,muted=true,audio,osc,gain;
+makeWorld();['classic','ranger','sunset','expedition'].forEach((c,i)=>trucks.push(makeTruck(c,['07','12','28','03'][i])));
+const keys=new Set();let phase='ready',previousPhase='racing',elapsed=0,count=0,selectedColor='#087a50',cash=0,levels={engine:0,grip:0},lastTime=0,muted=true,audio,osc,gain;
 try{const save=JSON.parse(localStorage.getItem('dust-runner-save'));if(save){cash=Math.max(0,Number(save.cash)||0);levels.engine=clamp(Number(save.engine)||0,0,3);levels.grip=clamp(Number(save.grip)||0,0,3);}}catch{}
 function save(){try{localStorage.setItem('dust-runner-save',JSON.stringify({cash,...levels}));}catch{}updateGarage();}
 function updateGarage(){$('#cash').textContent=cash;for(const type of ['engine','grip']){$(`#${type}-level`).textContent=levels[type];const b=$(`[data-upgrade="${type}"]`);b.disabled=levels[type]>=3;b.title=levels[type]>=3?'Fully upgraded':'Buy upgrade for $300';}}
@@ -91,7 +93,12 @@ function initAudio(){if(muted)return;try{if(!audio){audio=new AudioContext();osc
 $('#sound').onclick=()=>{muted=!muted;$('#sound').innerHTML=`SOUND ${muted?'OFF':'ON'} <span>◖))</span>`;if(!muted)initAudio();if(gain)gain.gain.value=muted?0:.02;};
 $('#pause').onclick=pause;$('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $('#app').requestFullscreen();}catch{$('#garage-note').textContent='Fullscreen is unavailable in this browser.';}};
 document.addEventListener('fullscreenchange',()=>{$('#fullscreen').textContent=document.fullscreenElement?'⊡':'⛶';$('#fullscreen').setAttribute('aria-label',document.fullscreenElement?'Exit fullscreen':'Fullscreen game');});
-document.querySelectorAll('[data-color]').forEach(b=>b.onclick=()=>{selectedColor=b.dataset.color;trucks[0].body.color.set(selectedColor);document.querySelectorAll('[data-color]').forEach(el=>{el.classList.toggle('selected',el===b);el.querySelector('b').textContent=el===b?'SELECTED ↗':'SELECT ↗';});});
+document.querySelectorAll('[data-model]').forEach(b=>b.onclick=()=>{
+ const player=trucks[0];scene.remove(player.mesh);player.dispose();
+ const model=createBronco(b.dataset.model,player.number);Object.assign(player,model,{style:b.dataset.model});scene.add(player.mesh);
+ selectedColor=b.dataset.color;poseTruck(player,0);
+ document.querySelectorAll('[data-model]').forEach(el=>{el.classList.toggle('selected',el===b);el.querySelector('b').textContent=el===b?'SELECTED ↗':'SELECT ↗';});
+});
 document.querySelectorAll('[data-track]').forEach(b=>b.onclick=()=>{trackIndex=Number(b.dataset.track);document.querySelectorAll('[data-track]').forEach(el=>el.classList.toggle('active',el===b));makeWorld();resize();$('#track-name').textContent=trackIndex?'02 — RATTLESNAKE':'01 — DUSTBOWL';reset();});
 document.querySelectorAll('[data-upgrade]').forEach(b=>b.onclick=()=>{const type=b.dataset.upgrade;if(phase==='racing'||phase==='countdown'||phase==='paused'){$('#garage-note').textContent='Upgrades are available between races.';return;}if(cash<300){$('#garage-note').textContent='You need $300. Finish a race to earn more cash.';return;}if(levels[type]<3){cash-=300;levels[type]++;save();$('#garage-note').textContent=`${type==='engine'?'Engine':'Tires'} upgraded to level ${levels[type]}. Ready for the next race.`;}});
 window.addEventListener('keydown',e=>{if(menuDialog.open)return;if(e.target instanceof HTMLButtonElement&&e.code==='Space')return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.repeat)return;keys.add(e.code);if(e.code==='Enter'&&['ready','finished'].includes(phase))start();if(e.code==='KeyP'||e.code==='Escape')pause();if(e.code==='KeyR')reset();});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{keys.clear();if(phase==='racing'||phase==='countdown')pause();});

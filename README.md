@@ -1,6 +1,6 @@
 # Dust Runner
 
-An original Three.js arcade off-road racer inspired by Super Off Road. Procedural 3D assets, two dirt circuits with tighter corners, four jumps per lap, repeated whoop sections, four compact Bronco-inspired SUVs, AI opponents, drifting, jumps, collisions, rechargeable nitro, race rewards, and persistent engine/tire upgrades.
+An original Three.js arcade off-road racer inspired by Super Off Road. Procedural 3D assets, two dirt circuits with tighter corners, four jumps per lap, repeated whoop sections, four detailed Bronco-inspired SUVs, AI opponents, drifting, jumps, collisions, rechargeable nitro, race rewards, and persistent engine/tire upgrades.
 
 ## Play online
 
@@ -18,6 +18,8 @@ npm run dev
 ```
 
 Open the local address printed by Vite. `npm run build` produces a static site in `dist/`. `npm run preview` serves that build. `npm test` checks racing physics, lap validation, terrain and AI laps, camera tracking, and minimap coverage.
+
+Three selectable bodies take their shapes and colors from the supplied vehicle references: short Heritage in emerald with an ivory cap and round headlights, wider Ranger in orange/ivory with rectangular lights, and Midnight Sunset with a lower raked cap and layered yellow/orange/red stripes. The olive Trail opponent has a utility bumper. Cabins have real window openings, tinted glass, seats and dashboards; exterior details include hood stampings, chrome belt lines, mirrors, markers, live axles and dampers. Outdoor sky/sand reflections support paint and chrome without external assets. All variants retain the shared racing wheelbase and collision envelope.
 
 Both circuits are scaled up by 35%, with 25% wider roads. The Broncos retain their physical size, steering, progressive braking, and short lateral slide. A smooth fixed-orientation camera follows the player with forward visibility and gently widens for corners and jumps. The close view makes vehicle details easier to see. A north-up minimap shows the whole course, start/finish line, all four racers, and the visible camera area. The outlined arrow identifies the player. Terrain crests launch fast trucks into ballistic jumps; landings compress the suspension, and airborne trucks preserve their takeoff velocity: steering, throttle, brakes, and nitro only work with tire contact. Each tire samples the rendered road triangles independently, including its leading edge on ramps. Suspension compression moves the body without pushing the tires into the road. Wheel rotation follows actual wheel travel and tire circumference, front wheels use Ackermann steering, and airborne wheels coast. Rounded tires feature staggered terrain tread, perforated steel rims, bead rings and five lug nuts; the rear spare uses the same model. Convex vehicle outlines resolve bumper, side and corner impacts with momentum transfer, friction and angular response. Vertical overlap determines airborne contacts, and road clearance accounts for the direction of the truck. AI opponents brake for tight corners and choose nitro on straights.
 

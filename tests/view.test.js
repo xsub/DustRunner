@@ -7,7 +7,7 @@ const player={x:0,z:0,vx:23,vz:0,speed:23,airborne:false,bend:0};
 
 test('camera reset snaps to the player with bounded forward visibility',()=>{
  const state=followCameraStep({x:-300,z:200,span:90},player,viewport,0,true);
- assert.ok(state.x>player.x&&state.x-player.x<=9);
+ assert.ok(state.x>player.x&&state.x-player.x<=20);
  assert.equal(state.z,player.z);assert.ok(state.span<30);
 });
 test('follow smoothing is consistent across frame rates',()=>{
@@ -46,6 +46,23 @@ for(const track of [0,1])test(`minimap fits the full road and racers on track ${
    for(const p of points)for(const edge of [-ROAD_WIDTH,ROAD_WIDTH]){
      const x=(p.x+edge)*map.scale+map.offsetX,z=(p.z+edge)*map.scale+map.offsetZ;
      assert.ok(x>0&&x<width&&z>0&&z<height);
+   }
+ }
+});
+
+test('camera looks farther ahead without making the Broncos smaller',()=>{
+ const state=followCameraStep({x:0,z:0,span:20},player,viewport,0,true);
+ assert.ok(state.x-player.x>15);
+ const expectedSpan=viewport.height/36+23/35*2;
+ assert.ok(Math.abs(state.span-expectedSpan)<1e-10);
+});
+test('nitro and reverse lead remain inside safe screen margins in every direction',()=>{
+ for(const view of [viewport,{width:390,height:844},{width:844,height:390}]){
+   for(let i=0;i<16;i++){
+     const angle=i*Math.PI/8,p={...player,vx:40*Math.cos(angle),vz:40*Math.sin(angle),speed:i%2?-40:40};
+     const state=followCameraStep({x:0,z:0,span:20},p,view,0,true);
+     const projected=Math.hypot((p.x-state.x)/(state.span*view.width/view.height),(p.z-state.z)*.744/state.span);
+     assert.ok(projected<=.580001);
    }
  }
 });

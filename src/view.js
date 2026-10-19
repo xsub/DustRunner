@@ -4,11 +4,14 @@ import {clamp} from './race.js';
 // Follow the horizontal motion, never the truck's vertical jump or body pitch.
 export function followCameraStep(state,player,viewport,dt,snap=false){
  const aspect=viewport.width/viewport.height;
- const leadX=player.vx*.32,leadZ=player.vz*.32;
- const leadScale=Math.min(1,9/(Math.hypot(leadX,leadZ)||1));
- const targetX=player.x+leadX*leadScale,targetZ=player.z+leadZ*leadScale;
  const base=clamp(viewport.height/36,12,24);
  const span=Math.max(17/aspect,base+clamp(Math.abs(player.speed)/35,0,1)*2+clamp(player.bend??0,0,1)*3+(player.airborne?1.5:0));
+ // Give corners more screen space by moving the focus, not zooming out.
+ // Bound the projected lead on small screens so the Bronco stays comfortably visible.
+ const leadX=player.vx*.7,leadZ=player.vz*.7;
+ const projectedLead=Math.hypot(leadX/(span*aspect*.58),leadZ*.744/(span*.58));
+ const leadScale=Math.min(1,20/(Math.hypot(leadX,leadZ)||1),1/(projectedLead||1));
+ const targetX=player.x+leadX*leadScale,targetZ=player.z+leadZ*leadScale;
  const pan=snap?1:1-Math.exp(-6*dt),zoom=snap?1:1-Math.exp(-2.5*dt);
  return {x:state.x+(targetX-state.x)*pan,z:state.z+(targetZ-state.z)*pan,span:state.span+(span-state.span)*zoom};
 }

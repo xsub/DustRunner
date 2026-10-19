@@ -128,7 +128,7 @@ function poseTruck(c,dt,snap=false){
 function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=count>.4?Math.ceil(count-.4):'GO!';if(count<=0){phase='racing';$('#countdown').textContent='';$('#race-status').textContent='RACE IN PROGRESS';}}if(phase==='racing'){
  elapsed+=dt;
  trucks.forEach((c,i)=>{const near=nearest(c.x,c.z),onDirt=near.distance<roadWidth;let throttle=0,steer=0,brake=false,boost=false;
- if(i===0){throttle=keys.has('ArrowUp')||keys.has('KeyW')?1:0;brake=keys.has('ArrowDown')||keys.has('KeyS');steer=(keys.has('ArrowLeft')||keys.has('KeyA')?1:0)-(keys.has('ArrowRight')||keys.has('KeyD')?1:0);boost=keys.has('Space')&&c.nitro>0&&throttle>0;}else{({throttle,steer,brake,boost}=opponentInput(c,near,curve,samples));}
+ if(i===0){throttle=keys.has('ArrowUp')||keys.has('KeyW')?1:0;brake=keys.has('ArrowDown')||keys.has('KeyS');steer=.2*((keys.has('ArrowLeft')||keys.has('KeyA')?1:0)-(keys.has('ArrowRight')||keys.has('KeyD')?1:0));boost=keys.has('Space')&&c.nitro>0&&throttle>0;}else{({throttle,steer,brake,boost}=opponentInput(c,near,curve,samples));}
  boost=boost&&!c.airborne;
  c.boosting=boost;if(boost)c.nitro=Math.max(0,c.nitro-dt*32);else c.nitro=Math.min(100,c.nitro+dt*7);
  advanceCollisionRotation(c,dt);

@@ -30,7 +30,7 @@ The race fills the browser window by default. The compact HUD shows position, la
 ## Controls
 
 - W / Up: accelerate
-- A / D or Left / Right: steer relative to the truck
+- A / D or Left / Right: steer relative to the truck (20% steering sensitivity)
 - S / Down: brake, then reverse
 - Space: nitro (recharges when released)
 - Enter: start or race again

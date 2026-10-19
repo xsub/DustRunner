@@ -10,6 +10,7 @@ import {createMinimap} from './minimap.js';
 import {TRACKS,ROAD_WIDTH,createCircuit,terrainHeight,nearestPoint,opponentInput} from './tracks.js';
 import {ENGINES,engineById,defaultEngine} from './engines.js';
 import {resetPowertrain} from './powertrain.js';
+import {createHistoryPanel} from './history-panel.js';
 import {EngineAudio} from './engine-audio.js';
 import {clamp,angleDelta,advanceProgress,formatTime,arcadeMotion,updateSuspension,containOnTrack} from './race.js';
 const $=s=>document.querySelector(s),canvas=$('#scene'),game=$('#game'),menuDialog=$('#game-menu');
@@ -123,6 +124,8 @@ engineSelect.onchange=()=>{
 };
 $('#engine-preview').onclick=async()=>{muted=false;updateSoundLabels();await initAudio();if(!muted)audioPreviewTime=3.4;};
 updateEngineMenu();updateSoundLabels();
+const historyPanel=createHistoryPanel({getPlayer:()=>trucks[0],canFit:()=>!['racing','countdown','paused'].includes(phase),fitEngine:id=>{engineSelect.value=id;engineSelect.onchange();}});
+$('#open-history').onclick=()=>{audioPreviewTime=0;engineAudio.silence();historyPanel.open();};
 function updateEngineSound(dt){
  const e=engineById(trucks[0].engineId);let state=trucks[0].powertrain,preview=audioPreviewTime>0;
  if(preview){audioPreviewTime=Math.max(0,audioPreviewTime-dt);const t=1-audioPreviewTime/3.4;state={rpm:e.idle+(e.redline-e.idle)*Math.sin(t*Math.PI)*.9,load:t<.62?.85:.1};}

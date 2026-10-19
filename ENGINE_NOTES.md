@@ -58,3 +58,25 @@ Sound remains opt-in. A button on the race screen toggles sound. The pit-stop
 menu includes an engine preview, volume slider and torque curve. Muting,
 pausing or hiding the page fades audio promptly. Assets ship locally with the
 game and do not depend on third-party streaming at play time.
+
+## In-game history and comparison
+
+The field guide uses the user's five-generation comparison as its starting
+point. It labels the date ranges as U.S. **model years**, identifies the
+351M/400 as the 335 family, and notes the staggered 1987–1988 transition to EFI.
+Sources include [Ford's history](https://corporate.ford.com/corporate/corporate/articles/history/the-ford-bronco/),
+[Gen 3](https://www.ford.com/bronco/history/1980-1986/),
+[Gen 4](https://www.ford.ca/bronco/history/1987-1991/),
+[Gen 5](https://www.ford.com/bronco/history/1992-1996/) and
+[Ford Racing's engine-family guide](https://performanceparts.ford.com/download/pdfs/enginehistory.pdf).
+Factory availability varies by model year and market; a game profile stands
+in for its engine family, not every original carburetor, ECU or annual tune.
+
+Performance is computed on demand using `arcadeMotion`, with an independent
+fresh car per engine, zero upgrades, no nitro, flat dirt, 60 Hz for 60 seconds,
+and one common selected chassis mass. Acceleration is interpolated at the
+50 km/h crossing; the final speed is the 60-second reading, not a promised
+maximum. Power is the maximum of RPM × interpolated torque / 9549 across
+the complete curve, including interior peaks. hp uses 0.745699872 kW per
+mechanical horsepower. Historical SAE gross/net claims are kept separate
+from these explicitly labeled game-calibration outputs.

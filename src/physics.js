@@ -1,6 +1,7 @@
 import RAPIER from '@dimforge/rapier3d-compat';
 import {Quaternion,Vector3} from 'three';
 import {powertrainStep} from './powertrain.js';
+import {vehicleMassProperties} from './vehicle-mass.js';
 import {WHEEL_LAYOUT,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 export const GRAVITY=9.81,CHASSIS_HEIGHT=1.5,REST_LENGTH=.55;
 export const initPhysics=()=>RAPIER.init();
@@ -11,10 +12,12 @@ export function createPhysics(terrain,bounds){
  world.createCollider(RAPIER.ColliderDesc.cuboid((bounds.max.x-bounds.min.x)/2+80,.5,(bounds.max.z-bounds.min.z)/2+80).setTranslation((bounds.min.x+bounds.max.x)/2,-.75,(bounds.min.z+bounds.max.z)/2).setFriction(.8));
  const vehicles=new Set();
  function add(car){
-  const mass=car.style==='classic'?1650:2050;
+  const properties=vehicleMassProperties(car.style,car.engineId),{mass}=properties;
   const body=world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setCanSleep(false).setCcdEnabled(true).setLinearDamping(.025).setAngularDamping(.9));
-  world.createCollider(RAPIER.ColliderDesc.cuboid(1.23,.48,2.28).setTranslation(0,.05,0).setMass(mass*.86).setFriction(.65).setRestitution(.08),body);
-  world.createCollider(RAPIER.ColliderDesc.cuboid(1.16,.53,1.22).setTranslation(0,1.19,.65).setMass(mass*.14).setFriction(.6).setRestitution(.05),body);
+  world.createCollider(RAPIER.ColliderDesc.cuboid(1.23,.48,2.28).setTranslation(0,.05,0).setMass(0).setFriction(.65).setRestitution(.08),body);
+  world.createCollider(RAPIER.ColliderDesc.cuboid(1.16,.53,1.22).setTranslation(0,1.19,.65).setMass(0).setFriction(.6).setRestitution(.05),body);
+  body.setAdditionalMassProperties(mass,properties.centerOfMass,properties.principalAngularInertia,properties.angularInertiaLocalFrame,true);
+  body.recomputeMassPropertiesFromColliders();
   const controller=world.createVehicleController(body);controller.indexUpAxis=1;controller.setIndexForwardAxis=2;
   const tireColliders=[];
   WHEEL_LAYOUT.forEach((w,i)=>{
@@ -25,7 +28,7 @@ export function createPhysics(terrain,bounds){
    // A smaller collision envelope catches the tires when the truck is on its side.
    tireColliders.push(world.createCollider(RAPIER.ColliderDesc.ball(.58).setTranslation(w.x*VEHICLE_SCALE,-.15-REST_LENGTH,w.z*VEHICLE_SCALE).setMass(0).setFriction(.8),body));
   });
-  const vehicle={body,controller,mass,tireColliders,steer:0};car.physics=vehicle;vehicles.add(car);return vehicle;
+  const vehicle={body,controller,mass,tireColliders,steer:0,massKey:`${car.style}:${car.engineId}`};car.physics=vehicle;vehicles.add(car);return vehicle;
  }
  function reset(car){
   const v=car.physics??add(car),rotation=new Quaternion().setFromAxisAngle(new Vector3(0,1,0),car.heading);
@@ -35,15 +38,24 @@ export function createPhysics(terrain,bounds){
  }
  function input(car,input,dt){
   const v=car.physics,c=v.controller;
-  const mass=car.style==='classic'?1650:2050;
-  if(mass!==v.mass){v.body.collider(0).setMass(mass*.86);v.body.collider(1).setMass(mass*.14);v.mass=mass;for(let i=0;i<4;i++)c.setWheelMaxSuspensionForce(i,mass*24);}
+  const properties=vehicleMassProperties(car.style,car.engineId),{mass}=properties;
+  const massKey=`${car.style}:${car.engineId}`;
+  if(massKey!==v.massKey){
+   v.body.setAdditionalMassProperties(mass,properties.centerOfMass,properties.principalAngularInertia,properties.angularInertiaLocalFrame,true);v.body.recomputeMassPropertiesFromColliders();
+   v.mass=mass;v.massKey=massKey;for(let i=0;i<4;i++)c.setWheelMaxSuspensionForce(i,mass*24);
+  }
   q.copy(v.body.rotation());forward.set(0,0,-1).applyQuaternion(q);
   const drive=powertrainStep(car,{...input,slope:forward.y},dt);
   // Player input retains the requested one-fifth steering sensitivity.
   const desired=(input.steer??0)*(input.ai?.38:.4);
   v.steer+=(desired-v.steer)*(1-Math.exp(-dt*9));
   const drag=-car.speed*(input.onDirt?.16:.6);
-  const force=(drive.acceleration+drag)*v.mass/4;
+  // Loose dirt cannot turn every extra engine/nitro torque into thrust.
+  // Limit longitudinal traction, preserving physical weight transfer and
+  // full pitch/roll freedom instead of adding an artificial anti-flip torque.
+  const traction=GRAVITY*(input.onDirt?1.0:.7)*(1+(input.tires??0)*.04);
+  const acceleration=Math.max(-traction,Math.min(traction,drive.acceleration+drag));
+  const force=acceleration*v.mass/4;
   const braking=input.brake&&car.speed>.1?5.2*v.mass*dt/4:0;
   for(let i=0;i<4;i++){
    const layout=WHEEL_LAYOUT[i];

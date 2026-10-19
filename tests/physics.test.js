@@ -2,15 +2,17 @@ import {test,before} from 'node:test';
 import assert from 'node:assert/strict';
 import {initPhysics,createPhysics,GRAVITY} from '../src/physics.js';
 import {triangleSampler} from '../src/terrain.js';
+import {ENGINES} from '../src/engines.js';
+import {vehicleMass} from '../src/vehicle-mass.js';
 before(async()=>await initPhysics());
 const dt=1/120;
-function fixture(height=()=>0){
- const vertices=[],indices=[],n=81,size=40;
+function fixture(height=()=>0,extent=20,configuration={}){
+ const vertices=[],indices=[],n=81,size=extent*2;
  for(let z=0;z<n;z++)for(let x=0;x<n;x++)vertices.push(x/(n-1)*size-size/2,height(x/(n-1)*size-size/2,z/(n-1)*size-size/2),z/(n-1)*size-size/2);
  for(let z=0;z<n-1;z++)for(let x=0;x<n-1;x++){const a=z*n+x;indices.push(a,a+n,a+1,a+1,a+n,a+n+1);}
  const terrain={positions:new Float32Array(vertices),indices:new Uint32Array(indices)};terrain.heightAt=triangleSampler(terrain.positions,terrain.indices);
- const physics=createPhysics(terrain,{min:{x:-20,z:-20},max:{x:20,z:20}});
- const car={x:0,z:0,heading:0,speed:0,style:'classic',engineId:'302'};physics.reset(car);
+ const physics=createPhysics(terrain,{min:{x:-extent,z:-extent},max:{x:extent,z:extent}});
+ const car={x:0,z:0,heading:0,speed:0,style:'classic',engineId:'302',...configuration};physics.reset(car);
  return {physics,car,terrain};
 }
 function step(f,input={},frames=1){for(let j=0;j<frames;j++){f.physics.input(f.car,{throttle:0,steer:0,onDirt:true,...input},dt);f.physics.step();f.physics.sync(f.car,dt);}}
@@ -59,5 +61,45 @@ test('front-wheel steering uses different inside and outside angles; rear wheels
  const c=f.car.physics.controller;
  assert.ok(c.wheelSteering(0)>0&&c.wheelSteering(2)>0);assert.notEqual(c.wheelSteering(0),c.wheelSteering(2));
  assert.equal(c.wheelSteering(1),0);assert.equal(c.wheelSteering(3),0);
+ f.physics.dispose();
+});
+
+test('engine weight loads the front axle and heavier blocks move the physical center of mass forward',()=>{
+ const light=fixture(()=>0,20,{engineId:'170'}),heavy=fixture(()=>0,20,{engineId:'400'});
+ for(const f of [light,heavy]){
+  step(f,{},240);
+  const body=f.car.physics.body,c=f.car.physics.controller,front=c.wheelSuspensionForce(0)+c.wheelSuspensionForce(2),rear=c.wheelSuspensionForce(1)+c.wheelSuspensionForce(3);
+  assert.ok(Math.abs(body.mass()-vehicleMass('classic',f.car.engineId))<.01);
+  assert.ok(body.localCom().y<-.35&&body.localCom().z<0);
+  assert.ok(front/(front+rear)>.53&&front/(front+rear)<.62,`front axle share ${front/(front+rear)}`);
+ }
+ assert.ok(heavy.car.physics.body.mass()>light.car.physics.body.mass());
+ assert.ok(heavy.car.physics.body.localCom().z<light.car.physics.body.localCom().z);
+ light.physics.dispose();heavy.physics.dispose();
+});
+test('full-throttle upgraded starts with nitro keep the front tires grounded for every engine and body',()=>{
+ for(const style of ['classic','ranger','sunset','expedition'])for(const engine of ENGINES)for(const settled of [false,true]){
+  const f=fixture(()=>0,250,{style,engineId:engine.id});if(settled)step(f,{},180);
+  let peakPitch=0,frontAirFrames=0;
+  for(let i=0;i<360;i++){
+   step(f,{throttle:1,boost:true,engine:3,tires:3});
+   const q=f.car.physics.body.rotation(),front=f.car.physics.controller;
+   peakPitch=Math.max(peakPitch,Math.asin(Math.max(-1,Math.min(1,2*(q.w*q.x-q.y*q.z)))));
+   if(i>30&&!front.wheelIsInContact(0)&&!front.wheelIsInContact(2))frontAirFrames++;
+   assert.equal(f.car.rollover,false,`${style} ${engine.id}`);
+  }
+  assert.ok(peakPitch<12*Math.PI/180,`${style} ${engine.id}: pitch ${peakPitch*180/Math.PI}`);
+  assert.ok(frontAirFrames<12,`${style} ${engine.id}: ${frontAirFrames} frames doing a wheelie`);
+  assert.ok(f.car.speed>10,`${style} ${engine.id}: launch must still accelerate`);
+  f.physics.dispose();
+ }
+});
+test('engine and body swaps update mass properties without changing the collision envelope',()=>{
+ const f=fixture(),body=f.car.physics.body,colliders=body.numColliders();step(f,{},180);
+ const before=body.mass(),center=body.localCom().z;
+ f.car.engineId='400';step(f);
+ assert.ok(body.mass()>before);assert.ok(body.localCom().z<center);assert.equal(body.numColliders(),colliders);
+ f.car.style='ranger';step(f);
+ assert.ok(Math.abs(body.mass()-vehicleMass('ranger','400'))<.01);assert.equal(body.numColliders(),colliders);
  f.physics.dispose();
 });

@@ -24,7 +24,8 @@ higher revs; small sixes have less available wheel force; EFI profiles have
 broader response. All use the same three-speed automatic game transmission,
 a common arcade acceleration scale and a shared final drive. This is a
 playable approximation rather than a complete drivetrain or fuel-injection
-simulation. Vehicle mass follows the compact/full-size visual body category.
+simulation. Vehicle mass combines the compact/full-size chassis category with a representative
+engine-block mass. These masses are game calibrations rather than factory weights.
 
 ## Coupled simulation
 
@@ -100,3 +101,21 @@ Racing now uses Rapier rigid bodies, four spring/damper wheel rays and 120 Hz
 contact integration. The shared torque model drives wheel forces. Climbing
 load can trigger a gearbox kickdown; terrain, grip and collisions change real
 acceleration and speed from the ideal flat-ground benchmark.
+
+## Mass distribution and launch stability
+
+`src/vehicle-mass.js` distributes mass between the low frame/drivetrain, body,
+cabin, light roof, four wheel/axle locations and the engine under the hood.
+It computes center of mass and angular inertia from those components. The
+engine is part of curb mass, not ballast added on top of an already complete
+vehicle. A heavier engine changes total mass and front axle loading; both
+Rapier and the powertrain use that same total. Mass properties update after
+an engine or body swap.
+
+The 302 compact calibration has a center of mass about 1.08 world units
+above the road, with approximately 57% static front-axle load. Previously
+collider volume placed the center around 1.71 units high and behind the
+wheelbase midpoint. Longitudinal traction now limits how much wheel torque
+can become acceleration on dirt, including with nitro and upgrades. Pitch
+and roll remain free: the car can still overturn from an impact or an
+asymmetric landing. No upright lock or airborne stabilization was added.

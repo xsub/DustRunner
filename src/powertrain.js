@@ -1,4 +1,5 @@
 import {engineById,engineTorque} from './engines.js';
+import {vehicleMass} from './vehicle-mass.js';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const RATIOS=[3,1.75,1],FINAL_DRIVE=4.7,ROLLING_RADIUS=.34;
 export function resetPowertrain(car){
@@ -9,7 +10,7 @@ export function resetPowertrain(car){
 export function powertrainStep(car,input,dt){
  const e=engineById(car.engineId),state=car.powertrain?.engineId===e.id?car.powertrain:resetPowertrain(car);
  const reverse=input.brake&&car.speed<=.05,gas=input.brake?(reverse?1:0):clamp(input.throttle??0,0,1);
- const speed=Math.abs(car.speed),upgrade=1+(input.engine??0)*.08,mass=car.style==='classic'?1650:2050;
+ const speed=Math.abs(car.speed),upgrade=1+(input.engine??0)*.08,mass=vehicleMass(car.style,car.engineId);
  const grade=car.airborne?0:Math.max(0,input.slope??0);
  state.grade+=(grade-(state.grade??0))*(1-Math.exp(-dt/.35));
  state.roadLoad=speed*(input.onDirt===false?.625:.185)+9.81*state.grade;

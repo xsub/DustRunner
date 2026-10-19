@@ -1,5 +1,6 @@
 import {engineById,engineTorque} from './engines.js';
 import {vehicleMass} from './vehicle-mass.js';
+import {rollingResistance} from './driving-controls.js';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const RATIOS=[3,1.75,1],FINAL_DRIVE=4.7,ROLLING_RADIUS=.34;
 export function resetPowertrain(car){
@@ -9,11 +10,11 @@ export function resetPowertrain(car){
 }
 export function powertrainStep(car,input,dt){
  const e=engineById(car.engineId),state=car.powertrain?.engineId===e.id?car.powertrain:resetPowertrain(car);
- const reverse=input.brake&&car.speed<=.05,gas=input.brake?(reverse?1:0):clamp(input.throttle??0,0,1);
+ const reverse=input.reverse??(input.brake&&car.speed<=.05),gas=input.brake?(reverse?clamp(input.reverseThrottle??1,0,1):0):clamp(input.throttle??0,0,1);
  const speed=Math.abs(car.speed),upgrade=1+(input.engine??0)*.08,mass=vehicleMass(car.style,car.engineId);
  const grade=car.airborne?0:Math.max(0,input.slope??0);
  state.grade+=(grade-(state.grade??0))*(1-Math.exp(-dt/.35));
- state.roadLoad=speed*(input.onDirt===false?.625:.185)+9.81*state.grade;
+ state.roadLoad=rollingResistance(speed,input.onDirt!==false)+speed*.025+9.81*state.grade;
  const capacity=ratio=>{
   const rpm=clamp(speed/ROLLING_RADIUS*60/(2*Math.PI)*FINAL_DRIVE*ratio,e.idle,e.redline);
   return engineTorque(e,rpm)*upgrade*ratio*FINAL_DRIVE*.84/ROLLING_RADIUS/mass*1.8;
@@ -51,7 +52,7 @@ export function powertrainStep(car,input,dt){
  const converter=1+Math.max(0,1-speed/5)*.25;
  const force=state.torque*ratio*FINAL_DRIVE*.84/ROLLING_RADIUS*converter;
  let acceleration=car.airborne?0:clamp(force/mass*1.8,0,12)*(input.boost?1.42:1)*(reverse?-1:1);
- const braking=gas===0&&!car.airborne?-Math.sign(car.speed)*e.braking*clamp(state.rpm/e.redline,.2,1):0;
+ const braking=gas===0&&!car.airborne?-Math.sign(car.speed)*e.braking*.55*clamp(state.rpm/e.redline,.2,1):0;
  const power=Math.max(...e.curve.map(([rpm,torque])=>rpm*torque/9549));
  const topSpeed=clamp(23*Math.cbrt(power/125),17,28)+(input.engine??0)*1.5;
  // Fade wheel force at the pace ceiling instead of deleting momentum when
@@ -65,5 +66,5 @@ export function powertrainStep(car,input,dt){
  const utilization=clamp(state.roadLoad/Math.max(1,capacity(ratio)),0,1);
  const targetLoad=effectiveGas*governor*(.58+.42*utilization)*(car.airborne?.12:1);
  state.load+=(targetLoad-state.load)*(1-Math.exp(-dt/.16));
- return {acceleration:acceleration+braking,topSpeed,rpm:state.rpm,gear:state.gear,torque:state.torque,load:state.load};
+ return {acceleration:acceleration+braking,engineBraking:braking,topSpeed,rpm:state.rpm,gear:state.gear,torque:state.torque,load:state.load};
 }

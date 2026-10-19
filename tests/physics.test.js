@@ -103,3 +103,53 @@ test('engine and body swaps update mass properties without changing the collisio
  assert.ok(Math.abs(body.mass()-vehicleMass('ranger','400'))<.01);assert.equal(body.numColliders(),colliders);
  f.physics.dispose();
 });
+
+function prepareCruise(f,speed){
+ step(f,{},180);f.car.physics.body.setLinvel({x:0,y:0,z:-speed},true);f.physics.sync(f.car,0);
+ f.car.powertrain.gear=3;f.car.powertrain.rpm=speed/.34*60/(Math.PI*2)*4.7;
+}
+test('service brakes build progressively and stop a 72 km/h truck over a controlled run-out',()=>{
+ const f=fixture(()=>0,250);prepareCruise(f,20);
+ const startZ=f.car.z;let firstDeceleration=0,laterDeceleration=0,stopTime=0;
+ for(let i=0;i<120*8;i++){
+  const before=f.car.speed;step(f,{brake:true});
+  if(i===0)firstDeceleration=(before-f.car.speed)/dt;
+  if(i===59){laterDeceleration=(before-f.car.speed)/dt;assert.ok(f.car.speed>17);}
+  assert.equal(f.car.rollover,false);
+  if(f.car.speed<.15){stopTime=(i+1)*dt;break;}
+ }
+ const distance=startZ-f.car.z;
+ assert.ok(firstDeceleration<3&&laterDeceleration>firstDeceleration+1);
+ assert.ok(stopTime>4.5&&stopTime<6,`stop time ${stopTime}`);
+ assert.ok(distance>42&&distance<60,`stopping distance ${distance}`);
+ f.physics.dispose();
+});
+test('braking slows more than coasting and takes priority over throttle and nitro',()=>{
+ const coast=fixture(()=>0,250),brake=fixture(()=>0,250),both=fixture(()=>0,250);
+ for(const f of [coast,brake,both])prepareCruise(f,20);
+ step(coast,{},240);step(brake,{brake:true},240);step(both,{throttle:1,brake:true,boost:true},240);
+ assert.ok(coast.car.speed>brake.car.speed+3);
+ assert.ok(Math.abs(brake.car.speed-both.car.speed)<1e-6);
+ assert.ok(Math.abs(brake.car.z-both.car.z)<1e-6);
+ for(const f of [coast,brake,both])f.physics.dispose();
+});
+test('reverse waits until the truck stops, then engages smoothly after a short hold',()=>{
+ const f=fixture(()=>0,250);prepareCruise(f,12);
+ let stoppedAt=null,reversedAt=null;
+ for(let i=0;i<120*8;i++){
+  step(f,{brake:true});
+  if(stoppedAt===null&&Math.abs(f.car.speed)<.15)stoppedAt=i*dt;
+  if(f.car.powertrain.gear<0){reversedAt=i*dt;break;}
+ }
+ assert.ok(stoppedAt!==null&&reversedAt-stoppedAt>.3&&reversedAt-stoppedAt<.6);
+ assert.ok(Math.abs(f.car.speed)<.3,'reverse must engage without an immediate launch');
+ step(f,{brake:true},120);assert.ok(f.car.speed< -1);
+ f.physics.dispose();
+});
+test('releasing the brake bleeds pressure and permits acceleration again',()=>{
+ const f=fixture(()=>0,250);prepareCruise(f,20);step(f,{brake:true},60);
+ const pressure=f.car.physics.controls.brakePressure,speed=f.car.speed;
+ step(f,{throttle:1},120);
+ assert.ok(f.car.physics.controls.brakePressure<pressure*.01);assert.ok(f.car.speed>speed);
+ f.physics.dispose();
+});

@@ -119,3 +119,20 @@ wheelbase midpoint. Longitudinal traction now limits how much wheel torque
 can become acceleration on dirt, including with nitro and upgrades. Pitch
 and roll remain free: the car can still overturn from an impact or an
 asymmetric landing. No upright lock or airborne stabilization was added.
+
+## Progressive service braking
+
+`src/driving-controls.js` builds brake pressure with a 0.32 s response time
+and bleeds it off with a 0.10 s response time. Full service-brake calibration
+is 3 world units/s², with rolling resistance and engine braking added. The
+Rapier controller receives those as a single brake impulse while the brake
+is held, with zero opposing engine force. Its engine-force and brake inputs
+are alternative channels, so sending both did not combine the braking
+correctly. Coasting losses are lower and also feed the road-load estimate.
+
+A flat-ground 302 compact test from 20 world units/s (72 km/h on the HUD)
+stops in about 4.9 s over 47.5 world units. This is game tuning, not a factory
+stopping-distance claim. Stationary brakes hold the truck while a 0.45 s
+hold-to-reverse delay runs; reverse drive then builds as brake pressure fades.
+Throttle and nitro do not override an active brake, and tire brakes have no
+effect without ground contact.

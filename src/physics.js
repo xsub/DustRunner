@@ -2,6 +2,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import {Quaternion,Vector3} from 'three';
 import {powertrainStep} from './powertrain.js';
 import {vehicleMassProperties} from './vehicle-mass.js';
+import {drivingControls,rollingResistance,BRAKE_DECELERATION} from './driving-controls.js';
 import {WHEEL_LAYOUT,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 export const GRAVITY=9.81,CHASSIS_HEIGHT=1.5,REST_LENGTH=.55;
 export const initPhysics=()=>RAPIER.init();
@@ -28,12 +29,12 @@ export function createPhysics(terrain,bounds){
    // A smaller collision envelope catches the tires when the truck is on its side.
    tireColliders.push(world.createCollider(RAPIER.ColliderDesc.ball(.58).setTranslation(w.x*VEHICLE_SCALE,-.15-REST_LENGTH,w.z*VEHICLE_SCALE).setMass(0).setFriction(.8),body));
   });
-  const vehicle={body,controller,mass,tireColliders,steer:0,massKey:`${car.style}:${car.engineId}`};car.physics=vehicle;vehicles.add(car);return vehicle;
+  const vehicle={body,controller,mass,tireColliders,steer:0,controls:{brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false},massKey:`${car.style}:${car.engineId}`};car.physics=vehicle;vehicles.add(car);return vehicle;
  }
  function reset(car){
   const v=car.physics??add(car),rotation=new Quaternion().setFromAxisAngle(new Vector3(0,1,0),car.heading);
   v.body.setTranslation({x:car.x,y:terrain.heightAt(car.x,car.z)+CHASSIS_HEIGHT+.15,z:car.z},true);v.body.setRotation(rotation,true);
-  v.body.setLinvel({x:0,y:0,z:0},true);v.body.setAngvel({x:0,y:0,z:0},true);v.steer=0;car.rolloverTime=0;car.rollover=false;
+  v.body.setLinvel({x:0,y:0,z:0},true);v.body.setAngvel({x:0,y:0,z:0},true);v.steer=0;v.controls={brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false};car.rolloverTime=0;car.rollover=false;
   for(let i=0;i<4;i++){v.controller.setWheelEngineForce(i,0);v.controller.setWheelBrake(i,0);v.controller.setWheelSteering(i,0);}
  }
  function input(car,input,dt){
@@ -45,18 +46,29 @@ export function createPhysics(terrain,bounds){
    v.mass=mass;v.massKey=massKey;for(let i=0;i<4;i++)c.setWheelMaxSuspensionForce(i,mass*24);
   }
   q.copy(v.body.rotation());forward.set(0,0,-1).applyQuaternion(q);
-  const drive=powertrainStep(car,{...input,slope:forward.y},dt);
+  const controls=drivingControls(v.controls,{...input,airborne:car.airborne},car.speed,dt);
+  const drive=powertrainStep(car,{...input,...controls,slope:forward.y},dt);
   // Player input retains the requested one-fifth steering sensitivity.
   const desired=(input.steer??0)*(input.ai?.38:.4);
   v.steer+=(desired-v.steer)*(1-Math.exp(-dt*9));
-  const drag=-car.speed*(input.onDirt?.16:.6);
+  const drag=-Math.sign(car.speed)*rollingResistance(car.speed,input.onDirt);
   // Loose dirt cannot turn every extra engine/nitro torque into thrust.
   // Limit longitudinal traction, preserving physical weight transfer and
   // full pitch/roll freedom instead of adding an artificial anti-flip torque.
   const traction=GRAVITY*(input.onDirt?1.0:.7)*(1+(input.tires??0)*.04);
-  const acceleration=Math.max(-traction,Math.min(traction,drive.acceleration+drag));
-  const force=acceleration*v.mass/4;
-  const braking=input.brake&&car.speed>.1?5.2*v.mass*dt/4:0;
+  const pedalBrake=BRAKE_DECELERATION*controls.brakePressure;
+  const brakingForward=input.brake&&!controls.reverse;
+  let acceleration=drive.acceleration+drag;
+  let braking=0;
+  if(brakingForward){
+   // Rapier's wheel controller chooses engine force OR brake impulse. Put
+   // service brake, engine braking and rolling resistance in one channel.
+   const deceleration=pedalBrake+Math.abs(drag)+Math.abs(drive.engineBraking);
+   const holding=Math.abs(car.speed)<.2?GRAVITY*controls.brakePressure:0;
+   braking=Math.max(deceleration,holding)*v.mass*dt/4;
+   acceleration=0;
+  }else acceleration-=Math.sign(car.speed)*pedalBrake;
+  const force=Math.max(-traction,Math.min(traction,acceleration))*v.mass/4;
   for(let i=0;i<4;i++){
    const layout=WHEEL_LAYOUT[i];
    let angle=0;if(layout.z<0&&Math.abs(v.steer)>.0001){const radius=2.506/Math.tan(v.steer);angle=Math.atan(2.506/(radius-layout.x*1.4));}

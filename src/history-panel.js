@@ -1,3 +1,4 @@
+import {tuningRevision} from './tuning.js';
 import {ENGINES} from './engines.js';
 import {GENERATIONS} from './heritage.js';
 import {benchmarkEngine} from './performance.js';
@@ -5,9 +6,10 @@ import {benchmarkEngine} from './performance.js';
 export function createHistoryPanel({getPlayer,canFit,fitEngine}){
  const dialog=document.querySelector('#history-menu'),bodySelect=dialog.querySelector('#comparison-body');
  const rows=dialog.querySelector('#generation-rows'),results=dialog.querySelector('#performance-rows');
- const cache=new Map();let generation=null;
+ const cache=new Map();let generation=null,cachedRevision=-1;
  rows.innerHTML=GENERATIONS.map(g=>`<tr data-generation-row="${g.id}"><th scope="row"><button data-generation="${g.id}" aria-pressed="false">GEN ${g.id} <span>↘</span></button></th><td>${g.years}</td><td>${g.layouts}</td><td>${g.fuel}</td></tr>`).join('');
  function render(){
+  if(cachedRevision!==tuningRevision()){cache.clear();cachedRevision=tuningRevision();}
   const body=bodySelect.value;
   if(!cache.has(body))cache.set(body,new Map(ENGINES.map(e=>[e.id,benchmarkEngine(e,body)])));
   const metrics=cache.get(body),player=getPlayer(),allowed=canFit();

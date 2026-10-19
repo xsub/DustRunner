@@ -1,5 +1,6 @@
+import {tuning as cfg} from './tuning.js';
 export const BRAKE_DECELERATION=3.0,REVERSE_DELAY=.45;
-export function rollingResistance(speed,onDirt=true){return Math.abs(speed)*(onDirt?.06:.3);}
+export function rollingResistance(speed,onDirt=true){return Math.abs(speed)*(onDirt?cfg.roadDrag:cfg.offroadDrag);}
 
 export function drivingControls(state,input,speed,dt){
  const pressed=Boolean(input.brake);
@@ -9,10 +10,10 @@ export function drivingControls(state,input,speed,dt){
   if(speed<-.25&&state.reverseTravel)state.reverse=true;
   if(!state.reverse){
    state.stoppedTime=Math.abs(speed)<.18?(state.stoppedTime??0)+dt:0;
-   if(state.stoppedTime>=REVERSE_DELAY){state.reverse=true;state.reverseTravel=true;}
+   if(state.stoppedTime>=cfg.reverseDelay){state.reverse=true;state.reverseTravel=true;}
   }
  }
- const target=pressed&&!state.reverse?1:0,tau=target>.5?.32:.10;
+ const target=pressed&&!state.reverse?1:0,tau=target>.5?cfg.brakeBuild:cfg.brakeRelease;
  state.brakePressure=(state.brakePressure??0)+(target-(state.brakePressure??0))*(1-Math.exp(-dt/tau));
  if(state.brakePressure<.0001)state.brakePressure=0;
  return {reverse:Boolean(state.reverse),reverseThrottle:1-state.brakePressure,brakePressure:state.brakePressure};
@@ -24,9 +25,9 @@ export function steeringStep(current,input,speed,dt,ai=false,mode='return',cente
  if(ai)return current+(steer*.38-current)*(1-Math.exp(-dt*9));
  if(center)return 0;
  // Held-angle mode moves the steering rack; release leaves it exactly there.
- if(mode==='hold')return Math.max(-.56,Math.min(.56,current+steer*.7*dt));
- const t=Math.max(0,Math.min(1,(Math.abs(speed)-4)/18)),blend=t*t*(3-2*t);
- const lock=.56+(.12-.56)*blend,target=steer*lock;
+ if(mode==='hold')return Math.max(-cfg.steerLow,Math.min(cfg.steerLow,current+steer*cfg.heldSteerRate*dt));
+ const t=Math.max(0,Math.min(1,(Math.abs(speed)-cfg.steerSlowSpeed)/(cfg.steerFastSpeed-cfg.steerSlowSpeed))),blend=t*t*(3-2*t);
+ const lock=cfg.steerLow+(cfg.steerHigh-cfg.steerLow)*blend,target=steer*lock;
  const returning=steer===0||target*current<0;
- return current+(target-current)*(1-Math.exp(-dt*(returning?8:3.8)));
+ return current+(target-current)*(1-Math.exp(-dt*(returning?cfg.steerReturn:cfg.steerBuild)));
 }

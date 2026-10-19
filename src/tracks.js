@@ -1,10 +1,11 @@
+import {tuning as cfg} from './tuning.js';
 import * as THREE from 'three';
 import {angleDelta,clamp} from './race.js';
 
 export const TRACK_SCALE = 1.35;
 export const LENGTH_MULTIPLIER = 4;
-export const ROAD_WIDTH = 6.2 * 1.25;
-export const SHOULDER_WIDTH = 14;
+export let ROAD_WIDTH = cfg.roadWidth;
+export let SHOULDER_WIDTH = cfg.shoulderWidth;
 // Map axes: OX runs left/right (world X), OY runs up/down (world Z).
 export const TRACK_VARIANTS=[
  {name:'ORIGINAL',x:1,z:1},
@@ -54,17 +55,19 @@ const extended=[
  [[-52,-38],[-30,-38],[-8,-38],[14,-38],[38,-38],[58,-38],[68,-28],[64,-10],[48,-8],[52,6],[70,14],[66,34],[48,40],[34,30],[20,42],[0,34],[-14,46],[-36,40],[-48,26],[-30,18],[-20,6],[-32,-4],[-48,4],[-66,18],[-70,0],[-62,-18]],
  BASE_TRACKS[1].points,
 ];
-export const TRACKS=BASE_TRACKS.map((track,index)=>{
+function buildTrack(track,index){
  const scale=TRACK_SCALE*(index===1?1.06:1),vectors=points=>points.map(([x,z])=>new THREE.Vector3(x,0,z));
  const previousLength=spline(vectors(track.points).map(p=>p.multiplyScalar(scale))).getLength();
  const points=extended[index],factor=previousLength*LENGTH_MULTIPLIER/spline(vectors(points)).getLength();
  const length=previousLength*LENGTH_MULTIPLIER;
  return {...track,points:points.map(([x,z])=>[x*factor,z*factor]),length,previousLength,
-  features:[{kind:'canyon',start:index===0?.085:.035,length:80/length,height:3.5,runup:30,gap:10,landing:40},
-   ...[.24,.43,.64,.82].map((start,i)=>({kind:'whoops',start,length:(70+i*5)/length,height:.10+i*.025,count:7+i})),
-   ...[.34,.56,.74,.93].map(start=>({kind:'jump',start,length:32/length,height:.65})),
-   ...[.29,.51,.71,.90].map(start=>({kind:'dip',start,length:28/length,height:-.45}))]};
-});
+  features:[{kind:'canyon',start:index===0?.085:.035,length:(cfg.rampRunup+cfg.jumpGap+cfg.landingLength)/length,height:cfg.rampHeight,runup:cfg.rampRunup,gap:cfg.jumpGap,landing:cfg.landingLength},
+   ...[.24,.43,.64,.82].map((start,i)=>({kind:'whoops',start,length:(70+i*5)/length,height:(.10+i*.025)*cfg.whoopsScale,count:7+i})),
+   ...[.34,.56,.74,.93].map(start=>({kind:'jump',start,length:32/length,height:cfg.smallJumpHeight})),
+   ...[.29,.51,.71,.90].map(start=>({kind:'dip',start,length:28/length,height:-cfg.dipDepth}))]};
+}
+export const TRACKS=BASE_TRACKS.map(buildTrack);
+export function refreshTracks(){ROAD_WIDTH=cfg.roadWidth;SHOULDER_WIDTH=cfg.shoulderWidth;TRACKS.splice(0,TRACKS.length,...BASE_TRACKS.map(buildTrack));}
 class ShiftedCircuit extends THREE.Curve{
  constructor(path,offset){super();this.path=path;this.offset=offset;}
  getPoint(t,target){return this.path.getPointAt(((t+this.offset)%1+1)%1,target);}
@@ -88,8 +91,8 @@ export function terrainHeight(progress,index=0,lateral=0,variant=0){
  lateral*=reflection.x*reflection.z;
  const t=((progress%1)+1)%1,track=TRACKS[index],s=t*track.length;
  // Broad rolling ground, bank changes and offset wheel ruts share one mesh.
- let height=3+.30*Math.sin(t*Math.PI*8)+.14*Math.sin(t*Math.PI*22);
- height+=lateral*.06*Math.sin(t*Math.PI*12)+.025*Math.sin(s*.43+lateral*1.7)+.020*Math.sin(s*.71-lateral*.9);
+ let height=3+cfg.rollingScale*(.30*Math.sin(t*Math.PI*8)+.14*Math.sin(t*Math.PI*22));
+ height+=cfg.bankScale*lateral*.06*Math.sin(t*Math.PI*12)+cfg.rutScale*(.025*Math.sin(s*.43+lateral*1.7)+.020*Math.sin(s*.71-lateral*.9));
  for(const f of track.features){
   const u=(t-f.start)/f.length;if(u<=0||u>=1)continue;
   if(f.kind==='canyon'){
@@ -99,7 +102,7 @@ export function terrainHeight(progress,index=0,lateral=0,variant=0){
    if(d<f.runup+f.gap)return 3;
    // Two landing lanes: straddling the seam loads one side first.
    const lane=smooth(Math.max(0,Math.min(1,(lateral+.55)/1.1)));
-   const landingHeight=.8+lane*1.0;
+   const landingHeight=cfg.landingLow+lane*cfg.landingSplit;
    const r=(d-f.runup-f.gap)/f.landing;
    // A short nose bevel avoids an invisible vertical collision wall.
    return 3+landingHeight*Math.min(1,r*f.landing/7)*(1-smooth(r));

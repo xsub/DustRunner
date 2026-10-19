@@ -1,3 +1,4 @@
+import {tuning as cfg} from './tuning.js';
 import {clamp} from './race.js';
 
 // Fixed orientation keeps left/right controls and the north-up minimap consistent.
@@ -5,14 +6,14 @@ import {clamp} from './race.js';
 export function followCameraStep(state,player,viewport,dt,snap=false){
  const aspect=viewport.width/viewport.height;
  const base=clamp(viewport.height/36,12,24);
- const span=Math.max(17/aspect,base+clamp(Math.abs(player.speed)/35,0,1)*2+clamp(player.bend??0,0,1)*3+(player.airborne?1.5:0));
+ const span=Math.max(17/aspect,base+clamp(Math.abs(player.speed)/35,0,1)*2+clamp(player.bend??0,0,1)*3+(player.airborne?1.5:0))*cfg.cameraScale;
  // Give corners more screen space by moving the focus, not zooming out.
  // Bound the projected lead on small screens so the Bronco stays comfortably visible.
- const leadX=player.vx*.7,leadZ=player.vz*.7;
+ const leadX=player.vx*cfg.cameraLead,leadZ=player.vz*cfg.cameraLead;
  const projectedLead=Math.hypot(leadX/(span*aspect*.58),leadZ*.744/(span*.58));
  const leadScale=Math.min(1,20/(Math.hypot(leadX,leadZ)||1),1/(projectedLead||1));
  const targetX=player.x+leadX*leadScale,targetZ=player.z+leadZ*leadScale;
- const pan=snap?1:1-Math.exp(-6*dt),zoom=snap?1:1-Math.exp(-2.5*dt);
+ const pan=snap?1:1-Math.exp(-cfg.cameraPan*dt),zoom=snap?1:1-Math.exp(-2.5*dt);
  return {x:state.x+(targetX-state.x)*pan,z:state.z+(targetZ-state.z)*pan,span:state.span+(span-state.span)*zoom};
 }
 

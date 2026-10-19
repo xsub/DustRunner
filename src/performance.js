@@ -1,3 +1,4 @@
+import {tuning as cfg} from './tuning.js';
 import {engineTorque} from './engines.js';
 import {arcadeMotion} from './race.js';
 
@@ -11,7 +12,7 @@ export function curvePerformance(engine){
   const slope=(yy-y)/(xx-x),intercept=y-slope*x;
   if(slope<0){const extremum=-intercept/(2*slope);if(extremum>x&&extremum<xx)check(extremum);}
  }
- return {peakTorque,powerKw,powerHp:powerKw/.745699872,powerRpm};
+ return {peakTorque:peakTorque*cfg.torqueScale,powerKw:powerKw*cfg.torqueScale,powerHp:powerKw*cfg.torqueScale/.745699872,powerRpm};
 }
 
 // A fresh car for every run: no persistent upgrades, nitro, steering or terrain

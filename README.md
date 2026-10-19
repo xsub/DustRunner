@@ -48,3 +48,40 @@ Touch controls appear on touch devices. Sound is opt-in via ♪ ON or the menu. 
 ### Steering modes
 
 **Menu → Driving controls → Steering mode** switches between **Auto center** (the default, smooth steering with speed-dependent lock) and **Hold steering angle**. In held-angle mode, a tap adjusts the steering rack, a longer press turns it farther, and releasing keeps that exact angle even as speed changes. The opposite direction unwinds the steering. **C**, or both steering directions together on keyboard/touch controls, centers the wheels. Recovery and race reset also center them. The choice is saved locally, can be changed while paused without restarting the race, and does not affect AI drivers.
+
+### Developer mode and browser-local “tunning” presets
+
+Open **DEV** in the HUD, or **Menu → Tryb developerski · Tunning** (also on
+small screens). The panel contains 73 sliders with numeric inputs, parameter
+search, per-field reset and factory reset. Groups cover mass/center of mass,
+gravity/contact solving, suspension, impacts, grip/rolling resistance,
+brakes/steering, engine/gearing/nitro, track/ramp/landing geometry, movable
+markers and camera behavior.
+
+Changes are staged while the race is paused. **Zastosuj · Restart** rebuilds
+the render mesh and Rapier world with the same configuration and returns to
+the grid; **Zastosuj i jedź** also starts a fresh race. The HUD readout in the
+panel reports the actual rigid-body mass, speed, vertical velocity, wheel
+contacts and RPM. Settings apply to all trucks; frame rate and the 120 Hz
+physics timestep remain fixed. Factory defaults reproduce the shipped tune.
+
+**Zapisz tunning** saves a named preset to localStorage on this origin. A
+matching name overwrites that preset. **Wczytaj** stages it for application;
+**Usuń zestaw** removes it locally. Applied settings are restored on reload.
+Neither action modifies GitHub or uploads the preset. localhost, GitHub Pages
+and other browsers have separate storage. Clearing site storage removes the
+local presets; JSON export is the portable copy.
+
+**Kopiuj wartości · JSON** copies all staged values, schema version and
+informational context (body, engine, track variant, steering mode and
+upgrades). Paste that JSON into the chat to share a tune. **Pobierz JSON**
+saves a file; the import section accepts a pasted document or file. Imports
+validate finite numeric ranges, gear ordering and format version before
+changing anything. If clipboard access is blocked, the panel selects the
+JSON for manual copying. Browser storage failures are reported explicitly.
+
+The source of defaults and bounds is `src/tuning.js`. Active configuration
+uses `dust-runner-active-tunning-v1`; up to 50 named presets use
+`dust-runner-tunnings-v1`. The transfer format is
+`{format:"dust-runner-tunning",version:1,name,parameters,context}`. Context is
+informational; loading a tune does not switch the current car or course.

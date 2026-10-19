@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import './style.css';
 import {createRoadSurface,wheelContacts,bodyAttitude,updateWheel,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
+import {createScenery} from './scenery.js';
 import {createBronco} from './vehicle.js';
 import {followCameraStep} from './view.js';
 import {createMinimap} from './minimap.js';
@@ -20,7 +21,7 @@ scene.add(new THREE.HemisphereLight('#fff4d6','#69653e',2.6));const sun=new THRE
 const mat=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:1,...extra});
 const textureCanvas=document.createElement('canvas');textureCanvas.width=256;textureCanvas.height=256;const textureContext=textureCanvas.getContext('2d');textureContext.fillStyle='#a8784c';textureContext.fillRect(0,0,256,256);for(let i=0;i<18000;i++){textureContext.fillStyle=Math.random()>.5?'#93683b':'#be8d59';textureContext.globalAlpha=.25+Math.random()*.3;textureContext.fillRect(Math.random()*256,Math.random()*256,1+Math.random()*2,1+Math.random()*2);}const dirtTexture=new THREE.CanvasTexture(textureCanvas);dirtTexture.wrapS=dirtTexture.wrapT=THREE.RepeatWrapping;dirtTexture.colorSpace=THREE.SRGBColorSpace;
 const sand=mat('#b59b65'),dirt=mat('#c8a06f',{map:dirtTexture,side:THREE.DoubleSide}),dark=mat('#252b24'),cream=mat('#e8d7a1'),green=mat('#58633b');
-let world=new THREE.Group();scene.add(world);const trucks=[],particles=[];let samples=[],curve,trackIndex=0,heightAt=()=>0;
+let world=new THREE.Group();scene.add(world);const trucks=[],particles=[];let samples=[],curve,trackIndex=0,heightAt=()=>0,scenery;
 const N=900,roadWidth=ROAD_WIDTH;
 function box(w,h,d,material,x=0,y=0,z=0,parent=world){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
 function cylinder(r,h,material,x,y,z,parent=world,segments=10){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,segments),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
@@ -42,7 +43,7 @@ function terrainSkirts(){
 
 function sign(text,x,z,rotation=0){const c=document.createElement('canvas');c.width=512;c.height=100;const ctx=c.getContext('2d');ctx.fillStyle='#273321';ctx.fillRect(0,0,512,100);ctx.fillStyle='#f5d363';ctx.font='bold 48px sans-serif';ctx.textAlign='center';ctx.fillText(text,256,68);const m=box(12,2.3,.22,new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(c)}),x,2.7,z);m.rotation.y=rotation;for(const dx of [-5,5])box(.2,2,.2,dark,x+dx,1,z);}
 function makeWorld(){
- for(const child of [...world.children]){world.remove(child);child.traverse(o=>{o.geometry?.dispose();});}seed=42+trackIndex;
+ const geometries=new Set(),materials=new Set();for(const child of [...world.children]){world.remove(child);child.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)materials.add(o.material);});}geometries.forEach(g=>g.dispose());materials.forEach(m=>{if(![sand,dirt,dark,cream,green].includes(m))m.dispose();});seed=42+trackIndex;
  curve=createCircuit(trackIndex);samples=Array.from({length:N},(_,i)=>curve.getPointAt(i/N));
  heightAt=createRoadSurface(samples,samples.map((_,i)=>curve.getTangentAt(i/N)),samples.map((_,i)=>terrain(i)+.01),roadWidth);
  const bounds=new THREE.Box3().setFromPoints(samples),pitZ=bounds.max.z+roadWidth+8,standZ=bounds.min.z-roadWidth-7;
@@ -50,10 +51,7 @@ function makeWorld(){
  ribbon(-3.7,.12,mat('#c29a63'),.025);ribbon(3.7,.12,mat('#c29a63'),.025);
  const rampPaint=mat('#e4bb5c');
  for(const f of TRACKS[trackIndex].features){const count=f.kind==='whoops'?f.count:2;for(let k=0;k<count;k++){const u=f.kind==='whoops'?(k+.5)/count:.25+k*.13;const j=Math.round((f.start+u*f.length)*N)%N,p=samples[j],t=curve.getTangentAt(j/N);const stripe=box(roadWidth*1.65,.035,.16,rampPaint,p.x,terrain(j)+.05,p.z);stripe.rotation.y=Math.atan2(-t.x,-t.z);stripe.castShadow=false;}}
- for(let i=0;i<N;i+=5){const p=samples[i],t=curve.getTangentAt(i/N),n=new THREE.Vector3(-t.z,0,t.x);for(const side of [-1,1]){const q=p.clone().addScaledVector(n,side*(roadWidth+.3));const b=box(curve.getLength()/N*5+.12,.7,.7,i%10===0?cream:mat('#ab5d3a'),q.x,.38+terrain(i),q.z);b.rotation.y=-Math.atan2(t.z,t.x);}}
- // Tire stacks and scrub leave the racing surface clear.
- for(let i=0;i<280;i++){const x=bounds.min.x-25+rand()*(bounds.max.x-bounds.min.x+50),z=bounds.min.z-25+rand()*(bounds.max.z-bounds.min.z+50);if(nearest(x,z).distance<roadWidth+4)continue;if(rand()<.37){const r=.4+rand()*1.1;const rock=new THREE.Mesh(new THREE.DodecahedronGeometry(r,0),mat(rand()>.5?'#8e8057':'#c0ac7b'));rock.position.set(x,r*.3,z);rock.scale.y=.7;rock.rotation.set(rand(),rand()*6,rand());rock.castShadow=true;world.add(rock);}else{const h=1+rand()*2.4;cylinder(.25,h,green,x,h/2,z,world,6);box(.8,.23,.23,green,x+.35,h*.6,z);box(.2,h*.4,.2,green,x+.7,h*.75,z);}}
- for(let i=0;i<90;i++){let x=(rand()-.5)*120,z=(rand()-.5)*90;if(nearest(x,z).distance<9)continue;box(.08,.05,.45,green,x,.02,z);}
+ scenery=createScenery({world,samples,curve,roadWidth,terrain,nearest,bounds,random:rand});
  // Grandstands, pit garages and warm desert details.
  for(let row=0;row<4;row++){box(26,.6,1.6,mat(row%2?'#69715b':'#827d61'),-3,1+row*.65,standZ-row*1.3);for(let j=0;j<34;j++){const x=-15+j*.75;const colors=['#d6b663','#8b5540','#ece2ba','#394e48'];box(.33,.65,.35,mat(colors[Math.floor(rand()*4)]),x,1.7+row*.65,standZ-row*1.3);}}
  for(let i=0;i<3;i++){box(8,3,5,mat('#beb191'),-20+i*10,1.5,pitZ);box(8.7,.22,6,mat(['#a75f3c','#73816b','#b69a4c'][i]),-20+i*10,3.1,pitZ);box(4.8,2.4,.1,dark,-20+i*10,1.2,pitZ-2.56);}
@@ -167,6 +165,6 @@ function resize(){
  renderer.setSize(w,h,false);minimap.resize();updateCamera(0,true);
 }
 new ResizeObserver(resize).observe(game);reset();resize();let accumulator=0;
-function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;accumulator+=dt;while(accumulator>=1/60){step(1/60);accumulator-=1/60;}updateCamera(dt);minimap.render(trucks,selectedColor,viewCorners);renderer.render(scene,camera);}requestAnimationFrame(frame);
+function frame(now){requestAnimationFrame(frame);const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;accumulator+=dt;while(accumulator>=1/60){step(1/60);accumulator-=1/60;}scenery.update(phase==='paused'?0:dt);updateCamera(dt);minimap.render(trucks,selectedColor,viewCorners);renderer.render(scene,camera);}requestAnimationFrame(frame);
 // Read-only telemetry makes gameplay and rendering easy to inspect.
 window.__DUST_RUNNER__={getState:()=>({phase,elapsed,track:trackIndex,renderer:renderer.info.render,player:{x:trucks[0].x,z:trucks[0].z,speed:trucks[0].speed,lap:trucks[0].lap,nitro:trucks[0].nitro},trucks:trucks.map(c=>({lap:c.lap,index:c.index,x:c.x,z:c.z,airborne:c.airborne,height:c.height})),cash,levels:{...levels}})};

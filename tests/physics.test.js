@@ -197,7 +197,7 @@ for(const kind of ['cone','tires'])test(`Bronco pushes through ${kind} and the d
   assert.ok(props.every(body=>body.isSleeping()));
   for(let i=0;i<120*4;i++){
    step(f,{throttle:.5});
-   for(const body of props)maxShift=Math.max(maxShift,Math.abs(body.translation().z+6));
+   for(const stack of props)for(const body of stack.tireBodies??[stack])maxShift=Math.max(maxShift,Math.abs(body.translation().z+6));
    assert.equal(f.car.rollover,false);
   }
   assert.ok(f.car.z<-15,`truck must get past props: ${f.car.z}`);
@@ -215,5 +215,41 @@ test('distant markers remain inactive until a truck approaches',()=>{
   f.car.x=45;f.car.z=0;f.physics.reset(f.car);step(f);
   assert.equal(prop.isEnabled(),true);
   f.physics.resetBarriers();assert.equal(prop.isEnabled(),false);
+ }finally{f.physics.dispose();}
+});
+
+test('loose tire stacks scatter without launching a Bronco at cruising speed',()=>{
+ for(const style of ['classic','ranger']){
+  const f=fixture(()=>0,100,{style});step(f,{},240);
+  const stacks=[-2.1,-.7,.7,2.1].map(x=>f.physics.addBarrier(x,0,-8,{kind:'tires',layers:3}));
+  f.car.physics.body.setLinvel({x:0,y:0,z:-16},true);f.physics.sync(f.car,0);
+  let peak=0,flight=0;
+  try{
+   for(const stack of stacks){assert.equal(stack.tireBodies.length,3);for(const tire of stack.tireBodies)assert.ok(Math.abs(tire.mass()-10)<.001);}
+   for(let i=0;i<360;i++){step(f);peak=Math.max(peak,f.car.height);if(f.car.airborne)flight+=dt;assert.equal(f.car.rollover,false);}
+   assert.ok(f.car.z<-15,'truck passes through the stack');
+   assert.ok(peak<.25,`unwanted launch height ${peak}`);assert.ok(flight<.1,`unwanted flight ${flight}`);
+  }finally{f.physics.dispose();}
+ }
+});
+test('suspension absorbs a two-meter flat landing without a second jump',()=>{
+ const f=fixture();step(f,{},240);const resting=f.car.height;
+ f.car.physics.body.setTranslation({x:0,y:3.5,z:0},true);f.physics.sync(f.car,0);
+ let touched=false,rebound=0,secondFlight=0;
+ try{
+  for(let i=0;i<480;i++){
+   step(f);if(!f.car.airborne)touched=true;
+   if(touched){rebound=Math.max(rebound,f.car.height-resting);if(f.car.airborne)secondFlight+=dt;}
+  }
+  assert.equal(touched,true);assert.ok(rebound<.03,`rebound ${rebound}`);assert.equal(secondFlight,0);
+ }finally{f.physics.dispose();}
+});
+test('small rolling bumps keep the tires in contact instead of producing repeated hops',()=>{
+ const f=fixture((x,z)=>.14*Math.sin(z*Math.PI*2/8),100);step(f,{},240);
+ f.car.physics.body.setLinvel({x:0,y:0,z:-9},true);f.physics.sync(f.car,0);
+ let air=0;
+ try{
+  for(let i=0;i<600;i++){step(f,{throttle:f.car.speed<9?.35:0});if(f.car.airborne)air++;assert.equal(f.car.rollover,false);}
+  assert.equal(air,0);
  }finally{f.physics.dispose();}
 });

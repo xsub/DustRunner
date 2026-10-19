@@ -21,15 +21,15 @@ export function createPhysics(terrain,bounds){
  function add(car){
   const properties=vehicleMassProperties(car.style,car.engineId),{mass}=properties;
   const body=world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setCanSleep(false).setCcdEnabled(true).setLinearDamping(.025).setAngularDamping(.9));
-  world.createCollider(RAPIER.ColliderDesc.cuboid(1.23,.48,2.28).setTranslation(0,.05,0).setMass(0).setFriction(.65).setRestitution(.08),body);
-  world.createCollider(RAPIER.ColliderDesc.cuboid(1.16,.53,1.22).setTranslation(0,1.19,.65).setMass(0).setFriction(.6).setRestitution(.05),body);
+  world.createCollider(RAPIER.ColliderDesc.cuboid(1.23,.48,2.28).setTranslation(0,.05,0).setMass(0).setFriction(.65).setRestitution(.02),body);
+  world.createCollider(RAPIER.ColliderDesc.cuboid(1.16,.53,1.22).setTranslation(0,1.19,.65).setMass(0).setFriction(.6).setRestitution(.01),body);
   body.setAdditionalMassProperties(mass,properties.centerOfMass,properties.principalAngularInertia,properties.angularInertiaLocalFrame,true);
   body.recomputeMassPropertiesFromColliders();
   const controller=world.createVehicleController(body);controller.indexUpAxis=1;controller.setIndexForwardAxis=2;
   const tireColliders=[];
   WHEEL_LAYOUT.forEach((w,i)=>{
    controller.addWheel({x:w.x*VEHICLE_SCALE,y:-.15,z:w.z*VEHICLE_SCALE},{x:0,y:-1,z:0},{x:-1,y:0,z:0},REST_LENGTH,TIRE_RADIUS*VEHICLE_SCALE);
-   controller.setWheelSuspensionStiffness(i,65);controller.setWheelSuspensionCompression(i,4.4);controller.setWheelSuspensionRelaxation(i,5.2);
+   controller.setWheelSuspensionStiffness(i,65);controller.setWheelSuspensionCompression(i,4.4);controller.setWheelSuspensionRelaxation(i,7);
    controller.setWheelMaxSuspensionTravel(i,.42);controller.setWheelMaxSuspensionForce(i,mass*24);
    controller.setWheelFrictionSlip(i,1.35);controller.setWheelSideFrictionStiffness(i,.8);
    // A smaller collision envelope catches the tires when the truck is on its side.
@@ -97,15 +97,25 @@ export function createPhysics(terrain,bounds){
  return {world,add,reset,input,sync,step(){world.step();},dispose(){for(const car of vehicles)delete car.physics;world.free();},
   resetBarriers(){for(const prop of barriers){const {body,origin}=prop;prop.active=false;body.setTranslation(origin,true);body.setRotation({x:0,y:0,z:0,w:1},true);body.setLinvel({x:0,y:0,z:0},true);body.setAngvel({x:0,y:0,z:0},true);body.sleep();body.setEnabled(false);}},
   addBarrier(x,y,z,{kind='tires',layers=2}={}){
-   // Light, sleeping props wake on impact; they are never immovable walls.
-   const origin={x,y,z},body=world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(x,y,z).setLinearDamping(.35).setAngularDamping(.45).setCcdEnabled(true));
-   const collider=desc=>world.createCollider(desc.setFriction(.65).setRestitution(.12),body);
+   const makeBody=(height)=>world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(x,height,z).setLinearDamping(.35).setAngularDamping(.45).setCcdEnabled(true));
+   const register=(body,height)=>{
+    const prop={body,origin:{x,y:height,z},active:false},key=`${Math.floor(x/cellSize)},${Math.floor(z/cellSize)}`;
+    barriers.push(prop);if(!barrierGrid.has(key))barrierGrid.set(key,[]);barrierGrid.get(key).push(prop);
+    barrierBodies.add(body.handle);body.sleep();body.setEnabled(false);
+   };
    if(kind==='cone'){
-    collider(RAPIER.ColliderDesc.cuboid(.425,.06,.425).setTranslation(0,.06,0).setMass(1.8));
-    collider(RAPIER.ColliderDesc.cone(.62,.38).setTranslation(0,.74,0).setMass(1.2));
-   }else for(let layer=0;layer<layers;layer++)collider(RAPIER.ColliderDesc.cylinder(.16,.55).setTranslation(0,.17+layer*.32,0).setMass(10));
-   const prop={body,origin,active:false},key=`${Math.floor(x/cellSize)},${Math.floor(z/cellSize)}`;
-   barriers.push(prop);if(!barrierGrid.has(key))barrierGrid.set(key,[]);barrierGrid.get(key).push(prop);
-   barrierBodies.add(body.handle);body.sleep();body.setEnabled(false);return body;
+    const body=makeBody(y);
+    world.createCollider(RAPIER.ColliderDesc.cuboid(.425,.06,.425).setTranslation(0,.06,0).setMass(1.8).setFriction(.4).setRestitution(0),body);
+    world.createCollider(RAPIER.ColliderDesc.cone(.62,.38).setTranslation(0,.74,0).setMass(1.2).setFriction(.4).setRestitution(0),body);
+    register(body,y);return body;
+   }
+   // Separate light tires scatter instead of wedging a rigid stack under a truck.
+   const tires=[];
+   for(let layer=0;layer<layers;layer++){
+    const height=y+layer*.32,body=makeBody(height);
+    world.createCollider(RAPIER.ColliderDesc.cylinder(.16,.55).setTranslation(0,.17,0).setMass(10).setFriction(.35).setRestitution(0),body);
+    register(body,height);tires.push(body);
+   }
+   tires[0].tireBodies=tires;return tires[0];
   }};
 }

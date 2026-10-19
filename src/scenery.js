@@ -34,7 +34,10 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
     coneSections.forEach((g,k)=>{const h=[.42,.32,.5][k];barrier(g,k===1?white:orange,x,bottom+h/2,z);bottom+=h;});
    }else{
     for(let layer=0;layer<layers;layer++){
+     const body=currentBarrier.body,origin=currentBarrier.origin;
+     currentBarrier={body:body?.tireBodies?.[layer]??body,origin:{x,y:y+layer*.32,z}};
      barrier(tireGeometry,(count+layer)%3?worn:rubber,x,y+.17+layer*.32,z,Math.PI/2,0,count*.7+layer);
+     currentBarrier={body,origin};
     }
    }
   }

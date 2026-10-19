@@ -95,7 +95,7 @@ export function createPhysics(terrain,bounds){
   car.suspensionLengths=WHEEL_LAYOUT.map((_,i)=>c.wheelSuspensionLength(i)??cfg.restLength);
   v.tireColliders.forEach((collider,i)=>{const w=WHEEL_LAYOUT[i];collider.setTranslationWrtParent({x:w.x*1.4,y:-.15-car.suspensionLengths[i],z:w.z*1.4});});
  }
- return {world,add,reset,input,sync,step(){world.step();},dispose(){for(const car of vehicles)delete car.physics;world.free();},
+ return {world,add,reset,input,sync,getStats(){let awake=vehicles.size;for(const prop of barriers)if(prop.active&&!prop.body.isSleeping())awake++;return {awake,bodies:vehicles.size+barriers.length};},step(){world.step();},dispose(){for(const car of vehicles)delete car.physics;world.free();},
   resetBarriers(){for(const prop of barriers){const {body,origin}=prop;prop.active=false;body.setTranslation(origin,true);body.setRotation({x:0,y:0,z:0,w:1},true);body.setLinvel({x:0,y:0,z:0},true);body.setAngvel({x:0,y:0,z:0},true);body.sleep();body.setEnabled(false);}},
   addBarrier(x,y,z,{kind='tires',layers=2}={}){
    const makeBody=(height)=>world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(x,height,z).setLinearDamping(cfg.propLinearDamping).setAngularDamping(cfg.propAngularDamping).setCcdEnabled(true));

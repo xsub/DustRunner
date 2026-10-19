@@ -17,6 +17,7 @@ import {buildTerrain} from './terrain.js';
 import {initPhysics,createPhysics,CHASSIS_HEIGHT} from './physics.js';
 import {tuning as cfg,restoreTuning,setTuning} from './tuning.js';
 import {createTuningPanel} from './tuning-panel.js';
+import {createStatsOverlay} from './stats-overlay.js';
 
 try{restoreTuning(window.localStorage);}catch{}
 refreshTracks();
@@ -187,6 +188,10 @@ const tuningPanel=createTuningPanel({
  getStats:()=>{const c=trucks[0];return {mass:Math.round(c.physics.body.mass()),speed:Math.round(Math.abs(c.speed)*3.6),vertical:c.vertical.toFixed(2),contacts:[0,1,2,3].filter(i=>c.physics.controller.wheelIsInContact(i)).length,rpm:Math.round(c.powertrain?.rpm??0)};},
 });
 $('#open-tuning').onclick=$('#quick-dev').onclick=()=>tuningPanel.open();
+const statsOverlay=createStatsOverlay({game,toggle:$('#show-stats'),onInteract:()=>canvas.focus({preventScroll:true}),getDiagnostics:()=>{
+ const c=trucks[0],info=renderer.info,powertrain=c.powertrain;
+ return {...physics.getStats(),calls:info.render.calls,triangles:info.render.triangles,geometries:info.memory.geometries,textures:info.memory.textures,speed:Math.round(Math.abs(c.speed)*3.6),rpm:Math.round(powertrain?.rpm??0),gear:powertrain?.gear<0?'R':'D'+(powertrain?.gear??1),mass:Math.round(c.physics.body.mass()),contacts:[0,1,2,3].filter(i=>c.physics.controller.wheelIsInContact(i)).length,vertical:c.vertical.toFixed(2),phase:({ready:'GOTOWY',countdown:'START',racing:'JAZDA',paused:'PAUZA',finished:'META'})[phase]};
+}});
 // During a race, Space belongs to nitro even when a HUD button has focus.
 window.addEventListener('keydown',e=>{if(menuDialog.open||document.querySelector('#tuning-menu')?.open)return;if(e.target instanceof HTMLButtonElement&&e.code==='Space'&&!['racing','countdown','paused'].includes(phase))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.repeat)return;keys.add(e.code);if(e.code==='Enter'&&['ready','finished'].includes(phase))start();if(e.code==='KeyP'||e.code==='Escape')pause();if(e.code==='KeyR')reset();if(e.code==='KeyF')recover(trucks[0]);});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{audioPreviewTime=0;engineAudio.silence();keys.clear();if(phase==='racing'||phase==='countdown')pause();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){audioPreviewTime=0;engineAudio.silence();}});
@@ -226,10 +231,12 @@ function recover(c,advance=0){
  c.x=p.x-t.z*(c.lane??-3.5);c.z=p.z+t.x*(c.lane??-3.5);c.heading=Math.atan2(-t.x,-t.z);c.speed=0;
  physics.reset(c);physics.sync(c,0);poseTruck(c,0,true);
 }
+let framePhysicsMs=0,framePhysicsSteps=0;
 function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=count>.4?Math.ceil(count-.4):'GO!';if(count<=0){phase='racing';$('#countdown').textContent='';$('#race-status').textContent='RACE IN PROGRESS';}}if(phase==='racing'){
  elapsed+=dt;
  // Two 120 Hz physics steps per gameplay tick keep fast ramp contacts stable.
  for(let substep=0;substep<2;substep++){
+  const physicsStarted=performance.now();
   trucks.forEach((c,i)=>{
    const near=nearest(c.x,c.z),onDirt=near.distance<roadWidth;
    let throttle=0,steer=0,brake=false,boost=false;
@@ -240,6 +247,7 @@ function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=
    physics.input(c,{throttle,steer,brake,boost,onDirt,steeringMode:i===0?steeringMode:'return',centerSteering:i===0&&(keys.has('KeyC')||((keys.has('ArrowLeft')||keys.has('KeyA'))&&(keys.has('ArrowRight')||keys.has('KeyD')))),engine:i===0?levels.engine:0,tires:i===0?levels.grip:0,ai:i!==0},dt/2);
   });
   physics.step();trucks.forEach(c=>physics.sync(c,dt/2));
+  framePhysicsMs+=performance.now()-physicsStarted;framePhysicsSteps++;
  }
  trucks.forEach((c,i)=>{
   const next=nearest(c.x,c.z).index;
@@ -280,7 +288,7 @@ function resize(){
  renderer.setSize(w,h,false);minimap.resize();updateCamera(0,true);
 }
 new ResizeObserver(resize).observe(game);reset();resize();let accumulator=0;
-function frame(now){requestAnimationFrame(frame);tuningPanel.update(now);const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;accumulator+=dt;while(accumulator>=1/60){step(1/60);accumulator-=1/60;}scenery.update(phase==='paused'?0:dt);updateEngineSound(dt);updateCamera(dt);minimap.render(trucks,selectedColor,viewCorners);renderer.render(scene,camera);}requestAnimationFrame(frame);
+function frame(now){requestAnimationFrame(frame);const frameStarted=performance.now();framePhysicsMs=framePhysicsSteps=0;tuningPanel.update(now);const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;accumulator+=dt;while(accumulator>=1/60){step(1/60);accumulator-=1/60;}scenery.update(phase==='paused'?0:dt);updateEngineSound(dt);updateCamera(dt);minimap.render(trucks,selectedColor,viewCorners);renderer.render(scene,camera);statsOverlay.record(now,{cpuMs:performance.now()-frameStarted,physicsMs:framePhysicsMs,steps:framePhysicsSteps});}requestAnimationFrame(frame);
 // Read-only telemetry makes gameplay and rendering easy to inspect.
 window.__DUST_RUNNER__={getState:()=>({phase,elapsed,track:trackIndex,trackVariant,renderer:renderer.info.render,player:{x:trucks[0].x,z:trucks[0].z,speed:trucks[0].speed,lap:trucks[0].lap,nitro:trucks[0].nitro,engineId:trucks[0].engineId,powertrain:{...trucks[0].powertrain}},trucks:trucks.map(c=>({lap:c.lap,index:c.index,x:c.x,z:c.z,airborne:c.airborne,height:c.height,rollover:c.rollover,suspension:c.suspensionLengths})),cash,levels:{...levels}})};
 

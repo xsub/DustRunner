@@ -85,3 +85,18 @@ uses `dust-runner-active-tunning-v1`; up to 50 named presets use
 `dust-runner-tunnings-v1`. The transfer format is
 `{format:"dust-runner-tunning",version:1,name,parameters,context}`. Context is
 informational; loading a tune does not switch the current car or course.
+
+### FPS and live statistics
+
+A small draggable window at the upper-right edge shows measured FPS, mean
+frame time/P95, JavaScript loop CPU time, physics CPU time and actual physics
+steps per second/frame. It also reports draw calls, triangles, geometry/texture
+counts, awake/total dynamic bodies, speed, gear/RPM, mass, wheel contacts and
+vertical velocity. FPS uses real animation timestamps over a rolling two-second
+window, independent of the clamped simulation delta. CPU measurements exclude
+GPU execution; these are not GPU timings. Readouts refresh twice per second.
+
+Drag the heading, collapse to FPS only with **−**, or hide with **×**. Restore it
+via **Menu → FPS i statystyki podczas jazdy**. Small screens start collapsed.
+Visibility, collapse state and position persist locally in the browser. Only
+the heading captures pointer input; the readout lets touches/clicks pass through.

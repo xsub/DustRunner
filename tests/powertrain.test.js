@@ -68,7 +68,7 @@ test('engine changes reset drivetrain state and upgrades increase installed engi
  const coast=powertrainStep({...stock}, {...drive,throttle:0},1/60);assert.ok(coast.acceleration<0);
 });
 test('ending nitro preserves momentum instead of snapping to the engine speed ceiling',()=>{
- const c=run(car(),{...drive,boost:true},10),before=c.speed;
+ const c=run(car(),{...drive,boost:true},20),before=c.speed;
  arcadeMotion(c,{...drive,throttle:0},1/60);
  assert.ok(before>25);assert.ok(c.speed>before-.2);
 });

@@ -21,10 +21,12 @@ for(let track=0;track<TRACKS.length;track++){
  test(`${TRACKS[track].name}: high jump has a straight approach and two different landing heights`,()=>{
   const f=TRACKS[track].features.find(f=>f.kind==='canyon'),length=curve.getLength();
   const a=curve.getTangentAt(f.start-20/length),b=curve.getTangentAt(f.start+f.runup/length);
+  assert.ok(f.height<=3.5&&f.gap<=10&&f.landing>=40,'jump must match Bronco race speeds');
+  assert.ok(TRACKS[track].features.filter(f=>f.kind==='whoops').every(f=>f.height<.2),'ordinary whoops must work the suspension rather than launch trucks');
   assert.ok(a.dot(b)>.99,'approach and takeoff must share a straight');
-  assert.ok(terrainHeight(f.start+(f.runup-.2)/length,track)>10);
+  assert.ok(terrainHeight(f.start+(f.runup-.2)/length,track)>6);
   const landing=f.start+(f.runup+f.gap+8)/length;
-  assert.ok(terrainHeight(landing,track,3.5)-terrainHeight(landing,track,-3.5)>2);
+  assert.ok(terrainHeight(landing,track,3.5)-terrainHeight(landing,track,-3.5)>.8);
   assert.ok(TRACKS[track].features.filter(f=>f.kind==='whoops').reduce((sum,f)=>sum+f.count,0)>=30);
  });
  test(`${TRACKS[track].name}: sampled contact height matches rendered triangle vertices and banks`,()=>{
@@ -35,7 +37,7 @@ for(let track=0;track<TRACKS.length;track++){
   }
   assert.equal(terrainHeight(0,track),terrainHeight(1,track));
  });
- test(`${TRACKS[track].name}: real suspension launches a long ballistic jump and lands beyond the gap`,()=>{
+ test(`${TRACKS[track].name}: real suspension launches a controlled ballistic jump and lands beyond the gap`,()=>{
   const physics=createPhysics(terrain,bounds),car={x:0,z:0,heading:0,speed:0,engineId:'302',style:'classic',lane:-3.5,nitro:100};
   const p=samples[0],t=curve.getTangentAt(0);car.x=p.x-t.z*car.lane;car.z=p.z+t.x*car.lane;car.heading=Math.atan2(-t.x,-t.z);physics.reset(car);
   const f=TRACKS[track].features[0];let flight=0,longest=0,landing=0,peak=0;
@@ -44,8 +46,8 @@ for(let track=0;track<TRACKS.length;track++){
    physics.input(car,{...opponentInput(car,near,curve,samples),boost:false,onDirt:true,ai:true},dt);physics.step();physics.sync(car,dt);peak=Math.max(peak,car.height);
    if(car.airborne)flight+=dt;else{if(flight>longest){longest=flight;landing=nearestPoint(samples,car.x,car.z).index/n;}flight=0;}
   }
-  assert.ok(longest>1&&longest<3.5,`flight ${longest}`);
-  assert.ok(peak>10&&peak<18,`peak ${peak}`);
+  assert.ok(longest>.4&&longest<1.8,`flight ${longest}`);
+  assert.ok(peak>6&&peak<8.5,`peak ${peak}`);
   assert.ok(landing>f.start+(f.runup+f.gap)/curve.getLength(),`landing ${landing}`);
   physics.dispose();
  });

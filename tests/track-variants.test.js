@@ -48,8 +48,8 @@ for(let track=0;track<TRACKS.length;track++){
      physics.input(car,{...opponentInput(car,near,curve,samples),boost:false,onDirt:true,ai:true},dt);physics.step();physics.sync(car,dt);peak=Math.max(peak,car.height);
      if(car.airborne)flight+=dt;else{if(flight>longest){longest=flight;landing=nearestPoint(samples,car.x,car.z).index/n;}flight=0;}
     }
-    assert.ok(longest>1&&longest<3.5,`flight ${longest}`);
-    assert.ok(peak>10&&peak<18,`peak ${peak}`);
+    assert.ok(longest>.4&&longest<1.8,`flight ${longest}`);
+    assert.ok(peak>6&&peak<8.5,`peak ${peak}`);
     assert.ok(landing>f.start+(f.runup+f.gap)/curve.getLength(),`landing ${landing}`);
    }finally{physics.dispose();}
   });

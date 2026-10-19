@@ -253,3 +253,16 @@ test('small rolling bumps keep the tires in contact instead of producing repeate
   assert.equal(air,0);
  }finally{f.physics.dispose();}
 });
+
+test('loaded Bronco mass is shared by the rigid body and drivetrain and resists vertical impulses',()=>{
+ for(const [style,mass] of [['classic',2250],['ranger',2750]]){
+  const f=fixture(()=>0,20,{style,engineId:'302'});step(f,{},240);
+  try{
+   assert.equal(vehicleMass(style,'302'),mass);assert.ok(Math.abs(f.car.physics.body.mass()-mass)<.01);
+   assert.ok(f.car.physics.body.localCom().y<-.47);
+   f.car.physics.body.setLinvel({x:0,y:0,z:0},true);f.car.physics.body.applyImpulse({x:0,y:3300,z:0},true);
+   assert.ok(Math.abs(f.car.physics.body.linvel().y-3300/mass)<.001);
+   assert.ok(f.car.physics.body.linvel().y<1.5,'same hit must lift a loaded truck less than the previous light calibration');
+  }finally{f.physics.dispose();}
+ }
+});

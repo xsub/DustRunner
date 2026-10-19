@@ -4,14 +4,14 @@
 const ENGINE_MASS={170:185,200:195,289:210,302:225,'302efi':230,'351m':285,400:300,300:270,'300efi':275,'351w':250,'351wefi':255};
 const cache=new Map();
 export function vehicleMass(style='classic',engineId='302'){
- return (style==='classic'?1425:1825)+(ENGINE_MASS[engineId]??225);
+ return (style==='classic'?2025:2525)+(ENGINE_MASS[engineId]??225);
 }
 export function vehicleMassProperties(style='classic',engineId='302'){
  const key=`${style}:${engineId}`;if(cache.has(key))return cache.get(key);
  const engineMass=ENGINE_MASS[engineId]??225,mass=vehicleMass(style,engineId),dry=mass-engineMass;
  const parts=[
   // Mass, local center (body origin is 1.5 above the road), box dimensions.
-  [dry*.43,[0,-.80,-.16],[2.35,.30,4.3]], // low frame / drivetrain
+  [dry*.43,[0,-.95,-.16],[2.35,.30,4.3]], // low frame / drivetrain
   [dry*.24,[0,-.12,-.04],[2.45,.85,4.2]], // body panels
   [dry*.12,[0,.20,.30],[2.1,.80,2.4]], // cabin / occupants
   [dry*.04,[0,1.12,.55],[2.3,.14,2.6]], // light roof

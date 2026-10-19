@@ -1,8 +1,8 @@
-import {terrainHeight,ROAD_WIDTH} from './tracks.js';
+import {terrainHeight,ROAD_WIDTH,SHOULDER_WIDTH} from './tracks.js';
 
 // Rendering, wheel rays and chassis contacts all use these exact triangles.
 export function buildTerrain(samples,curve,trackIndex){
- const offsets=[-ROAD_WIDTH-9,-ROAD_WIDTH-4,...Array.from({length:29},(_,i)=>-ROAD_WIDTH+2*ROAD_WIDTH*i/28),ROAD_WIDTH+4,ROAD_WIDTH+9];
+ const offsets=[-ROAD_WIDTH-SHOULDER_WIDTH,-ROAD_WIDTH-6,...Array.from({length:29},(_,i)=>-ROAD_WIDTH+2*ROAD_WIDTH*i/28),ROAD_WIDTH+6,ROAD_WIDTH+SHOULDER_WIDTH];
  const positions=[],indices=[],uv=[],colors=[],n=samples.length,cols=offsets.length;
  for(let i=0;i<=n;i++){
   const j=i%n,p=samples[j],t=curve.getTangentAt(j/n);
@@ -15,9 +15,9 @@ export function buildTerrain(samples,curve,trackIndex){
    if(nearby*turn>0)radius=Math.min(radius,4*curve.getLength()/n/(Math.abs(nearby)||1e-9));
   }
   for(const nominal of offsets){
-   const shoulder=Math.max(0,(Math.abs(nominal)-ROAD_WIDTH)/9);
+   const shoulder=Math.max(0,(Math.abs(nominal)-ROAD_WIDTH)/SHOULDER_WIDTH);
    // Narrow the inner embankment before it reaches the bend's center.
-   const reach=nominal*turn>0?Math.min(9,Math.max(.6,radius-ROAD_WIDTH-.8)):9;
+   const reach=nominal*turn>0?Math.min(SHOULDER_WIDTH,Math.max(.6,radius-ROAD_WIDTH-.8)):SHOULDER_WIDTH;
    const lateral=Math.sign(nominal)*(Math.min(Math.abs(nominal),ROAD_WIDTH)+shoulder*reach);
    const edge=Math.max(-ROAD_WIDTH,Math.min(ROAD_WIDTH,lateral));
    const h=terrainHeight(j/n,trackIndex,edge,curve.variant??0)*(1-shoulder)-.25*shoulder;

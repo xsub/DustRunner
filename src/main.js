@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {createDesertReflections} from './lighting.js';
 import './style.css';
 import {VEHICLE_SCALE} from './contact.js';
+import {vehicleMass} from './vehicle-mass.js';
 import {createScenery} from './scenery.js';
 import {createBronco} from './vehicle.js';
 import {followCameraStep} from './view.js';
@@ -131,7 +132,7 @@ function updateEngineMenu(){
  const e=engineById(trucks[0].engineId);engineSelect.value=e.id;
  const peak=Math.max(...e.curve.map(p=>p[1]));
  $('#engine-character').textContent=e.character;
- $('#engine-spec').textContent=`${e.cylinders} CYL · ${e.idle}–${e.redline} RPM · ${peak} N·m peak tune`;
+ $('#engine-spec').textContent=`${e.cylinders} CYL · ${e.idle}–${e.redline} RPM · ${peak} N·m peak tune · ${vehicleMass(trucks[0].style,e.id)} KG`;
  const points=e.curve.map(([rpm,torque])=>`${10+(rpm-e.idle)/(e.redline-e.idle)*280},${70-torque/450*58}`).join(' ');
  $('#torque-line').setAttribute('points',points);$('#torque-chart').setAttribute('aria-label',`${e.name}: modeled torque curve, ${peak} newton meters peak`);
 }
@@ -155,7 +156,7 @@ document.addEventListener('fullscreenchange',()=>{$('#fullscreen').textContent=d
 document.querySelectorAll('[data-model]').forEach(b=>b.onclick=()=>{
  const player=trucks[0];scene.remove(player.mesh);player.dispose();
  const model=createBronco(b.dataset.model,player.number);Object.assign(player,model,{style:b.dataset.model});scene.add(player.mesh);
- selectedColor=b.dataset.color;poseTruck(player,0);
+ selectedColor=b.dataset.color;poseTruck(player,0);updateEngineMenu();
  document.querySelectorAll('[data-model]').forEach(el=>{el.classList.toggle('selected',el===b);el.querySelector('b').textContent=el===b?'SELECTED ↗':'SELECT ↗';});
 });
 function rebuildTrack(){

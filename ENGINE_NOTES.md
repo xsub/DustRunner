@@ -112,8 +112,8 @@ vehicle. A heavier engine changes total mass and front axle loading; both
 Rapier and the powertrain use that same total. Mass properties update after
 an engine or body swap.
 
-The 302 compact calibration has a center of mass about 1.08 world units
-above the road, with approximately 57% static front-axle load. Previously
+The 302 compact calibration has a center of mass about 1.02 world units
+above the road, with approximately 56% static front-axle load. Previously
 collider volume placed the center around 1.71 units high and behind the
 wheelbase midpoint. Longitudinal traction now limits how much wheel torque
 can become acceleration on dirt, including with nitro and upgrades. Pitch
@@ -136,3 +136,17 @@ stopping-distance claim. Stationary brakes hold the truck while a 0.45 s
 hold-to-reverse delay runs; reverse drive then builds as brake pressure fades.
 Throttle and nitro do not override an active brake, and tire brakes have no
 effect without ground contact.
+
+## Loaded trucks and scaled terrain
+
+The 302 compact/full-size tune is now 2250/2750 kg (previously 1650/2050),
+with the low frame mass centered at local Y -0.95. These are deliberately
+loaded game calibrations. Rapier mass/inertia, suspension force capacity,
+engine acceleration, hill-load shifting and the garage benchmark all use
+this same mass. Engine specifications show the current tune's kg value.
+
+The main ramp is 3.5 units high with a 30-unit run-up, 10-unit gap and
+40-unit split landing. Ordinary whoops are 0.10–0.175 units high; smaller
+humps peak at 0.65, dips at -0.45, and cross slopes/ruts are reduced.
+Outer shoulders grade down over 14 units. This changes the terrain that
+launches a truck; gravity and airborne steering remain physical.

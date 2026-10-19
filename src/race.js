@@ -19,8 +19,8 @@ export function arcadeMotion(car,input,dt){
  car.speed*=Math.exp(-dt*(onDirt?.55:1.6));
  car.speed=clamp(car.speed,-8,onDirt?max:max*.65);
  const yaw=(ai?3.2:3.65+tires*.12)*clamp(Math.abs(car.speed)/3,0,1);
- car.heading+=steer*yaw*dt*(car.speed<0?-1:1)*(car.height>.6?.8:1);
- const grip=1-Math.exp(-dt*((ai?10:9.5+tires*1.1)*(car.height>.6?.65:1)));
+ car.heading+=steer*yaw*dt*(car.speed<0?-1:1)*((car.airborne??car.height>.6)?.8:1);
+ const grip=1-Math.exp(-dt*((ai?10:9.5+tires*1.1)*((car.airborne??car.height>.6)?.65:1)));
  car.vx+=(-Math.sin(car.heading)*car.speed-car.vx)*grip;
  car.vz+=(-Math.cos(car.heading)*car.speed-car.vz)*grip;
  car.x+=car.vx*dt;car.z+=car.vz*dt;
@@ -32,4 +32,43 @@ export function fitCircuitView(bounds,aspect){
  let width=(bounds.maxX-bounds.minX)*1.06,height=(bounds.maxY-bounds.minY)*1.16;
  if(width/height<aspect)width=height*aspect;else height=width/aspect;
  return {left:cx-width/2,right:cx+width/2,top:cy+height/2,bottom:cy-height/2};
+}
+
+// Contact follows the terrain until a crest falls away faster than the truck.
+// Airborne trucks then follow gravity and settle through a damped suspension.
+export function updateSuspension(car,ground,dt) {
+ const previousGround=car.lastGround??ground;
+ const groundVelocity=(ground-previousGround)/dt;
+ const wasAirborne=!!car.airborne;
+ let landed=false;
+ if(wasAirborne) {
+   car.vertical-=20*dt;
+   car.height+=car.vertical*dt;
+   if(car.height<=ground) {
+     const impact=Math.max(0,-car.vertical+groundVelocity);
+     car.height=ground;car.airborne=false;car.vertical=groundVelocity;
+     car.suspensionVelocity=-Math.min(impact*.2,2.6);
+     car.speed*=1-Math.min(impact*.0025,.045);
+     landed=true;
+   }
+ } else if((car.vertical??0)>1.2 && groundVelocity<car.vertical-20*dt && Math.abs(car.speed)>8) {
+   car.airborne=true;
+   car.vertical=clamp(car.vertical*1.08+Math.abs(car.speed)*.045,2.8,8.5);
+   car.height=Math.max(car.height,ground);
+ } else {
+   car.height=ground;car.vertical=groundVelocity;car.airborne=false;
+ }
+ car.lastGround=ground;
+ car.suspensionVelocity=(car.suspensionVelocity??0)+(-(car.suspension??0)*95-(car.suspensionVelocity??0)*12)*dt;
+ car.suspension=clamp((car.suspension??0)+car.suspensionVelocity*dt,-.24,.16);
+ return {landed,airborne:car.airborne};
+}
+
+export function containOnTrack(car,edge,halfWidth){
+ const limit=halfWidth-1.7;
+ if(edge.distance<=limit)return;
+ const nx=(car.x-edge.point.x)/(edge.distance||1),nz=(car.z-edge.point.z)/(edge.distance||1);
+ car.x=edge.point.x+nx*limit;car.z=edge.point.z+nz*limit;
+ const outward=car.vx*nx+car.vz*nz;
+ if(outward>0){car.vx-=nx*outward;car.vz-=nz*outward;car.speed*=.9;}
 }

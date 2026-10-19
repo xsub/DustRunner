@@ -178,6 +178,7 @@ document.querySelectorAll('[data-model]').forEach(b=>b.onclick=()=>{
  const model=createBronco(b.dataset.model,player.number);Object.assign(player,model,{style:b.dataset.model});scene.add(player.mesh);
  selectedColor=b.dataset.color;poseTruck(player,0);updateEngineMenu();
  document.querySelectorAll('[data-model]').forEach(el=>{el.classList.toggle('selected',el===b);el.querySelector('b').textContent=el===b?'SELECTED ↗':'SELECT ↗';});
+ rebuildTrack();
 });
 function rebuildTrack(){
  keys.clear();makeWorld();resize();reset();

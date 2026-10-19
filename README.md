@@ -19,7 +19,7 @@ npm run dev
 
 Open the local address printed by Vite. `npm run build` produces a static site in `dist/`. `npm run preview` serves that build. `npm test` checks racing physics, lap validation, terrain and AI laps, camera tracking, and minimap coverage.
 
-Three selectable bodies take their shapes and colors from the supplied vehicle references: short Heritage in emerald with an ivory cap and round headlights, wider Ranger in orange/ivory with rectangular lights, and Midnight Sunset with a lower raked cap and layered yellow/orange/red stripes. The olive Trail opponent has a utility bumper. Cabins have real window openings, tinted glass, seats and dashboards; exterior details include hood stampings, chrome belt lines, mirrors, markers, live axles and dampers. Outdoor sky/sand reflections support paint and chrome without external assets. All variants retain the shared racing wheelbase and collision envelope.
+Five selectable bodies take their shapes and colors from the supplied vehicle references: short Heritage in emerald with an ivory cap and round headlights, wider Ranger in orange/ivory with rectangular lights, and Midnight Sunset with a lower raked cap and layered yellow/orange/red stripes. The olive Trail opponent has a utility bumper. Cabins have real window openings, tinted glass, seats and dashboards; exterior details include hood stampings, chrome belt lines, mirrors, markers, live axles and dampers. Outdoor sky/sand reflections support paint and chrome without external assets. All variants retain the shared racing wheelbase and lower-body collision envelope; open models use individual cage contacts above the cabin.
 
 Both circuits now have laps exactly **four times their previous length** (Dustbowl about 1.33 km), with the existing 15.5-unit road width and unchanged Bronco® scale. A long straight leads up a 3.5-unit canyon ramp, across a 10-unit gap and onto two landing lanes with different heights. A 40-unit split landing catches the jump. Four low whoop sections provide 34 crests (0.10–0.175 units high), plus gentler rolling hills, ruts, four 0.65-unit humps and changing cross slopes. The outer shoulder now grades down over 14 units. The north-up minimap marks the big jump; a smooth camera looks ahead while keeping the truck close.
 
@@ -120,3 +120,15 @@ rewards or time limit; the HUD timer only records session duration. F rights
 the truck in place; R returns to the starting basin. The raised outer rim has
 a solid boundary, so the finite map cannot be driven off. Track/ramp sliders
 apply to race circuits; desert dunes have their own fixed procedural layout.
+
+### Open-top vehicles
+
+**Menu → Choose your ride** includes **SKY · OPEN AIR** (powder blue,
+ivory flares, upholstery and rear roll bar) and **CRAWLER · OLIVE** (olive
+paint, full dark cage, bronze rims, snorkel, winch and recovery hooks).
+Both have a seated driver with helmet, visor, hands on the wheel and harness.
+They use the compact-body mass calibration and the shared off-road wheelbase.
+Race numbers move onto the hood so the open cabin stays visible. Individual
+cage tubes provide rollover contacts in place of the solid hardtop collider.
+Changing the body restarts the current race/free-ride session to rebuild its
+collision shape; the selected engine and upgrades remain installed.

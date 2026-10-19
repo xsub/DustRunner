@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
-// All four trucks share geometry. Detailed tread is merged into one draw call.
+// All trucks share geometry. Detailed tread is merged into one draw call.
 const profile=[[.30,-.205],[.39,-.24],[.49,-.225],[.55,-.17],[.565,-.09],[.565,.09],[.55,.17],[.49,.225],[.39,.24],[.30,.205],[.30,-.205]];
 const tireGeometry=new THREE.LatheGeometry(profile.map(([r,x])=>new THREE.Vector2(r,x)),40).rotateZ(Math.PI/2);
 const blocks=[];
@@ -28,14 +28,16 @@ const treadMaterial=new THREE.MeshStandardMaterial({color:'#32352c',roughness:1}
 const metalMaterial=new THREE.MeshStandardMaterial({color:'#c9c6af',metalness:.65,roughness:.44});
 const innerMaterial=new THREE.MeshStandardMaterial({color:'#34352c',roughness:.85});
 const hubMaterial=new THREE.MeshStandardMaterial({color:'#66685d',metalness:.6,roughness:.55});
-export function createOffroadWheel(){
+const bronzeMaterial=new THREE.MeshStandardMaterial({color:'#90704a',metalness:.65,roughness:.42});
+export function createOffroadWheel(finish='silver'){
+ const rimMaterial=finish==='bronze'?bronzeMaterial:metalMaterial;
  const group=new THREE.Group();
  const add=(geometry,material,x=0,y=0,z=0)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;m.userData.sharedWheel=true;group.add(m);return m;};
  add(tireGeometry,tireMaterial);add(treadGeometry,treadMaterial);add(innerGeometry,innerMaterial);
  for(const side of [-1,1]){
-  add(ringGeometry,metalMaterial,side*.213);
+  add(ringGeometry,rimMaterial,side*.213);
   add(sideRingGeometry,treadMaterial,side*.236);
-  const face=add(faceGeometry,metalMaterial,side*.2);if(side<0)face.rotation.y=Math.PI;
+  const face=add(faceGeometry,rimMaterial,side*.2);if(side<0)face.rotation.y=Math.PI;
   add(hubGeometry,hubMaterial,side*.205);
   for(let i=0;i<5;i++){
    const a=i*Math.PI*2/5;add(boltGeometry,metalMaterial,side*.235,Math.cos(a)*.13,Math.sin(a)*.13);

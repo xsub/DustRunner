@@ -1,11 +1,12 @@
 import {tuning as cfg,tuningRevision} from './tuning.js';
+import {isCompactBody} from './body-types.js';
 // Representative game mass calibrations, not factory shipping weights.
 // The engine replaces the baseline 302's mass rather than adding a second
 // engine on top of the curb mass. Physics and powertrain share this model.
 const ENGINE_MASS={170:185,200:195,289:210,302:225,'302efi':230,'351m':285,400:300,300:270,'300efi':275,'351w':250,'351wefi':255};
 const cache=new Map();let cachedRevision=-1;
 export function vehicleMass(style='classic',engineId='302'){
- return (style==='classic'?cfg.compactDryMass:cfg.fullDryMass)+(ENGINE_MASS[engineId]??225)*cfg.engineMassScale;
+ return (isCompactBody(style)?cfg.compactDryMass:cfg.fullDryMass)+(ENGINE_MASS[engineId]??225)*cfg.engineMassScale;
 }
 export function vehicleMassProperties(style='classic',engineId='302'){
  if(cachedRevision!==tuningRevision()){cache.clear();cachedRevision=tuningRevision();}

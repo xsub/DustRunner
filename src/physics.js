@@ -3,6 +3,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import {Quaternion,Vector3} from 'three';
 import {powertrainStep} from './powertrain.js';
 import {vehicleMassProperties} from './vehicle-mass.js';
+import {isOpenBody,rollCageSegments} from './body-types.js';
 import {drivingControls,rollingResistance,steeringStep} from './driving-controls.js';
 import {WHEEL_LAYOUT,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 export const GRAVITY=9.81,CHASSIS_HEIGHT=1.5,REST_LENGTH=.55;
@@ -23,7 +24,13 @@ export function createPhysics(terrain,bounds){
   const properties=vehicleMassProperties(car.style,car.engineId),{mass}=properties;
   const body=world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setCanSleep(false).setCcdEnabled(true).setLinearDamping(cfg.linearDamping).setAngularDamping(cfg.angularDamping));
   world.createCollider(RAPIER.ColliderDesc.cuboid(1.23,.48,2.28).setTranslation(0,.05,0).setMass(0).setFriction(.65).setRestitution(cfg.bodyBounce),body);
-  world.createCollider(RAPIER.ColliderDesc.cuboid(1.16,.53,1.22).setTranslation(0,1.19,.65).setMass(0).setFriction(.6).setRestitution(cfg.bodyBounce/2),body);
+  if(isOpenBody(car.style)){
+   for(const [a,b] of rollCageSegments(car.style)){
+    const from=new Vector3(...a).multiplyScalar(VEHICLE_SCALE),to=new Vector3(...b).multiplyScalar(VEHICLE_SCALE);from.y-=CHASSIS_HEIGHT;to.y-=CHASSIS_HEIGHT;
+    const delta=to.clone().sub(from),center=from.clone().add(to).multiplyScalar(.5),rotation=new Quaternion().setFromUnitVectors(new Vector3(0,1,0),delta.clone().normalize());
+    world.createCollider(RAPIER.ColliderDesc.cuboid(.075,delta.length()/2,.075).setTranslation(center.x,center.y,center.z).setRotation(rotation).setMass(0).setFriction(.6).setRestitution(cfg.bodyBounce/2),body);
+   }
+  }else world.createCollider(RAPIER.ColliderDesc.cuboid(1.16,.53,1.22).setTranslation(0,1.19,.65).setMass(0).setFriction(.6).setRestitution(cfg.bodyBounce/2),body);
   body.setAdditionalMassProperties(mass,properties.centerOfMass,properties.principalAngularInertia,properties.angularInertiaLocalFrame,true);
   body.recomputeMassPropertiesFromColliders();
   const controller=world.createVehicleController(body);controller.indexUpAxis=1;controller.setIndexForwardAxis=2;

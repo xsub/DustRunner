@@ -22,4 +22,4 @@ export function engineTorque(engine,rpm){
  for(let i=1;i<curve.length;i++)if(rpm<=curve[i][0]){const [x,y]=curve[i-1],[xx,yy]=curve[i];return y+(yy-y)*(rpm-x)/(xx-x);}
  return Math.max(0,curve.at(-1)[1]*(1-(rpm-engine.redline)/350));
 }
-export const defaultEngine=style=>({classic:'302',ranger:'351m',sunset:'302efi',expedition:'300efi'}[style]??'302');
+export const defaultEngine=style=>({classic:'302',ranger:'351m',sunset:'302efi',expedition:'300efi',sky:'302',crawler:'351w'}[style]??'302');

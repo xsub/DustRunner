@@ -1,3 +1,4 @@
+import {isCompactBody} from './body-types.js';
 import {tuningRevision} from './tuning.js';
 import {ENGINES} from './engines.js';
 import {GENERATIONS} from './heritage.js';
@@ -35,5 +36,5 @@ export function createHistoryPanel({getPlayer,canFit,fitEngine}){
  const close=()=>dialog.close();dialog.querySelector('#history-close').onclick=close;
  dialog.addEventListener('cancel',event=>{event.preventDefault();event.stopPropagation();close();});
  dialog.addEventListener('keydown',event=>event.stopPropagation());
- return {open(){generation=null;bodySelect.value=getPlayer().style==='classic'?'classic':'fullsize';render();dialog.showModal();}};
+ return {open(){generation=null;bodySelect.value=isCompactBody(getPlayer().style)?'classic':'fullsize';render();dialog.showModal();}};
 }

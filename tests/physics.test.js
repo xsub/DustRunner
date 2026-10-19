@@ -78,7 +78,7 @@ test('engine weight loads the front axle and heavier blocks move the physical ce
  light.physics.dispose();heavy.physics.dispose();
 });
 test('full-throttle upgraded starts with nitro keep the front tires grounded for every engine and body',()=>{
- for(const style of ['classic','ranger','sunset','expedition'])for(const engine of ENGINES)for(const settled of [false,true]){
+ for(const style of ['classic','ranger','sunset','expedition','sky','crawler'])for(const engine of ENGINES)for(const settled of [false,true]){
   const f=fixture(()=>0,250,{style,engineId:engine.id});if(settled)step(f,{},180);
   let peakPitch=0,frontAirFrames=0;
   for(let i=0;i<360;i++){
@@ -264,5 +264,17 @@ test('loaded Bronco mass is shared by the rigid body and drivetrain and resists 
    assert.ok(Math.abs(f.car.physics.body.linvel().y-3300/mass)<.001);
    assert.ok(f.car.physics.body.linvel().y<1.5,'same hit must lift a loaded truck less than the previous light calibration');
   }finally{f.physics.dispose();}
+ }
+});
+
+test('open bodies have tube contacts instead of an invisible solid roof',()=>{
+ for(const style of ['sky','crawler']){
+  const f=fixture(()=>0,20,{style});
+  const body=f.car.physics.body;
+  assert.ok(body.numColliders()>10,'body, wheels and individual cage tubes');
+  step(f,{},240);
+  const position=body.translation(),emptyCabin={x:position.x,y:position.y+1.5,z:position.z+.2};
+  for(let i=0;i<body.numColliders();i++)assert.equal(body.collider(i).containsPoint(emptyCabin),false,'open center remains empty');
+  assert.ok(Math.abs(body.mass()-vehicleMass('classic','302'))<.01);assert.equal(f.car.airborne,false);f.physics.dispose();
  }
 });

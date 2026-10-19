@@ -21,6 +21,8 @@ Open the local address printed by Vite. `npm run build` produces a static site i
 
 The circuit automatically fills the playfield across window sizes. Trucks are enlarged for readability, with quick arcade steering, acceleration, braking, and a short lateral slide. Collision clearance and the starting grid match the larger trucks.
 
+The race fills the browser window by default. The compact HUD shows position, lap, time, speed, and nitro. Open **Menu** for truck selection, tracks, upgrades, sound, and controls; opening the menu pauses an active race and closing it resumes. The fullscreen button is optional.
+
 ## Controls
 
 - W / Up: accelerate

@@ -1,11 +1,32 @@
 <!doctype html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#121712"><meta name="description" content="Four trucks. Three laps. All dirt. A Three.js off-road arcade racer."><title>Dust Runner · Off-road Arcade</title></head>
-<body><div id="app">
-<header><a class="brand" href="./"><span class="brand-icon">DR<span>↗</span></span><span>DUST RUNNER<small>OFF-ROAD ARCADE</small></span></a><div class="header-right"><span class="live-dot"></span> THE DIRT IS CALLING <button id="sound" aria-label="Toggle sound">SOUND OFF <span>◖))</span></button></div></header>
-<main><div class="eyebrow"><span>THE ORIGINAL ARCADE SPIRIT.</span><span>REBUILT FOR THE BROWSER. ↗</span></div><section class="title-row"><div><h1>SMALL TRUCKS.<br><span>BIG DIRT ENERGY.</span></h1><p>Four trucks. Three laps. No clean getaways.</p></div><div class="edition"><span>EST. 1989 / REMIXED 2026</span><strong>OFF-ROAD<br>ON PURPOSE.</strong></div></section>
-<section class="race-shell"><div class="race-bar"><div><span class="live-dot"></span> <b id="race-status">FREE PRACTICE</b><span class="divider">/</span><span id="track-name">01 — DUSTBOWL</span></div><div><span class="weather">☀ 32°C &nbsp; DRY DIRT</span><button id="pause" aria-label="Pause game">Ⅱ</button><button id="fullscreen" aria-label="Fullscreen game">⛶</button></div></div>
-<div id="game"><canvas id="scene" aria-label="Three-dimensional off-road racing circuit"></canvas><div class="hud"><div class="hud-box"><span>POSITION</span><strong id="position">01<small> / 04</small></strong></div><div class="hud-box"><span>LAP</span><strong id="lap">01<small> / 03</small></strong></div><div class="hud-box timer"><span>RACE TIME</span><strong id="time">00:00.00</strong></div></div><div id="message" class="message"><span>WELCOME TO THE DUSTBOWL</span><strong>LET’S KICK UP<br>SOME DIRT.</strong><p>Pick your truck. Hit the starting line.</p><button id="start">START YOUR ENGINES <span>↗</span></button><small>OR PRESS ENTER TO RACE</small></div><div id="countdown"></div><button id="exit-fullscreen" aria-label="Exit fullscreen">EXIT FULLSCREEN ⛶</button><div class="course-label">DUSTBOWL <span>RACEWAY</span><small>36°14′ N &nbsp; 116°49′ W</small></div><div class="speed"><strong id="speed">0</strong><span>KM/H</span><div class="nitro-label">NITRO <span id="nitro-text">100%</span></div><div class="nitro-track"><div id="nitro-fill"></div></div></div><div class="race-direction">↶ &nbsp; COUNTERCLOCKWISE</div><div id="touch"><button data-key="ArrowLeft">◀</button><button data-key="ArrowRight">▶</button><button data-key="Space">N₂O</button><button data-key="ArrowUp">▲</button></div></div>
-<div class="controls"><span><kbd>W</kbd><kbd>↑</kbd> ACCELERATE</span><span><kbd>A</kbd><kbd>D</kbd><kbd>←</kbd><kbd>→</kbd> STEER</span><span><kbd>S</kbd><kbd>↓</kbd> BRAKE / REVERSE</span><span><kbd>SPACE</kbd> NITRO</span><span><kbd>R</kbd> RESET</span><span><kbd>P</kbd> PAUSE</span></div></section>
+<body>
+<main id="app">
+<section id="game" aria-label="Dust Runner arcade racer">
+<canvas id="scene" aria-label="Three-dimensional off-road racing circuit"></canvas>
+<div class="hud" aria-label="Race statistics">
+<div class="hud-box"><span>POS</span><strong id="position">01<small> / 04</small></strong></div>
+<div class="hud-box"><span>LAP</span><strong id="lap">01<small> / 03</small></strong></div>
+<div class="hud-box timer"><span>TIME</span><strong id="time">00:00.00</strong></div>
+</div>
+<nav class="game-tools" aria-label="Game controls">
+<button id="pause" aria-label="Pause game" title="Pause (P)">Ⅱ</button>
+<button id="fullscreen" aria-label="Fullscreen game" title="Fullscreen">⛶</button>
+<button id="menu" aria-label="Open game menu" title="Truck, track and upgrades">☰ <span>MENU</span></button>
+</nav>
+<div id="message" class="message"><span>DUST RUNNER</span><strong>DUSTBOWL</strong><p>Three laps. Four trucks. All dirt.</p><button id="start">RACE <span>↗</span></button><small>ENTER TO RACE · WASD / ARROWS TO DRIVE</small></div>
+<div id="countdown" aria-live="polite"></div>
+<div class="track-info"><b id="race-status">FREE PRACTICE</b><span id="track-name">01 — DUSTBOWL</span></div>
+<div class="speed"><div class="speed-readout"><strong id="speed">0</strong><span>KM/H</span></div><div class="nitro-label">NITRO <span id="nitro-text">100%</span></div><div class="nitro-track"><div id="nitro-fill"></div></div></div>
+<div class="drive-hint">WASD / ARROWS <span>DRIVE</span> &nbsp; SPACE <span>NITRO</span> &nbsp; P <span>PAUSE</span> &nbsp; R <span>RESET</span></div>
+<div id="touch" aria-label="Touch driving controls"><div><button data-key="ArrowLeft" aria-label="Steer left">◀</button><button data-key="ArrowRight" aria-label="Steer right">▶</button></div><div><button data-key="Space" aria-label="Nitro boost">N₂O</button><button data-key="ArrowDown" aria-label="Brake and reverse">▼</button><button data-key="ArrowUp" aria-label="Accelerate">▲</button></div></div>
+</section>
+<dialog id="game-menu" aria-labelledby="menu-title">
+<div class="menu-heading"><div><span class="section-label">DUST RUNNER</span><h1 id="menu-title">PIT STOP</h1></div><button id="menu-close" aria-label="Close game menu">✕</button></div>
 <section class="setup"><div class="truck-select"><div class="section-label">01 <h2>CHOOSE YOUR RIDE</h2><span>YOU’RE THE ONE IN</span></div><div class="trucks"><button class="truck-option selected" data-color="#f3bf42" style="--truck:#f3bf42"><span class="truck-drawing">▰<i></i></span><span>THE YELLOWJACKET<small>NO. 07 <b>SELECTED ↗</b></small></span></button><button class="truck-option" data-color="#e6644c" style="--truck:#e6644c"><span class="truck-drawing">▰<i></i></span><span>THE FIRESTARTER<small>NO. 12 <b>SELECT ↗</b></small></span></button><button class="truck-option" data-color="#5ca9ba" style="--truck:#5ca9ba"><span class="truck-drawing">▰<i></i></span><span>THE BLUE HOUR<small>NO. 28 <b>SELECT ↗</b></small></span></button></div></div><div class="track-select"><div class="section-label">02 <h2>PICK YOUR PLAYGROUND</h2></div><div class="track-buttons"><button class="active" data-track="0"><span>01</span> DUSTBOWL <small>THE CLASSIC ↗</small></button><button data-track="1"><span>02</span> RATTLESNAKE <small>GET TWISTED ↗</small></button></div></div></section>
 <section class="garage"><div><span class="section-label">THE PIT STOP</span><h2>A LITTLE EDGE GOES A LONG WAY.</h2><p>Race for cash. Build a faster truck.</p></div><div class="wallet">$<span id="cash">0</span><small>RACE EARNINGS</small></div><button class="upgrade" data-upgrade="engine">ENGINE <span>$300 · LV <b id="engine-level">0</b></span></button><button class="upgrade" data-upgrade="grip">TIRES <span>$300 · LV <b id="grip-level">0</b></span></button><p id="garage-note" role="status">Finish a race to earn your first upgrade.</p></section>
-<footer><span>BUILT FOR THE LOVE OF THE ARCADE.</span><span>THREE.JS POWERED <i>✳</i> NO DOWNLOAD. JUST DIRT.</span></footer></main></div><script type="module" src="/src/main.js"></script></body></html>
+
+<div class="menu-footer"><button id="sound" aria-label="Toggle sound">SOUND OFF <span>◖))</span></button><button id="menu-play" class="primary">BACK TO RACE ↗</button></div>
+<p class="menu-help">W / ↑ accelerate · A D / ← → steer · S / ↓ brake &amp; reverse<br>Space nitro · P pause · R reset · Esc close menu</p>
+</dialog>
+</main><script type="module" src="/src/main.js"></script></body></html>

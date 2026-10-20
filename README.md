@@ -474,3 +474,9 @@ view has its own larger animated sections and also permits a static pre-race
 inspection. Expand with ⤢. Mechanical geometry, source links, physical calibration
 and audio limits are documented in [ENGINE_NOTES.md](ENGINE_NOTES.md). Both tabs
 remain Canvas 2D at 10 Hz and stop work while the panel is hidden/collapsed.
+
+### Desert scenery around the circuits
+
+The former plain infield uses warm, procedurally shaded sand with wind ripples and low dunes beyond the racing shoulders. Rendered dune triangles are included in the terrain collider and spawn height sampling. The track and its graded shoulders retain their existing shape. Terrain is chunked for camera culling.
+
+A single optional wind event starts after 18–40 seconds, then leaves a 30–75 second quiet interval: either one rolling tumbleweed or a faint sand plume over a visible dune crest. These two render objects add no rigid bodies, update at at most 20 Hz, freeze when paused, skip invisible anchors, and yield whenever physics uses the frame budget. The same sand material and wind details are used in desert Free Ride.

@@ -9,6 +9,7 @@ import {VehiclePresentation} from './vehicle-presentation.js';
 import {RenderBudget} from './render-budget.js';
 import {createDustPool} from './dust-pool.js';
 import {chunkTerrain} from './terrain-chunks.js';
+import {buildRaceDesert,combineGround,createSandMaterial,createDesertWind} from './desert-scenery.js';
 import {createDesertReflections} from './lighting.js';
 import './style.css';
 import {VEHICLE_SCALE} from './contact.js';
@@ -55,8 +56,8 @@ const camera=new THREE.OrthographicCamera(-50,50,35,-35,.1,250);camera.position.
 scene.add(new THREE.HemisphereLight('#fff4d6','#69653e',2.6));const sun=new THREE.DirectionalLight('#fff0cb',3.2);sun.position.set(-30,55,20);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-55,right:55,top:55,bottom:-55,near:1,far:180});sun.shadow.normalBias=.04;scene.add(sun,sun.target);
 const mat=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:1,...extra});
 const textureCanvas=document.createElement('canvas');textureCanvas.width=256;textureCanvas.height=256;const textureContext=textureCanvas.getContext('2d');textureContext.fillStyle='#a8784c';textureContext.fillRect(0,0,256,256);for(let i=0;i<18000;i++){textureContext.fillStyle=Math.random()>.5?'#93683b':'#be8d59';textureContext.globalAlpha=.25+Math.random()*.3;textureContext.fillRect(Math.random()*256,Math.random()*256,1+Math.random()*2,1+Math.random()*2);}const dirtTexture=new THREE.CanvasTexture(textureCanvas);dirtTexture.wrapS=dirtTexture.wrapT=THREE.RepeatWrapping;dirtTexture.colorSpace=THREE.SRGBColorSpace;
-const sand=mat('#b59b65'),dirt=mat('#c8a06f',{map:dirtTexture,side:THREE.DoubleSide}),dark=mat('#252b24'),cream=mat('#e8d7a1'),green=mat('#58633b');
-let world=new THREE.Group();scene.add(world);const trucks=[],dustPool=createDustPool(scene);let samples=[],curve,trackIndex=0,trackVariant=0,freeRide=false,heightAt=()=>0,scenery,physics;
+const sand=createSandMaterial(),dirt=mat('#c8a06f',{map:dirtTexture,side:THREE.DoubleSide}),dark=mat('#252b24'),cream=mat('#e8d7a1'),green=mat('#58633b');
+let world=new THREE.Group();scene.add(world);const trucks=[],dustPool=createDustPool(scene);let samples=[],curve,trackIndex=0,trackVariant=0,freeRide=false,heightAt=()=>0,scenery,physics,desertWind;
 const N=3600;let roadWidth=ROAD_WIDTH;
 let desertOptions=normalizeDesertOptions();
 try{desertOptions=normalizeDesertOptions(JSON.parse(localStorage.getItem('dust-runner-desert-v1'))??{});}catch{}
@@ -73,7 +74,9 @@ function activeTrucks(){return freeRide?trucks.slice(0,1):trucks;}
 function makeDesertWorld(){
  const ground=buildDesert(desertOptions);heightAt=ground.heightAt;physics=createPhysics(ground,ground.bounds);
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(ground.positions,3));geometry.setAttribute('uv',new THREE.BufferAttribute(ground.uv,2));geometry.setAttribute('color',new THREE.BufferAttribute(ground.colors,3));geometry.setIndex(new THREE.BufferAttribute(ground.indices,1));geometry.computeVertexNormals();
- world.add(chunkTerrain(geometry,new THREE.MeshStandardMaterial({color:'#e2bd7d',map:dirtTexture,vertexColors:true,roughness:1}),64,false));
+ world.add(chunkTerrain(geometry,sand,64,false));
+ const anchors=[];for(let z=ground.bounds.min.z+30;z<ground.bounds.max.z-30;z+=24)for(let x=ground.bounds.min.x+30;x<ground.bounds.max.x-30;x+=24){const y=heightAt(x,z);if(y>5&&y>heightAt(x+6,z)&&y>heightAt(x-6,z))anchors.push({x,y,z});}
+ desertWind=createDesertWind({world,heightAt,anchors,random:rand});
  scenery=createScenery({world,samples:[],curve,roadWidth:0,heightAt,nearest:()=>({distance:Infinity}),bounds:ground.bounds,random:rand});
  // A raised sandy rim and solid outer edge keep the finite playground contained.
  for(const side of [-1,1])for(const axis of ['x','z']){const halfX=DESERT_BOUNDS.max.x,halfZ=DESERT_BOUNDS.max.z,x=axis==='x'?side*(halfX+1):0,z=axis==='z'?side*(halfZ+1):0;physics.addBoundary(x,z,axis==='x'?1:halfX+2,axis==='z'?1:halfZ+2,45);}
@@ -85,10 +88,14 @@ function makeWorld(){
  const geometries=new Set(),materials=new Set();for(const child of [...world.children]){world.remove(child);child.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)materials.add(o.material);});}geometries.forEach(g=>g.dispose());materials.forEach(m=>{if(![sand,dirt,dark,cream,green].includes(m))m.dispose();});seed=42+trackIndex;
  curve=createCircuit(trackIndex,trackVariant);samples=Array.from({length:N},(_,i)=>curve.getPointAt(i/N));
  if(freeRide){makeDesertWorld();return;}
- const terrainMesh=buildTerrain(samples,curve,trackIndex);heightAt=terrainMesh.heightAt;
+ const terrainMesh=buildTerrain(samples,curve,trackIndex);
  const bounds=new THREE.Box3().setFromPoints(samples),pitZ=bounds.max.z+roadWidth+8,standZ=bounds.min.z-roadWidth-7;
- physics=createPhysics(terrainMesh,bounds);
- box(bounds.max.x-bounds.min.x+160,.7,bounds.max.z-bounds.min.z+160,sand,(bounds.min.x+bounds.max.x)/2,-.6,(bounds.min.z+bounds.max.z)/2);
+ const dunes=buildRaceDesert(samples,bounds,roadWidth+cfg.shoulderWidth);
+ heightAt=(x,z)=>Math.max(terrainMesh.heightAt(x,z),dunes.heightAt(x,z));
+ physics=createPhysics(combineGround(terrainMesh,dunes),bounds);
+ const duneGeometry=new THREE.BufferGeometry();duneGeometry.setAttribute('position',new THREE.BufferAttribute(dunes.positions,3));duneGeometry.setAttribute('uv',new THREE.BufferAttribute(dunes.uv,2));duneGeometry.setIndex(new THREE.BufferAttribute(dunes.indices,1));duneGeometry.computeVertexNormals();
+ world.add(chunkTerrain(duneGeometry,sand,64,false));
+ desertWind=createDesertWind({world,heightAt,anchors:dunes.anchors,random:rand});
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(terrainMesh.positions,3));geometry.setAttribute('uv',new THREE.BufferAttribute(terrainMesh.uv,2));geometry.setIndex(new THREE.BufferAttribute(terrainMesh.indices,1));geometry.computeVertexNormals();
  world.add(chunkTerrain(geometry,dirt));
  ribbon(-3.7,.12,mat('#c29a63',{polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),.025);ribbon(3.7,.12,mat('#c29a63',{polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),.025);
@@ -371,6 +378,7 @@ function frame(now){
  updateEngineSound(dt);updateCamera(dt);
  dustPool.update(phase==='paused'?0:dt);
  scenery.update(phase==='paused'?0:dt,sceneryIsVisible,work.dropped===0&&work.cpuMs<simulationClock.budgetMs);
+ desertWind?.update(phase==='racing'?dt:0,sceneryIsVisible,work.dropped===0&&work.cpuMs<simulationClock.budgetMs);
  tuningPanel.update(now);
  if(now-lastHudPaint>=100){drivePanel.update();handlingPanel.update();updateGameHud();minimap.render(activeTrucks(),selectedColor,viewCorners);lastHudPaint=now;}
  renderer.render(scene,camera);

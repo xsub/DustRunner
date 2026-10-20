@@ -13,11 +13,51 @@ export function createPhysics(terrain,bounds){
  const world=new RAPIER.World({x:0,y:-cfg.gravity,z:0});world.timestep=1/120;world.numSolverIterations=cfg.solverIterations;
  world.createCollider(RAPIER.ColliderDesc.trimesh(terrain.positions,terrain.indices).setFriction(cfg.groundFriction).setRestitution(.03));
  world.createCollider(RAPIER.ColliderDesc.cuboid((bounds.max.x-bounds.min.x)/2+80,.5,(bounds.max.z-bounds.min.z)/2+80).setTranslation((bounds.min.x+bounds.max.x)/2,-.75,(bounds.min.z+bounds.max.z)/2).setFriction(.8));
- const vehicles=new Set(),barriers=[],barrierBodies=new Set(),barrierGrid=new Map(),cellSize=12;
+ const vehicles=new Set(),barriers=[],barrierBodies=new Set(),barrierGrid=new Map(),cellSize=12,activeMarkers=new Set();
+ let markerBudget=Infinity,visibleMarkers=0,hasMarkerView=false;
+ function moveMarkerCell(prop){
+  const key=`${Math.floor(prop.position.x/cellSize)},${Math.floor(prop.position.z/cellSize)}`;
+  if(prop.cell===key)return;
+  if(prop.cell){const list=barrierGrid.get(prop.cell),i=list.indexOf(prop);if(i>=0)list.splice(i,1);}
+  if(!barrierGrid.has(key))barrierGrid.set(key,[]);barrierGrid.get(key).push(prop);prop.cell=key;
+ }
+ function anchorMarker(prop,restore=false){
+  const {body}=prop;
+  const position=restore?{...prop.origin}:{x:prop.position.x,y:terrain.heightAt(prop.position.x,prop.position.z)+.01,z:prop.position.z};
+  body.setTranslation(position,false);body.setRotation({x:0,y:0,z:0,w:1},false);body.setLinvel({x:0,y:0,z:0},false);body.setAngvel({x:0,y:0,z:0},false);body.sleep();body.setEnabled(false);
+  prop.position=position;prop.rotation={x:0,y:0,z:0,w:1};prop.active=false;prop.version++;activeMarkers.delete(prop);moveMarkerCell(prop);
+ }
+ function setMarkerVisibility(isVisible){
+  hasMarkerView=true;visibleMarkers=0;
+  for(const prop of barriers){prop.visible=Boolean(isVisible(prop.position));if(prop.visible)visibleMarkers++;}
+  markerBudget=Math.floor(visibleMarkers*.1);
+  for(const prop of activeMarkers)if(!prop.visible)anchorMarker(prop);
+  // Enforce the quota immediately even when the view shrinks or turns away.
+  if(activeMarkers.size>markerBudget){
+   const distance=prop=>{let best=Infinity;for(const car of vehicles)best=Math.min(best,(prop.position.x-car.x)**2+(prop.position.z-car.z)**2);return best;};
+   const farthest=[...activeMarkers].sort((a,b)=>distance(b)-distance(a));
+   while(activeMarkers.size>markerBudget)anchorMarker(farthest.shift());
+  }
+ }
  function activateBarriers(car){
-  const reach=12+Math.min(12,Math.abs(car.speed??0)*.4);
+  const reach=6,cos=Math.cos(car.heading),sin=Math.sin(car.heading),ahead=3.25+Math.min(1,Math.abs(car.speed??0)*.025);
   for(let x=Math.floor((car.x-reach)/cellSize);x<=Math.floor((car.x+reach)/cellSize);x++)for(let z=Math.floor((car.z-reach)/cellSize);z<=Math.floor((car.z+reach)/cellSize);z++){
-   for(const prop of barrierGrid.get(`${x},${z}`)??[])if(!prop.active&&(prop.origin.x-car.x)**2+(prop.origin.z-car.z)**2<reach*reach){prop.active=true;prop.body.setEnabled(true);prop.body.wakeUp();}
+   for(const prop of barrierGrid.get(`${x},${z}`)??[]){
+    if(prop.active||!prop.visible||activeMarkers.size>=markerBudget)continue;
+    const dx=prop.position.x-car.x,dz=prop.position.z-car.z;
+    // Wake only in the truck's swept footprint, never merely because it is nearby.
+    if(Math.abs(dx*cos-dz*sin)>1.9||Math.abs(-dx*sin-dz*cos)>ahead)continue;
+    const group=(prop.group??[prop]).filter(member=>!member.active);
+    if(group.some(member=>!member.visible)||activeMarkers.size+group.length>markerBudget)continue;
+    for(const member of group){member.active=true;member.age=0;activeMarkers.add(member);member.body.setEnabled(true);member.body.wakeUp();}
+   }
+  }
+ }
+ function updateMarkers(){
+  for(const prop of activeMarkers){
+   prop.age+=world.timestep;prop.position=prop.body.translation();prop.rotation=prop.body.rotation();prop.version++;
+   let near=false;for(const car of vehicles)if((car.x-prop.position.x)**2+(car.z-prop.position.z)**2<64){near=true;break;}
+   if(prop.body.isSleeping()||(!near&&prop.age>.6))anchorMarker(prop);
   }
  }
  function add(car){
@@ -105,13 +145,13 @@ export function createPhysics(terrain,bounds){
   car.suspensionLengths=WHEEL_LAYOUT.map((_,i)=>c.wheelSuspensionLength(i)??cfg.restLength);
   v.tireColliders.forEach((collider,i)=>{const w=WHEEL_LAYOUT[i];collider.setTranslationWrtParent({x:w.x*1.4,y:-.15-car.suspensionLengths[i],z:w.z*1.4});});
  }
- return {world,add,reset,input,sync,refreshMass,addBoundary(x,z,hx,hz,height){world.createCollider(RAPIER.ColliderDesc.cuboid(hx,height,hz).setTranslation(x,height,z).setFriction(.8));},getStats(){let awake=vehicles.size;for(const prop of barriers)if(prop.active&&!prop.body.isSleeping())awake++;return {awake,bodies:vehicles.size+barriers.length};},step(){world.step();},dispose(){for(const car of vehicles)delete car.physics;world.free();},
-  resetBarriers(){for(const prop of barriers){const {body,origin}=prop;prop.active=false;body.setTranslation(origin,true);body.setRotation({x:0,y:0,z:0,w:1},true);body.setLinvel({x:0,y:0,z:0},true);body.setAngvel({x:0,y:0,z:0},true);body.sleep();body.setEnabled(false);}},
+ return {world,add,reset,input,sync,refreshMass,addBoundary(x,z,hx,hz,height){world.createCollider(RAPIER.ColliderDesc.cuboid(hx,height,hz).setTranslation(x,height,z).setFriction(.8));},setMarkerVisibility,getStats(){return {awake:vehicles.size+activeMarkers.size,bodies:vehicles.size+barriers.length,visibleMarkers:hasMarkerView?visibleMarkers:barriers.length,movingMarkers:activeMarkers.size,markerBudget:hasMarkerView?markerBudget:barriers.length};},step(){world.step();updateMarkers();},dispose(){for(const car of vehicles)delete car.physics;world.free();},
+  resetBarriers(){for(const prop of barriers)anchorMarker(prop,true);},
   addBarrier(x,y,z,{kind='tires',layers=2}={}){
    const makeBody=(height)=>world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(x,height,z).setLinearDamping(cfg.propLinearDamping).setAngularDamping(cfg.propAngularDamping).setCcdEnabled(true));
    const register=(body,height)=>{
-    const prop={body,origin:{x,y:height,z},active:false},key=`${Math.floor(x/cellSize)},${Math.floor(z/cellSize)}`;
-    barriers.push(prop);if(!barrierGrid.has(key))barrierGrid.set(key,[]);barrierGrid.get(key).push(prop);
+    const prop={body,origin:{x,y:height,z},position:{x,y:height,z},rotation:{x:0,y:0,z:0,w:1},active:false,visible:true,version:0,age:0};
+    body.markerState=prop;barriers.push(prop);moveMarkerCell(prop);
     barrierBodies.add(body.handle);body.sleep();body.setEnabled(false);
    };
    if(kind==='cone'){
@@ -127,6 +167,7 @@ export function createPhysics(terrain,bounds){
     world.createCollider(RAPIER.ColliderDesc.cylinder(.16,.55).setTranslation(0,.17,0).setMass(cfg.tireMass).setFriction(cfg.tireFriction).setRestitution(cfg.propBounce),body);
     register(body,height);tires.push(body);
    }
+   const group=tires.map(body=>body.markerState);for(const prop of group)prop.group=group;
    tires[0].tireBodies=tires;return tires[0];
   }};
 }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+export const MARKER_SPACING=8;
 
 // Shared geometries and instanced plants keep the desert inexpensive to draw.
 export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()=>-.25,addBarrier=()=>{},nearest,bounds,random}){
@@ -22,8 +23,8 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
   for(let i=0;i<samples.length;i++){
    const p=samples[i],t=curve.getTangentAt(i/samples.length);
    const x=p.x-t.z*(roadWidth+.06)*side,z=p.z+t.x*(roadWidth+.06)*side;
-   if(last&&Math.hypot(x-last.x,z-last.z)<2.1)continue;
-   if(first&&i>samples.length*.9&&Math.hypot(x-first.x,z-first.z)<2.1)continue;
+   if(last&&Math.hypot(x-last.x,z-last.z)<MARKER_SPACING)continue;
+   if(first&&i>samples.length*.9&&Math.hypot(x-first.x,z-first.z)<MARKER_SPACING)continue;
    last={x,z};first??=last;
    const y=heightAt(x,z)+.01;
    const cone=count++%4===2,layers=2+(count%7===0?1:0);
@@ -44,7 +45,7 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
  }
  for(const [geometry,byMaterial] of barrierBatches)for(const [mat,entries] of byMaterial){
   const batch=new THREE.InstancedMesh(geometry,mat,entries.length);
-  entries.forEach((entry,index)=>{batch.setMatrixAt(index,entry.matrix);if(entry.body)barrierBindings.push({batch,index,body:entry.body,local:entry.local,sleeping:true});});
+  entries.forEach((entry,index)=>{batch.setMatrixAt(index,entry.matrix);if(entry.body)barrierBindings.push({batch,index,body:entry.body,local:entry.local,version:-1});});
   batch.castShadow=true;batch.receiveShadow=true;batch.frustumCulled=false;world.add(batch);
  }
  const propPose=new THREE.Matrix4(),propMatrix=new THREE.Matrix4(),propPosition=new THREE.Vector3(),propRotation=new THREE.Quaternion(),unitScale=new THREE.Vector3(1,1,1);
@@ -98,11 +99,11 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
   snakes.push({group,segments,head,tail,x,z,phase:random()*Math.PI*2});
  }
  let time=0;
- return {resetBarriers(){for(const binding of barrierBindings)binding.sleeping=false;},update(dt){
+ return {resetBarriers(){for(const binding of barrierBindings)binding.version=-1;},update(dt){
   const dirty=new Set();
   for(const binding of barrierBindings){
-   const sleeping=binding.body.isSleeping();if(sleeping&&binding.sleeping)continue;binding.sleeping=sleeping;
-   propPosition.copy(binding.body.translation());propRotation.copy(binding.body.rotation());
+   const state=binding.body.markerState;if(!state||binding.version===state.version)continue;binding.version=state.version;
+   propPosition.copy(state.position);propRotation.copy(state.rotation);
    propPose.compose(propPosition,propRotation,unitScale);propMatrix.multiplyMatrices(propPose,binding.local);
    binding.batch.setMatrixAt(binding.index,propMatrix);dirty.add(binding.batch);
   }

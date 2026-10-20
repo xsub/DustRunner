@@ -208,11 +208,11 @@ for(const kind of ['cone','tires'])test(`Bronco pushes through ${kind} and the d
  }finally{f.physics.dispose();}
 });
 
-test('distant markers remain inactive until a truck approaches',()=>{
+test('distant markers remain inactive until a truck enters contact range',()=>{
  const f=fixture(()=>0,100),prop=f.physics.addBarrier(50,0,0,{kind:'cone'});
  try{
   step(f,{},120);assert.equal(prop.isEnabled(),false);
-  f.car.x=45;f.car.z=0;f.physics.reset(f.car);step(f);
+  f.car.x=48.5;f.car.z=0;f.physics.reset(f.car);step(f);
   assert.equal(prop.isEnabled(),true);
   f.physics.resetBarriers();assert.equal(prop.isEnabled(),false);
  }finally{f.physics.dispose();}
@@ -283,4 +283,31 @@ test('paused engine mass refresh preserves the rigid body pose, velocity and ste
  const f=fixture();step(f,{},180);const body=f.car.physics.body;body.setLinvel({x:2,y:1,z:-20},true);f.car.physics.steer=.22;
  const position=body.translation(),rotation=body.rotation(),velocity=body.linvel();f.car.engineId='400';f.physics.refreshMass(f.car);
  assert.ok(Math.abs(body.mass()-vehicleMass('classic','400'))<.01);assert.deepEqual(body.translation(),position);assert.deepEqual(body.rotation(),rotation);assert.deepEqual(body.linvel(),velocity);assert.equal(f.car.physics.steer,.22);f.physics.dispose();
+});
+
+test('unhit markers stay anchored on slopes even beside a parked Bronco',()=>{
+ const f=fixture((x,z)=>4+x*.18,60),props=[];
+ for(let i=0;i<30;i++){const x=5+i*.6,z=-10+i*.7;props.push(f.physics.addBarrier(x,f.terrain.heightAt(x,z)+.01,z,{kind:i%2?'cone':'tires',layers:2}));}
+ f.physics.setMarkerVisibility(()=>true);const origins=props.map(body=>body.translation());
+ try{
+  step(f,{},600);assert.equal(f.physics.getStats().movingMarkers,0);
+  props.forEach((body,i)=>{assert.equal(body.isEnabled(),false);assert.deepEqual(body.translation(),origins[i]);});
+ }finally{f.physics.dispose();}
+});
+test('moving markers never exceed ten percent of the current visible set, including impacts',()=>{
+ const f=fixture(()=>0,100),props=[];
+ for(let i=0;i<60;i++)props.push(f.physics.addBarrier((i%10-4.5)*.7,0,-4-Math.floor(i/10)*3,{kind:'cone'}));
+ f.physics.setMarkerVisibility(()=>true);let peak=0,shift=0;
+ try{
+  for(let frame=0;frame<480;frame++){
+   if(frame===120)f.physics.setMarkerVisibility(p=>p.x<0);
+   step(f,{throttle:.5});const stats=f.physics.getStats();peak=Math.max(peak,stats.movingMarkers);
+   assert.ok(stats.movingMarkers<=Math.floor(stats.visibleMarkers*.1));assert.equal(stats.markerBudget,Math.floor(stats.visibleMarkers*.1));
+   props.forEach((body,i)=>shift=Math.max(shift,Math.abs(body.translation().z-(-4-Math.floor(i/10)*3))));
+  }
+  assert.ok(peak>0);assert.ok(shift>.25);assert.ok(f.car.z<-15,'quota must not trap the truck behind anchored markers');
+  f.physics.setMarkerVisibility(()=>false);assert.equal(f.physics.getStats().movingMarkers,0);
+  assert.ok(props.every(body=>!body.isEnabled()));
+  f.physics.resetBarriers();assert.equal(f.physics.getStats().movingMarkers,0);
+ }finally{f.physics.dispose();}
 });

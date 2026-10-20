@@ -27,7 +27,7 @@ The original two circuits have laps exactly **four times their previous length**
 
 Rapier runs rigid-body physics at 120 Hz. The rendered terrain and collision surface use the same triangles, including cross slopes and graded shoulders. Stronger rebound damping absorbs landing energy without a second hop. Four spring/damper wheel contacts drive suspension, pitch and roll, with visible axle articulation, individual tire travel and Ackermann front steering. The live axles are a game approximation, not a complete linkage simulation. Wheel rotation follows road travel and coasts in flight. Gravity is 9.81 world units/s²; jump height, flight time and landing impacts arise from the terrain and momentum. There are no artificial jump-height caps or air steering. Chassis, roof and tire collision envelopes allow real 3D impacts and rollovers. Frame, body, wheels and front-mounted engine determine a low, forward-biased center of mass and distributed angular inertia. Loaded game tuning sets a 302 Heritage to 2,250 kg and the larger 302 bodies to 2,750 kg, with more weight low in the frame. Engine swaps affect mass consistently in physics and the powertrain, so heavier trucks accelerate more slowly and resist impacts more. The current tune mass is shown beside the engine specifications. Dirt traction limits hard launches, so nitro does not stand the truck on its rear bumper. Press **F** (or the touch recovery button) to right the truck; opponents recover automatically when overturned or stranded. Nitro remains **Space**, and player steering builds smoothly to full lock at low speed, then progressively reduces lock at racing speed. Engine torque curves, automatic gear changes and hill-load kickdown drive acceleration and sound. Brake pressure builds smoothly instead of applying full braking at the first keypress. Reduced rolling and engine drag preserve momentum when coasting. The service brake combines tire braking and drivetrain resistance; holding Down after stopping engages reverse after a short pause.
 
-Separated stacks of worn tires and orange-white traffic cones mark both road edges. These are movable props: light cones tip over, and stacks break into separate 10 kg tires that slide or tumble when hit. Trucks can break through them and drive back up the graded shoulder without using recovery. Nearby props activate for physics; distant ones stay inactive to keep the long circuits fast. Race reset restores their original positions. The desert contains saguaro cacti, agave, scrub and dry grass, with 18 animated rattlesnakes per circuit roaming safely outside the road. Plants use instanced geometry.
+Separated stacks of worn tires and orange-white traffic cones mark both road edges at roughly 8 m intervals. These are movable props: light cones tip over, and stacks break into separate 10 kg tires that slide or tumble when hit. Trucks can break through them and drive back up the graded shoulder without using recovery. Markers stay anchored until the truck reaches contact range. A camera-based quota permits at most 10% of visible individual tires/cones to move, including those struck by cars. Offscreen or settled markers re-anchor; impacts do not cause a chain reaction along the hillside. Race reset restores their original positions. The desert contains saguaro cacti, agave, scrub and dry grass, with 18 animated rattlesnakes per circuit roaming safely outside the road. Plants use instanced geometry.
 
 The race fills the browser window by default. The compact HUD shows position, lap, time, speed, and nitro. Open **Menu** for truck selection, tracks, upgrades, sound, and controls; opening the menu pauses an active race and closing it resumes. The fullscreen button is optional. **Menu → Bronco® History & Performance** opens a five-generation field guide with model years, factory engine layouts, fuel systems and source links. Select a generation to read its history and filter engine profiles. A shared-chassis drivetrain benchmark runs the longitudinal engine model for 60 seconds with stock engines and no nitro: modeled kW/hp, torque, 0–50 km/h and final speed. Choose compact or full-size mass, then use FIT to hot-swap an engine at any time. These are ideal flat-ground drivetrain benchmarks; 3D suspension, terrain, tire slip and impacts affect actual lap performance. They are not historical factory performance figures.
 
@@ -169,3 +169,39 @@ changing cross slopes. The opening runway stays level before the main ramp.
 All surface triangles are shared by rendering, tire contacts and body
 collisions. Automated checks drive an AI lap on every added circuit with
 the same physical recovery used in the game.
+
+### Marker activity budget and performance
+
+The former 12–24 m activation radius woke an entire band of loose markers
+beside every racer. On slopes these kept sliding and accumulated simulation
+work. Marker spacing is now 8 m instead of 2.1 m. Unhit markers stay anchored,
+including on steep banks. Contact activation uses the oriented truck footprint;
+it does not wake the whole neighborhood. The viewport counts individual tire
+bodies and cones and caps simultaneous movement at `floor(visible * 0.10)`.
+The quota includes impacts. Tire stacks enter the simulation together when
+the quota permits; other markers stay anchored and do not form an impassable
+wall. Leaving the view or moving away from the trucks settles and anchors
+a marker at its new ground position. With fewer than ten visible markers the
+budget is zero. This is an explicit game/performance policy rather than a full
+physical simulation of every marker. Race reset restores original placements.
+
+The FPS window adds **Ruchome bandy**: moving / budget · visible. Marker poses
+are cached in JavaScript and versioned; inactive render instances no longer
+call into WASM every frame. The vehicle simulation still runs at 120 Hz.
+
+`node scripts/benchmark-markers.mjs` drives four AI trucks on Ravine Rush for
+30 simulated seconds, including scenery synchronization, with an 80 × 65 m
+half-extent visibility window. On the same development machine, before/after:
+3,348 → 971 bodies, peak awake bodies 177 → 4, mean step 1.343 → 0.225 ms,
+P95 2.943 → 0.257 ms. This measures ordinary driving without hitting markers;
+it is a headless CPU comparison, not a prediction of browser FPS on another
+computer. Impact, slope anchoring, viewport quota shrink, and off-road return
+are covered separately by automated tests.
+
+Research references for further rendering work: [Three.js: reducing object/draw
+counts](https://threejs.org/manual/pages/optimize-lots-of-objects.html),
+[Three.js: shadow-map render cost](https://threejs.org/manual/pages/shadows.html),
+[Rapier: sleeping bodies](https://rapier.rs/docs/user_guides/javascript/rigid_body_sleeping/),
+and [Frank Force's LittleJS batched WebGL renderer](https://killedbyapixel.github.io/LittleJS/docs/src_engineWebGL.js.html).
+The first fix targets the measured physics/marker problem; it does not change
+rendering engines or silently reduce vehicle contact accuracy.

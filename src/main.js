@@ -35,6 +35,8 @@ let renderer;
 try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}catch(e){$('#message p').textContent='WebGL is required. Please enable hardware acceleration and reload.';$('#start').disabled=true;throw e;}
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.setClearColor('#a99a70');renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
 const reflections=createDesertReflections(renderer);scene.environment=reflections.texture;scene.environmentIntensity=.65;
+const markerFrustum=new THREE.Frustum(),markerViewMatrix=new THREE.Matrix4(),markerPosition=new THREE.Vector3();
+const markerIsVisible=position=>{markerPosition.set(position.x,position.y+.17,position.z);return markerFrustum.containsPoint(markerPosition);};
 const camera=new THREE.OrthographicCamera(-50,50,35,-35,.1,250);camera.position.set(12,88,62);camera.lookAt(0,0,0);
 scene.add(new THREE.HemisphereLight('#fff4d6','#69653e',2.6));const sun=new THREE.DirectionalLight('#fff0cb',3.2);sun.position.set(-30,55,20);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);Object.assign(sun.shadow.camera,{left:-55,right:55,top:55,bottom:-55,near:1,far:180});sun.shadow.normalBias=.04;scene.add(sun,sun.target);
 const mat=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:1,...extra});
@@ -317,6 +319,7 @@ function updateCamera(dt,snap=false){
  const targetY=heightAt(player.x,player.z)+Math.max(0,player.height-heightAt(player.x,player.z))*.35;
  cameraState.y=(cameraState.y??targetY)+(targetY-(cameraState.y??targetY))*(snap?1:1-Math.exp(-dt*3));
  camera.position.set(x,78+cameraState.y,z+70);camera.lookAt(x,cameraState.y,z);camera.updateProjectionMatrix();camera.updateMatrixWorld();
+ markerViewMatrix.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);markerFrustum.setFromProjectionMatrix(markerViewMatrix);physics?.setMarkerVisibility(markerIsVisible);
  camera.getWorldDirection(viewDirection);
  const ndc=[[-1,-1],[1,-1],[1,1],[-1,1]];
  viewCorners.forEach((point,i)=>{point.set(ndc[i][0],ndc[i][1],-1).unproject(camera);point.addScaledVector(viewDirection,-point.y/viewDirection.y);});
@@ -329,7 +332,7 @@ function resize(){
  renderer.setSize(w,h,false);minimap.resize();updateCamera(0,true);
 }
 new ResizeObserver(resize).observe(game);reset();resize();if(new URLSearchParams(location.search).get('mode')==='desert')document.querySelector('[data-mode="desert"]').click();let accumulator=0;
-function frame(now){requestAnimationFrame(frame);const frameStarted=performance.now();framePhysicsMs=framePhysicsSteps=0;tuningPanel.update(now);const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;accumulator+=dt;while(accumulator>=1/60){step(1/60);accumulator-=1/60;}scenery.update(phase==='paused'?0:dt);updateEngineSound(dt);updateCamera(dt);minimap.render(activeTrucks(),selectedColor,viewCorners);renderer.render(scene,camera);statsOverlay.record(now,{cpuMs:performance.now()-frameStarted,physicsMs:framePhysicsMs,steps:framePhysicsSteps});}requestAnimationFrame(frame);
+function frame(now){requestAnimationFrame(frame);const frameStarted=performance.now();framePhysicsMs=framePhysicsSteps=0;tuningPanel.update(now);const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;accumulator+=dt;while(accumulator>=1/60){step(1/60);accumulator-=1/60;}updateEngineSound(dt);updateCamera(dt);scenery.update(phase==='paused'?0:dt);minimap.render(activeTrucks(),selectedColor,viewCorners);renderer.render(scene,camera);statsOverlay.record(now,{cpuMs:performance.now()-frameStarted,physicsMs:framePhysicsMs,steps:framePhysicsSteps});}requestAnimationFrame(frame);
 // Read-only telemetry makes gameplay and rendering easy to inspect.
 window.__DUST_RUNNER__={getState:()=>({phase,elapsed,mode:freeRide?'desert':'race',desert:{...desertOptions},track:trackIndex,trackVariant,renderer:renderer.info.render,player:{x:trucks[0].x,z:trucks[0].z,speed:trucks[0].speed,lap:trucks[0].lap,nitro:trucks[0].nitro,engineId:trucks[0].engineId,powertrain:{...trucks[0].powertrain}},trucks:trucks.map(c=>({lap:c.lap,index:c.index,x:c.x,z:c.z,airborne:c.airborne,height:c.height,rollover:c.rollover,suspension:c.suspensionLengths})),cash,levels:{...levels}})};
 

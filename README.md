@@ -490,3 +490,9 @@ A single optional wind event starts after 18–40 seconds, then leaves a 30–75
 Desert rock clusters now use the same instanced low-poly triangles for rendering and collision. A single fixed BVH collider covers all rocks in a world; there are no extra dynamic rock bodies or per-frame rock transforms. Wheel rays and chassis contacts can hit them. The Free Ride spawn stays clear, and recovery excludes rock-occupied patches.
 
 Snakes are wildlife rather than targets: a swept approach check makes them retreat into the sand before a truck arrives, with immediate hiding at close range and a four-second quiet period before returning. No animal injury, impact sound, collision, or vehicle speed penalty is applied. Safety checks continue when decorative animation yields to the physics budget, without terrain queries.
+
+### Finish line and victory lap
+
+Crossing the third-lap finish records the place, time and cash reward once, while full driving and physics continue indefinitely. A compact medal bar offers **ZAKOŃCZ WYŚCIG**. Gold uses red screen confetti, silver green, bronze orange; fourth place has no podium medal. The noninteractive, 96-piece canvas celebration lasts six seconds at at most 30 Hz and honors reduced-motion preferences.
+
+Results open only via that button or after ten uninterrupted seconds stopped with no driving input. Sliding, flight, driving controls, pause, hidden/unfocused tabs, menu and developer editing interrupt that countdown. Returning from a menu starts a fresh ten-second interval; normal parameter changes that rebuild the world still start a fresh session. Final time/place and earnings remain fixed during victory laps.

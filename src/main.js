@@ -26,6 +26,8 @@ import {EngineAudio} from './engine-audio.js';
 import {clamp,angleDelta,advanceProgress,formatTime} from './race.js';
 import {buildTerrain} from './terrain.js';
 import {findRecoverySpot} from './recovery.js';
+import {RaceCompletion} from './race-completion.js';
+import {createRaceCelebration} from './race-celebration.js';
 import {buildDesert,DESERT_SPAWN,DESERT_BOUNDS,DESERT_VARIANTS,normalizeDesertOptions} from './desert.js';
 import {initPhysics,createPhysics,CHASSIS_HEIGHT} from './physics.js';
 import {tuning as cfg,restoreTuning,setTuning} from './tuning.js';
@@ -135,24 +137,25 @@ function makeTruck(style,num){
  return {mesh,chassis,body,wheels,axles,dispose,number:num,style,engineId:defaultEngine(style),driveMode:'auto',axleLocks:{front:true,rear:true},x:0,z:0,vx:0,vz:0,heading:0,speed:0,index:0,checkpoint:0,lap:0,height:0,vertical:0,nitro:100,boosting:false,finish:false};
 }
 makeWorld();['classic','ranger','sunset','expedition'].forEach((c,i)=>trucks.push(makeTruck(c,['07','12','28','03'][i])));
+const completion=new RaceCompletion(),celebration=createRaceCelebration(game);
 const keys=new Set();let phase='ready',previousPhase='racing',elapsed=0,count=0,selectedColor='#087a50',cash=0,levels={engine:0,grip:0},lastTime=0,muted=true,volume=.55,steeringMode='return',audioPreviewTime=0;
 const engineAudio=new EngineAudio();
 try{const save=JSON.parse(localStorage.getItem('dust-runner-save'));if(save){trucks[0].driveMode=driveModeById(save.driveMode).id;trucks[0].axleLocks={front:typeof save.axleLocks?.front==='boolean'?save.axleLocks.front:true,rear:typeof save.axleLocks?.rear==='boolean'?save.axleLocks.rear:true};if(['return','hold'].includes(save.steeringMode))steeringMode=save.steeringMode;if(ENGINES.some(e=>e.id===save.engineId))trucks[0].engineId=save.engineId;if(Number.isFinite(save.volume))volume=clamp(save.volume,0,1);cash=Math.max(0,Number(save.cash)||0);levels.engine=clamp(Number(save.engine)||0,0,3);levels.grip=clamp(Number(save.grip)||0,0,3);}}catch{}
 function save(){try{localStorage.setItem('dust-runner-save',JSON.stringify({cash,...levels,engineId:trucks[0].engineId,volume,steeringMode,driveMode:trucks[0].driveMode,axleLocks:trucks[0].axleLocks}));}catch{}updateGarage();}
 function updateGarage(){$('#cash').textContent=cash;for(const type of ['engine','grip']){$(`#${type}-level`).textContent=levels[type];const b=$(`[data-upgrade="${type}"]`);b.disabled=levels[type]>=3;b.title=levels[type]>=3?'Fully upgraded':'Buy upgrade for $300';}}
 updateGarage();
-const drivePanel=createDrivePanel({getPlayer:()=>trucks[0],onChange:save,onInteract:()=>{if(!menuDialog.open)canvas.focus({preventScroll:true});}});
-const handlingPanel=createHandlingPanel({getPlayer:()=>trucks[0],onChange:()=>keys.clear(),onInteract:()=>{if(!menuDialog.open)canvas.focus({preventScroll:true});}});
-function reset(){simulationClock.reset(true);physics.resetBarriers();scenery.resetBarriers();elapsed=0;count=0;phase='ready';$('#race-status').textContent=freeRide?'FREE RIDE · PUSTYNIA':'FREE PRACTICE';$('#countdown').textContent='';$('#pause').textContent='Ⅱ';$('#message').style.display='block';$('#message').innerHTML='<span>DUST RUNNER</span><strong>'+TRACKS[trackIndex].name+'</strong><p>Three laps · '+(curve.getLength()/1000).toFixed(2)+' km per lap · Split landing ahead.</p><button id="start">RACE <span>↗</span></button><button class="setup-link" id="open-setup">TRUCK · TRACK · PIT STOP</button><small>ENTER TO RACE · WASD / ARROWS TO DRIVE</small>';if(freeRide){$('#message').innerHTML='<span>FREE RIDE</span><strong>PUSTYNIA</strong><p>1200 × 600 m · Wydmy sierpowe, długie grzbiety, wysokie kopce i pola nierównego piasku. Bez przeciwników i limitu czasu.</p><button id="start">JEDŹ NA PUSTYNIĘ ↗</button><button class="setup-link" id="open-setup">SAMOCHÓD · SILNIK · MENU</button><small>F · POSTAW AUTO NA KOŁACH &nbsp; R · WRÓĆ NA START</small>';}$('#start').onclick=start;$('#open-setup').onclick=openMenu;updateMenu();
+const drivePanel=createDrivePanel({getPlayer:()=>trucks[0],onChange:()=>{completion.interrupt();save();},onInteract:()=>{if(!menuDialog.open)canvas.focus({preventScroll:true});}});
+const handlingPanel=createHandlingPanel({getPlayer:()=>trucks[0],onChange:()=>{completion.interrupt();keys.clear();},onInteract:()=>{if(!menuDialog.open)canvas.focus({preventScroll:true});}});
+function reset(){completion.reset();celebration.reset();$('#race-victory').hidden=true;simulationClock.reset(true);physics.resetBarriers();scenery.resetBarriers();elapsed=0;count=0;phase='ready';$('#race-status').textContent=freeRide?'FREE RIDE · PUSTYNIA':'FREE PRACTICE';$('#countdown').textContent='';$('#pause').textContent='Ⅱ';$('#message').style.display='block';$('#message').innerHTML='<span>DUST RUNNER</span><strong>'+TRACKS[trackIndex].name+'</strong><p>Three laps · '+(curve.getLength()/1000).toFixed(2)+' km per lap · Split landing ahead.</p><button id="start">RACE <span>↗</span></button><button class="setup-link" id="open-setup">TRUCK · TRACK · PIT STOP</button><small>ENTER TO RACE · WASD / ARROWS TO DRIVE</small>';if(freeRide){$('#message').innerHTML='<span>FREE RIDE</span><strong>PUSTYNIA</strong><p>1200 × 600 m · Wydmy sierpowe, długie grzbiety, wysokie kopce i pola nierównego piasku. Bez przeciwników i limitu czasu.</p><button id="start">JEDŹ NA PUSTYNIĘ ↗</button><button class="setup-link" id="open-setup">SAMOCHÓD · SILNIK · MENU</button><small>F · POSTAW AUTO NA KOŁACH &nbsp; R · WRÓĆ NA START</small>';}$('#start').onclick=start;$('#open-setup').onclick=openMenu;updateMenu();
  trucks.forEach((c,i)=>c.mesh.visible=!freeRide||i===0);
  activeTrucks().forEach((c,i)=>{const j=N-20-(i>1?25:0),p=samples[j],t=curve.getTangentAt(j/N),side=(i%2?1:-1)*2.1*curve.lateralSign;Object.assign(c,{x:p.x-t.z*side,z:p.z+t.x*side,vx:0,vz:0,heading:Math.atan2(-t.x,-t.z),speed:0,index:j,checkpoint:-1,lap:0,height:terrain(j),vertical:0,airborne:false,lastGround:terrain(j),suspension:0,suspensionVelocity:0,rampRiseVelocity:0,collisionYaw:0,nitro:100,boosting:false,finish:false});c.mesh.position.set(c.x,0,c.z);c.mesh.rotation.set(0,c.heading,0);c.wheels.forEach(w=>{w.previousRotation=undefined;w.previousX=undefined;w.previousHeading=undefined;w.angle=0;w.steer=0;w.angularVelocity=0;});c.stuckTime=0;c.lane=(i%2?3.5:-3.5)*curve.lateralSign;if(freeRide)Object.assign(c,{...DESERT_SPAWN,height:heightAt(DESERT_SPAWN.x,DESERT_SPAWN.z)});resetPowertrain(c);physics.reset(c);poseTruck(c,0,true);});
  dustPool.reset();updateCamera(0,true);}
 function start(){if(phase==='racing'||phase==='countdown')return;audioPreviewTime=0;reset();phase=freeRide?'racing':'countdown';count=3.4;$('#message').style.display='none';$('#race-status').textContent=freeRide?'FREE RIDE · PUSTYNIA':'GET READY';canvas.focus({preventScroll:true});initAudio();}
-function pause(){if(!['racing','countdown','paused'].includes(phase))return;if(phase==='paused'){phase=previousPhase;$('#countdown').textContent='';$('#pause').textContent='Ⅱ';}else{previousPhase=phase;phase='paused';$('#countdown').textContent='PAUSED';$('#pause').textContent='▶';engineAudio.silence();}keys.clear();canvas.focus({preventScroll:true});}
+function pause(){completion.interrupt();if(!['racing','countdown','paused'].includes(phase))return;if(phase==='paused'){phase=previousPhase;$('#countdown').textContent='';$('#pause').textContent='Ⅱ';}else{previousPhase=phase;phase='paused';$('#countdown').textContent='PAUSED';$('#pause').textContent='▶';engineAudio.silence();}keys.clear();canvas.focus({preventScroll:true});}
 let menuPaused=false;
 function updateMenu(){$('#menu-play').textContent=freeRide?(phase==='paused'?'WRÓĆ NA PUSTYNIĘ ↗':'JEDŹ NA PUSTYNIĘ ↗'):(phase==='paused'?'RESUME RACE ↗':'START RACE ↗');}
-function openMenu(){if(menuDialog.open)return;menuPaused=phase==='racing'||phase==='countdown';if(menuPaused)pause();keys.clear();updateMenu();menuDialog.showModal();}
-function closeMenu(){menuDialog.close();if(menuPaused&&phase==='paused')pause();menuPaused=false;canvas.focus({preventScroll:true});}
+function openMenu(){if(menuDialog.open)return;completion.interrupt();menuPaused=phase==='racing'||phase==='countdown';if(menuPaused)pause();keys.clear();updateMenu();menuDialog.showModal();}
+function closeMenu(){completion.interrupt();menuDialog.close();if(menuPaused&&phase==='paused')pause();menuPaused=false;canvas.focus({preventScroll:true});}
 $('#menu').onclick=openMenu;$('#menu-close').onclick=closeMenu;
 $('#menu-play').onclick=()=>{closeMenu();if(['ready','finished'].includes(phase))start();else if(phase==='paused')pause();};
 menuDialog.addEventListener('cancel',event=>{event.preventDefault();closeMenu();});
@@ -245,8 +248,8 @@ document.querySelectorAll('[data-reflection]').forEach(b=>b.onclick=()=>{trackVa
 document.querySelectorAll('[data-upgrade]').forEach(b=>b.onclick=()=>{const type=b.dataset.upgrade;if(phase==='racing'||phase==='countdown'||phase==='paused'){$('#garage-note').textContent='Upgrades are available between races.';return;}if(cash<300){$('#garage-note').textContent='You need $300. Finish a race to earn more cash.';return;}if(levels[type]<3){cash-=300;levels[type]++;save();$('#garage-note').textContent=`${type==='engine'?'Engine':'Tires'} upgraded to level ${levels[type]}. Ready for the next race.`;}});
 let devResume=false;
 const tuningPanel=createTuningPanel({
- onOpen(){devResume=menuPaused||phase==='racing'||phase==='countdown';if(menuDialog.open){menuDialog.close();menuPaused=false;}if(phase==='racing'||phase==='countdown')pause();keys.clear();engineAudio.silence();},
- onClose(drive){if(drive)start();else if(devResume&&phase==='paused')pause();devResume=false;canvas.focus({preventScroll:true});},
+ onOpen(){completion.interrupt();devResume=menuPaused||phase==='racing'||phase==='countdown';if(menuDialog.open){menuDialog.close();menuPaused=false;}if(phase==='racing'||phase==='countdown')pause();keys.clear();engineAudio.silence();},
+ onClose(drive){completion.interrupt();if(drive)start();else if(devResume&&phase==='paused')pause();devResume=false;canvas.focus({preventScroll:true});},
  onApply(parameters){
   const previous={...cfg};
   try{setTuning(parameters);refreshTracks();makeWorld();reset();resize();updateEngineMenu();}
@@ -266,7 +269,22 @@ window.addEventListener('keydown',e=>{if(menuDialog.open||document.querySelector
 document.addEventListener('visibilitychange',()=>{simulationClock.reset();lastTime=performance.now();if(document.hidden){audioPreviewTime=0;engineAudio.silence();}});
 document.querySelectorAll('[data-key]').forEach(b=>{b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);};b.onpointerup=b.onpointercancel=()=>keys.delete(b.dataset.key);});
 function dust(c,dt){if(Math.random()<=Math.min(1,dt*60))dustPool.spawn(c,heightAt(c.x,c.z));}
-function finish(){phase='finished';trucks[0].finish=true;const rank=ranking().indexOf(trucks[0])+1,reward=[900,600,400,300][rank-1];cash+=reward;save();$('#race-status').textContent='RACE COMPLETE';$('#message').style.display='block';$('#message').innerHTML=`<span>THE DUST HAS SETTLED</span><strong>${['FIRST PLACE!','SECOND PLACE','THIRD PLACE','KEEP ON TRUCKIN’'][rank-1]}</strong><p>${formatTime(elapsed)} · $${reward} earned · Visit the pit stop for upgrades.</p><button id="start">RACE AGAIN <span>↗</span></button><button class="setup-link" id="open-setup">PIT STOP · UPGRADES</button><small>OR PRESS ENTER</small>`;$('#start').onclick=start;$('#open-setup').onclick=openMenu;$('#garage-note').textContent=`$${reward} earned. Upgrade your truck and get back out there.`;}
+function finish(){
+ const result=completion.record(ranking().indexOf(trucks[0])+1,elapsed);if(!result)return;
+ trucks[0].finish=true;cash+=result.reward;save();
+ $('#race-victory').hidden=false;$('#finish-medal').textContent=result.medal?result.rank:'✓';$('#finish-medal').style.setProperty('--medal',result.metal);
+ $('#finish-title').textContent=(result.medal?result.medal+' · ':'META · ')+formatTime(result.time);
+ $('#garage-note').textContent=`$${result.reward} earned. Upgrade your truck and get back out there.`;
+ celebration.burst(result);
+}
+function showResults(){
+ if(!completion.close())return;const result=completion.result;
+ phase='finished';keys.clear();engineAudio.silence();celebration.reset();$('#race-victory').hidden=true;$('#countdown').textContent='';
+ $('#race-status').textContent='RACE COMPLETE';$('#message').style.display='block';$('#message').innerHTML=`<span>THE DUST HAS SETTLED</span><strong>${result.title}</strong><p>${formatTime(result.time)} · $${result.reward} earned · Visit the pit stop for upgrades.</p><button id="start">RACE AGAIN <span>↗</span></button><button class="setup-link" id="open-setup">PIT STOP · UPGRADES</button><small>OR PRESS ENTER</small>`;
+ $('#start').onclick=start;$('#open-setup').onclick=openMenu;$('#start').focus({preventScroll:true});
+}
+$('#end-race').onclick=showResults;
+
 function ranking(){return [...trucks].sort((a,b)=>(b.lap*N+b.index+(b.checkpoint>=0?N:0))-(a.lap*N+a.index+(a.checkpoint>=0?N:0)));}
 const bodyOffset=new THREE.Vector3();
 function poseTruck(c,dt,snap=false){
@@ -350,13 +368,13 @@ function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=
   if(i>0&&(c.rolloverTime>3||nearest(c.x,c.z).distance>roadWidth+12||c.stuckTime>6)){recover(c,c.stuckTime>6?6:0);c.stuckTime=0;}
   poseTruck(c,dt);
  });
- if(!freeRide&&trucks[0].lap>=3)finish();
+ if(!freeRide&&trucks[0].lap>=3&&!completion.result)finish();
  }
 }
 function updateGameHud(){
- if(phase==='racing')$('#race-status').textContent=trucks[0].rollover?'ROLLOVER · F TO RECOVER':trucks[0].airborne?'AIRBORNE':freeRide?'FREE RIDE · PUSTYNIA':'RACE IN PROGRESS';
+ if(phase==='racing')$('#race-status').textContent=completion.result?'META · '+(completion.result.medal??'FINISH')+' · JEDŹ DALEJ':trucks[0].rollover?'ROLLOVER · F TO RECOVER':trucks[0].airborne?'AIRBORNE':freeRide?'FREE RIDE · PUSTYNIA':'RACE IN PROGRESS';
  const c=trucks[0];if(import.meta.env.DEV)canvas.dataset.physics=JSON.stringify({x:c.x,z:c.z,index:c.index,heading:c.heading,airborne:c.airborne,height:c.height,rollover:c.rollover,suspension:c.suspensionLengths,rpm:c.powertrain?.rpm,gear:c.powertrain?.gear,load:c.powertrain?.load,grade:c.powertrain?.grade,mass:c.physics.body.mass(),centerOfMass:c.physics.body.localCom(),noseUpDegrees:Math.asin(clamp(2*(c.mesh.quaternion.w*c.mesh.quaternion.x-c.mesh.quaternion.y*c.mesh.quaternion.z),-1,1))*180/Math.PI,brakePressure:c.physics.controls.brakePressure,steering:c.physics.steer});
- $('#speed').textContent=Math.round(Math.abs(c.speed)*3.6);$('#time').textContent=formatTime(elapsed);$('#lap').innerHTML=`${String(Math.min(c.lap+1,3)).padStart(2,'0')}<small> / 03</small>`;$('#position').innerHTML=`${String(ranking().indexOf(c)+1).padStart(2,'0')}<small> / 04</small>`;$('#nitro-text').textContent=Math.round(c.nitro)+'%';$('#nitro-fill').style.width=c.nitro+'%';const drivetrain=c.powertrain;$('#rpm').textContent=Math.round(drivetrain?.rpm??engineById(c.engineId).idle);$('#gear').textContent=driveModeById(drivetrain?.mode).label+' · '+(drivetrain?.gear<0?'R':`D${drivetrain?.gear??1}`);
+ $('#speed').textContent=Math.round(Math.abs(c.speed)*3.6);$('#time').textContent=formatTime(completion.result?.time??elapsed);$('#lap').innerHTML=`${String(Math.min(c.lap+1,3)).padStart(2,'0')}<small> / 03</small>`;$('#position').innerHTML=`${String(completion.result?.rank??ranking().indexOf(c)+1).padStart(2,'0')}<small> / 04</small>`;$('#nitro-text').textContent=Math.round(c.nitro)+'%';$('#nitro-fill').style.width=c.nitro+'%';const drivetrain=c.powertrain;$('#rpm').textContent=Math.round(drivetrain?.rpm??engineById(c.engineId).idle);$('#gear').textContent=driveModeById(drivetrain?.mode).label+' · '+(drivetrain?.gear<0?'R':`D${drivetrain?.gear??1}`);
 }
 function updateCamera(dt,snap=false){
  const player=trucks[0];if(!player||(!snap&&phase==='paused'))return;
@@ -390,6 +408,8 @@ function frame(now){
  // time and step cap, so a slow frame cannot create an ever-growing backlog.
  let work={alpha:1,dropped:0,cpuMs:0};
  if(!document.hidden&&(phase==='racing'||phase==='countdown'))work=simulationClock.advance(elapsedFrame,step);else simulationClock.reset();
+ if(completion.tick(dt,{speed:Math.hypot(trucks[0].vx??0,trucks[0].vz??0),vertical:trucks[0].vertical,airborne:trucks[0].airborne,driving:[...keys].some(key=>['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD','Space'].includes(key)),editing:menuDialog.open||document.querySelector('#tuning-menu')?.open,active:phase==='racing'&&!document.hidden&&document.hasFocus()}))showResults();
+ celebration.update(dt,phase==='racing'&&!document.hidden);
  activeTrucks().forEach(c=>c.presentation?.render(phase==='racing'?work.alpha:1));
  updateEngineSound(dt);updateCamera(dt);
  dustPool.update(phase==='paused'?0:dt);
@@ -405,7 +425,7 @@ function frame(now){
 }
 requestAnimationFrame(frame);
 // Read-only telemetry makes gameplay and rendering easy to inspect.
-window.__DUST_RUNNER__={getState:()=>({phase,elapsed,mode:freeRide?'desert':'race',desert:{...desertOptions},track:trackIndex,trackVariant,renderer:{...renderer.info.render,width:canvas.width,height:canvas.height},performance:performanceTracker.snapshot(),scheduler:{budgetMs:simulationClock.budgetMs,limitedFrames:simulationClock.limitedFrames,droppedSeconds:simulationClock.droppedSeconds},player:{x:trucks[0].x,z:trucks[0].z,speed:trucks[0].speed,lap:trucks[0].lap,nitro:trucks[0].nitro,engineId:trucks[0].engineId,powertrain:{...trucks[0].powertrain}},trucks:trucks.map(c=>({lap:c.lap,index:c.index,x:c.x,z:c.z,airborne:c.airborne,height:c.height,rollover:c.rollover,suspension:c.suspensionLengths})),cash,levels:{...levels}})};
+window.__DUST_RUNNER__={getState:()=>({phase,elapsed,result:completion.result,stoppedAfterFinish:completion.stoppedFor,mode:freeRide?'desert':'race',desert:{...desertOptions},track:trackIndex,trackVariant,renderer:{...renderer.info.render,width:canvas.width,height:canvas.height},performance:performanceTracker.snapshot(),scheduler:{budgetMs:simulationClock.budgetMs,limitedFrames:simulationClock.limitedFrames,droppedSeconds:simulationClock.droppedSeconds},player:{x:trucks[0].x,z:trucks[0].z,speed:trucks[0].speed,lap:trucks[0].lap,nitro:trucks[0].nitro,engineId:trucks[0].engineId,powertrain:{...trucks[0].powertrain}},trucks:trucks.map(c=>({lap:c.lap,index:c.index,x:c.x,z:c.z,airborne:c.airborne,height:c.height,rollover:c.rollover,suspension:c.suspensionLengths})),cash,levels:{...levels}})};
 
 }
 boot().catch(error=>{console.error(error);document.querySelector('#message p').textContent='The physics engine could not load. Please reload the game.';});

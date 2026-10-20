@@ -205,3 +205,59 @@ counts](https://threejs.org/manual/pages/optimize-lots-of-objects.html),
 and [Frank Force's LittleJS batched WebGL renderer](https://killedbyapixel.github.io/LittleJS/docs/src_engineWebGL.js.html).
 The first fix targets the measured physics/marker problem; it does not change
 rendering engines or silently reduce vehicle contact accuracy.
+
+
+### Four-truck rendering budget (60 FPS target)
+
+Rigid opaque chassis parts are merged per material and shadow flags. Windows
+retain separate transparency sorting; the four wheel/suspension pivots and
+live axles remain independently animated. Detailed wheel templates share five
+material batches per wheel instead of 25 individual meshes, with no triangles
+removed. Both wheel finishes share their baked geometries across vehicles.
+Every terrain triangle, normal and UV remains unchanged, but 64 m chunks let
+the main and shadow cameras reject distant sections of the track/desert.
+Grandstand spectators share material batches instead of one draw per person.
+Snakes use five instance batches. Dust uses one bounded instance batch and
+recycled particle slots, eliminating geometry/material allocation during driving.
+
+Render-only pose interpolation smooths body, wheels and axles between 60 Hz
+gameplay ticks on 120 Hz displays. The Rapier contact solver remains at 120 Hz.
+A resolution controller starts with at most 2.1 million scene pixels (DPR cap
+1.5) and, after sustained slow frames over 2.5 s, reduces scene resolution in
+12% steps to a bounded floor. It recovers slowly when there is clear headroom.
+HUD text, model detail, collision geometry and simulation frequency are intact.
+Tab switches and isolated pauses do not trigger a quality reduction. This is
+a 60 FPS target, not a guarantee for arbitrary hardware or background-tab
+scheduling. Statistics show the actual render size and **FPS · 1% low**;
+that low is the inverse mean duration of the slowest one percent of frames
+in the rolling window, rather than the average FPS.
+
+Manual browser comparison on the development machine, same 3024 × 1880 CSS
+viewport, four-truck Dustbowl race, sampled about nine seconds into a straight
+acceleration after countdown:
+
+| Metric | Previous commit 11d03d7 | Optimized |
+| --- | ---: | ---: |
+| Rolling FPS | 48 | 120 |
+| P95 frame interval | 25.1 ms | 9.2 ms |
+| CPU loop | 20.2 ms | 2.6 ms |
+| Draw calls | 1086 | 251 |
+| Scene render size | 3023 × 1879 | 1837 × 1142 |
+| 1% low FPS | unavailable | 97 |
+
+These are observed rolling samples, not a deterministic race replay or a
+hardware-independent minimum: particle timing, traffic and saved engines can
+differ. The resolution reduction is part of the optimization, not a comparison
+at equal internal pixel count. Separately, the same stationary four-truck
+starting view dropped from about 999 to 255 draw calls by batching alone,
+before resolution adaptation, terrain chunks and particle changes.
+Ravine Rush also reached 120 FPS / 98 FPS 1% low in the same large viewport.
+To reproduce: start a four-truck race, hold Up through countdown and at least
+12 seconds of driving, and inspect FPS, 1% low, P95, scene size and draw calls.
+Use the same track, engine/tuning, viewport and browser for comparisons; exclude
+initial shader compilation and course-loading stalls from steady-state results.
+
+The implementation follows the primary-source batching/instancing and shadow
+cost references linked above. Tests check exact triangle/attribute preservation,
+rigid-part transforms, six body styles, shared wheel resources, bounded dust
+reuse, frame statistics, pose interpolation and resolution-controller hysteresis.

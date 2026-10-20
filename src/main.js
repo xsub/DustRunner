@@ -1,4 +1,10 @@
 import * as THREE from 'three';
+import {batchRigidMeshes} from './mesh-batching.js';
+import {FrameStats} from './frame-stats.js';
+import {VehiclePresentation} from './vehicle-presentation.js';
+import {RenderBudget} from './render-budget.js';
+import {createDustPool} from './dust-pool.js';
+import {chunkTerrain} from './terrain-chunks.js';
 import {createDesertReflections} from './lighting.js';
 import './style.css';
 import {VEHICLE_SCALE} from './contact.js';
@@ -33,7 +39,7 @@ const viewCorners=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>new THREE.Vector3(x
 const scene=new THREE.Scene();scene.background=new THREE.Color('#a99a70');scene.fog=new THREE.Fog('#a99a70',105,210);
 let renderer;
 try{renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:'high-performance'});}catch(e){$('#message p').textContent='WebGL is required. Please enable hardware acceleration and reload.';$('#start').disabled=true;throw e;}
-renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.setClearColor('#a99a70');renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
+const renderBudget=new RenderBudget(),performanceTracker=new FrameStats(10000);renderer.setPixelRatio(renderBudget.pixelRatio(game.clientWidth,game.clientHeight,devicePixelRatio));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.setClearColor('#a99a70');renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
 const reflections=createDesertReflections(renderer);scene.environment=reflections.texture;scene.environmentIntensity=.65;
 const markerFrustum=new THREE.Frustum(),markerViewMatrix=new THREE.Matrix4(),markerPosition=new THREE.Vector3();
 const markerIsVisible=position=>{markerPosition.set(position.x,position.y+.17,position.z);return markerFrustum.containsPoint(markerPosition);};
@@ -42,7 +48,7 @@ scene.add(new THREE.HemisphereLight('#fff4d6','#69653e',2.6));const sun=new THRE
 const mat=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:1,...extra});
 const textureCanvas=document.createElement('canvas');textureCanvas.width=256;textureCanvas.height=256;const textureContext=textureCanvas.getContext('2d');textureContext.fillStyle='#a8784c';textureContext.fillRect(0,0,256,256);for(let i=0;i<18000;i++){textureContext.fillStyle=Math.random()>.5?'#93683b':'#be8d59';textureContext.globalAlpha=.25+Math.random()*.3;textureContext.fillRect(Math.random()*256,Math.random()*256,1+Math.random()*2,1+Math.random()*2);}const dirtTexture=new THREE.CanvasTexture(textureCanvas);dirtTexture.wrapS=dirtTexture.wrapT=THREE.RepeatWrapping;dirtTexture.colorSpace=THREE.SRGBColorSpace;
 const sand=mat('#b59b65'),dirt=mat('#c8a06f',{map:dirtTexture,side:THREE.DoubleSide}),dark=mat('#252b24'),cream=mat('#e8d7a1'),green=mat('#58633b');
-let world=new THREE.Group();scene.add(world);const trucks=[],particles=[];let samples=[],curve,trackIndex=0,trackVariant=0,freeRide=false,heightAt=()=>0,scenery,physics;
+let world=new THREE.Group();scene.add(world);const trucks=[],dustPool=createDustPool(scene);let samples=[],curve,trackIndex=0,trackVariant=0,freeRide=false,heightAt=()=>0,scenery,physics;
 const N=3600;let roadWidth=ROAD_WIDTH;
 let desertOptions=normalizeDesertOptions();
 try{desertOptions=normalizeDesertOptions(JSON.parse(localStorage.getItem('dust-runner-desert-v1'))??{});}catch{}
@@ -59,7 +65,7 @@ function activeTrucks(){return freeRide?trucks.slice(0,1):trucks;}
 function makeDesertWorld(){
  const ground=buildDesert(desertOptions);heightAt=ground.heightAt;physics=createPhysics(ground,ground.bounds);
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(ground.positions,3));geometry.setAttribute('uv',new THREE.BufferAttribute(ground.uv,2));geometry.setAttribute('color',new THREE.BufferAttribute(ground.colors,3));geometry.setIndex(new THREE.BufferAttribute(ground.indices,1));geometry.computeVertexNormals();
- const surface=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:'#e2bd7d',map:dirtTexture,vertexColors:true,roughness:1}));surface.receiveShadow=true;world.add(surface);
+ world.add(chunkTerrain(geometry,new THREE.MeshStandardMaterial({color:'#e2bd7d',map:dirtTexture,vertexColors:true,roughness:1}),64,false));
  scenery=createScenery({world,samples:[],curve,roadWidth:0,heightAt,nearest:()=>({distance:Infinity}),bounds:ground.bounds,random:rand});
  // A raised sandy rim and solid outer edge keep the finite playground contained.
  for(const side of [-1,1])for(const axis of ['x','z']){const halfX=DESERT_BOUNDS.max.x,halfZ=DESERT_BOUNDS.max.z,x=axis==='x'?side*(halfX+1):0,z=axis==='z'?side*(halfZ+1):0;physics.addBoundary(x,z,axis==='x'?1:halfX+2,axis==='z'?1:halfZ+2,45);}
@@ -76,7 +82,7 @@ function makeWorld(){
  physics=createPhysics(terrainMesh,bounds);
  box(bounds.max.x-bounds.min.x+160,.7,bounds.max.z-bounds.min.z+160,sand,(bounds.min.x+bounds.max.x)/2,-.6,(bounds.min.z+bounds.max.z)/2);
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(terrainMesh.positions,3));geometry.setAttribute('uv',new THREE.BufferAttribute(terrainMesh.uv,2));geometry.setIndex(new THREE.BufferAttribute(terrainMesh.indices,1));geometry.computeVertexNormals();
- const surface=new THREE.Mesh(geometry,dirt);surface.receiveShadow=true;surface.castShadow=true;world.add(surface);
+ world.add(chunkTerrain(geometry,dirt));
  ribbon(-3.7,.12,mat('#c29a63',{polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),.025);ribbon(3.7,.12,mat('#c29a63',{polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),.025);
  // Conforming painted cross-strips stay flush even on banked, split landings.
  const rampPaint=mat('#e4bb5c',{side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
@@ -96,7 +102,9 @@ function makeWorld(){
  }
  scenery=createScenery({world,samples,curve,roadWidth,terrain:(i,side)=>terrainHeight(i/N,trackIndex,side,trackVariant),heightAt,addBarrier:(...args)=>physics.addBarrier(...args),nearest,bounds,random:rand});
  // Grandstands, pit garages and warm desert details.
- for(let row=0;row<4;row++){box(26,.6,1.6,mat(row%2?'#69715b':'#827d61'),-3,1+row*.65,standZ-row*1.3);for(let j=0;j<34;j++){const x=-15+j*.75;const colors=['#d6b663','#8b5540','#ece2ba','#394e48'];box(.33,.65,.35,mat(colors[Math.floor(rand()*4)]),x,1.7+row*.65,standZ-row*1.3);}}
+ const stands=new THREE.Group();world.add(stands);const spectatorMaterials=['#d6b663','#8b5540','#ece2ba','#394e48'].map(color=>mat(color)),benchMaterials=['#827d61','#69715b'].map(color=>mat(color));
+ for(let row=0;row<4;row++){box(26,.6,1.6,benchMaterials[row%2],-3,1+row*.65,standZ-row*1.3,stands);for(let j=0;j<34;j++){const x=-15+j*.75;box(.33,.65,.35,spectatorMaterials[Math.floor(rand()*4)],x,1.7+row*.65,standZ-row*1.3,stands);}}
+ batchRigidMeshes(stands);stands.traverse(o=>{o.matrixAutoUpdate=false;});
  for(let i=0;i<3;i++){box(8,3,5,mat('#beb191'),-20+i*10,1.5,pitZ);box(8.7,.22,6,mat(['#a75f3c','#73816b','#b69a4c'][i]),-20+i*10,3.1,pitZ);box(4.8,2.4,.1,dark,-20+i*10,1.2,pitZ-2.56);}
  sign('DUST RUNNER',-1,standZ+4);sign('GOOD TIMES. FULL THROTTLE.',0,pitZ-5,Math.PI);
  // Checkered start strip follows the track's tangent.
@@ -120,7 +128,7 @@ updateGarage();
 function reset(){physics.resetBarriers();scenery.resetBarriers();elapsed=0;count=0;phase='ready';$('#race-status').textContent=freeRide?'FREE RIDE · PUSTYNIA':'FREE PRACTICE';$('#countdown').textContent='';$('#pause').textContent='Ⅱ';$('#message').style.display='block';$('#message').innerHTML='<span>DUST RUNNER</span><strong>'+TRACKS[trackIndex].name+'</strong><p>Three laps · '+(curve.getLength()/1000).toFixed(2)+' km per lap · Split landing ahead.</p><button id="start">RACE <span>↗</span></button><button class="setup-link" id="open-setup">TRUCK · TRACK · PIT STOP</button><small>ENTER TO RACE · WASD / ARROWS TO DRIVE</small>';if(freeRide){$('#message').innerHTML='<span>FREE RIDE</span><strong>PUSTYNIA</strong><p>1200 × 600 m · Wydmy sierpowe, długie grzbiety, wysokie kopce i pola nierównego piasku. Bez przeciwników i limitu czasu.</p><button id="start">JEDŹ NA PUSTYNIĘ ↗</button><button class="setup-link" id="open-setup">SAMOCHÓD · SILNIK · MENU</button><small>F · POSTAW AUTO NA KOŁACH &nbsp; R · WRÓĆ NA START</small>';}$('#start').onclick=start;$('#open-setup').onclick=openMenu;updateMenu();
  trucks.forEach((c,i)=>c.mesh.visible=!freeRide||i===0);
  activeTrucks().forEach((c,i)=>{const j=N-20-(i>1?25:0),p=samples[j],t=curve.getTangentAt(j/N),side=(i%2?1:-1)*2.1*curve.lateralSign;Object.assign(c,{x:p.x-t.z*side,z:p.z+t.x*side,vx:0,vz:0,heading:Math.atan2(-t.x,-t.z),speed:0,index:j,checkpoint:-1,lap:0,height:terrain(j),vertical:0,airborne:false,lastGround:terrain(j),suspension:0,suspensionVelocity:0,rampRiseVelocity:0,collisionYaw:0,nitro:100,boosting:false,finish:false});c.mesh.position.set(c.x,0,c.z);c.mesh.rotation.set(0,c.heading,0);c.wheels.forEach(w=>{w.previousRotation=undefined;w.previousX=undefined;w.previousHeading=undefined;w.angle=0;w.steer=0;w.angularVelocity=0;});c.stuckTime=0;c.lane=(i%2?3.5:-3.5)*curve.lateralSign;if(freeRide)Object.assign(c,{...DESERT_SPAWN,height:heightAt(DESERT_SPAWN.x,DESERT_SPAWN.z)});resetPowertrain(c);physics.reset(c);poseTruck(c,0,true);});
- for(const p of particles){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();}particles.length=0;updateCamera(0,true);}
+ dustPool.reset();updateCamera(0,true);}
 function start(){if(phase==='racing'||phase==='countdown')return;audioPreviewTime=0;reset();phase=freeRide?'racing':'countdown';count=3.4;$('#message').style.display='none';$('#race-status').textContent=freeRide?'FREE RIDE · PUSTYNIA':'GET READY';canvas.focus({preventScroll:true});initAudio();}
 function pause(){if(!['racing','countdown','paused'].includes(phase))return;if(phase==='paused'){phase=previousPhase;$('#countdown').textContent='';$('#pause').textContent='Ⅱ';}else{previousPhase=phase;phase='paused';$('#countdown').textContent='PAUSED';$('#pause').textContent='▶';engineAudio.silence();}keys.clear();canvas.focus({preventScroll:true});}
 let menuPaused=false;
@@ -231,13 +239,13 @@ const tuningPanel=createTuningPanel({
 $('#open-tuning').onclick=$('#quick-dev').onclick=()=>tuningPanel.open();
 const statsOverlay=createStatsOverlay({game,toggle:$('#show-stats'),onInteract:()=>canvas.focus({preventScroll:true}),getDiagnostics:()=>{
  const c=trucks[0],info=renderer.info,powertrain=c.powertrain;
- return {...physics.getStats(),calls:info.render.calls,triangles:info.render.triangles,geometries:info.memory.geometries,textures:info.memory.textures,speed:Math.round(Math.abs(c.speed)*3.6),rpm:Math.round(powertrain?.rpm??0),gear:powertrain?.gear<0?'R':'D'+(powertrain?.gear??1),mass:Math.round(c.physics.body.mass()),contacts:[0,1,2,3].filter(i=>c.physics.controller.wheelIsInContact(i)).length,vertical:c.vertical.toFixed(2),phase:({ready:'GOTOWY',countdown:'START',racing:'JAZDA',paused:'PAUZA',finished:'META'})[phase]};
+ return {...physics.getStats(),resolution:Math.round(canvas.width)+' × '+Math.round(canvas.height),calls:info.render.calls,triangles:info.render.triangles,geometries:info.memory.geometries,textures:info.memory.textures,speed:Math.round(Math.abs(c.speed)*3.6),rpm:Math.round(powertrain?.rpm??0),gear:powertrain?.gear<0?'R':'D'+(powertrain?.gear??1),mass:Math.round(c.physics.body.mass()),contacts:[0,1,2,3].filter(i=>c.physics.controller.wheelIsInContact(i)).length,vertical:c.vertical.toFixed(2),phase:({ready:'GOTOWY',countdown:'START',racing:'JAZDA',paused:'PAUZA',finished:'META'})[phase]};
 }});
 // During a race, Space belongs to nitro even when a HUD button has focus.
 window.addEventListener('keydown',e=>{if(menuDialog.open||document.querySelector('#tuning-menu')?.open)return;if(e.target instanceof HTMLButtonElement&&e.code==='Space'&&!['racing','countdown','paused'].includes(phase))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.repeat)return;keys.add(e.code);if(e.code==='Enter'&&['ready','finished'].includes(phase))start();if(e.code==='KeyP'||e.code==='Escape')pause();if(e.code==='KeyR')reset();if(e.code==='KeyF')recover(trucks[0]);});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{audioPreviewTime=0;engineAudio.silence();keys.clear();if(phase==='racing'||phase==='countdown')pause();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){audioPreviewTime=0;engineAudio.silence();}});
 document.querySelectorAll('[data-key]').forEach(b=>{b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);};b.onpointerup=b.onpointercancel=()=>keys.delete(b.dataset.key);});
-function dust(c){if(particles.length>130||Math.random()>.48)return;const mesh=new THREE.Mesh(new THREE.IcosahedronGeometry(.2+Math.random()*.3,0),new THREE.MeshBasicMaterial({color:c.boosting?'#ead38f':'#c5a477',transparent:true,opacity:.45,depthWrite:false}));mesh.position.set(c.x+Math.sin(c.heading)*2,heightAt(c.x,c.z)+.3,c.z+Math.cos(c.heading)*2);scene.add(mesh);particles.push({mesh,life:.6+Math.random()*.5,vx:(Math.random()-.5)*3,vz:(Math.random()-.5)*3});}
+function dust(c){dustPool.spawn(c,heightAt(c.x,c.z));}
 function finish(){phase='finished';trucks[0].finish=true;const rank=ranking().indexOf(trucks[0])+1,reward=[900,600,400,300][rank-1];cash+=reward;save();$('#race-status').textContent='RACE COMPLETE';$('#message').style.display='block';$('#message').innerHTML=`<span>THE DUST HAS SETTLED</span><strong>${['FIRST PLACE!','SECOND PLACE','THIRD PLACE','KEEP ON TRUCKIN’'][rank-1]}</strong><p>${formatTime(elapsed)} · $${reward} earned · Visit the pit stop for upgrades.</p><button id="start">RACE AGAIN <span>↗</span></button><button class="setup-link" id="open-setup">PIT STOP · UPGRADES</button><small>OR PRESS ENTER</small>`;$('#start').onclick=start;$('#open-setup').onclick=openMenu;$('#garage-note').textContent=`$${reward} earned. Upgrade your truck and get back out there.`;}
 function ranking(){return [...trucks].sort((a,b)=>(b.lap*N+b.index+(b.checkpoint>=0?N:0))-(a.lap*N+a.index+(a.checkpoint>=0?N:0)));}
 const bodyOffset=new THREE.Vector3();
@@ -266,6 +274,8 @@ function poseTruck(c,dt,snap=false){
   axle.group.rotation.z=Math.atan2(right.y-left.y,right.x-left.x);
   for(const index of axle.indices)c.wheels[index].pivot.rotation.z=axle.group.rotation.z;
  });
+ if(c.presentation?.mesh!==c.mesh)c.presentation=new VehiclePresentation(c);
+ c.presentation.capture(snap);
 }
 function recover(c,advance=0){
  if(freeRide){c.x=clamp(c.x,DESERT_BOUNDS.min.x+25,DESERT_BOUNDS.max.x-25);c.z=clamp(c.z,DESERT_BOUNDS.min.z+25,DESERT_BOUNDS.max.z-25);c.speed=0;physics.reset(c);physics.sync(c,0);poseTruck(c,0,true);return;}
@@ -303,7 +313,7 @@ function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=
  $('#race-status').textContent=trucks[0].rollover?'ROLLOVER · F TO RECOVER':trucks[0].airborne?'AIRBORNE':freeRide?'FREE RIDE · PUSTYNIA':'RACE IN PROGRESS';
  if(!freeRide&&trucks[0].lap>=3)finish();
  }
- for(let i=particles.length-1;i>=0;i--){const p=particles[i];if(phase!=='paused'){p.life-=dt;p.mesh.position.x+=p.vx*dt;p.mesh.position.z+=p.vz*dt;p.mesh.position.y+=dt*.6;p.mesh.scale.multiplyScalar(1+dt*.7);p.mesh.material.opacity=Math.max(0,p.life*.35);}if(p.life<=0){scene.remove(p.mesh);p.mesh.geometry.dispose();p.mesh.material.dispose();particles.splice(i,1);}}
+ dustPool.update(phase==='paused'?0:dt);
  const c=trucks[0];if(import.meta.env.DEV)canvas.dataset.physics=JSON.stringify({x:c.x,z:c.z,index:c.index,heading:c.heading,airborne:c.airborne,height:c.height,rollover:c.rollover,suspension:c.suspensionLengths,rpm:c.powertrain?.rpm,gear:c.powertrain?.gear,load:c.powertrain?.load,grade:c.powertrain?.grade,mass:c.physics.body.mass(),centerOfMass:c.physics.body.localCom(),noseUpDegrees:Math.asin(clamp(2*(c.mesh.quaternion.w*c.mesh.quaternion.x-c.mesh.quaternion.y*c.mesh.quaternion.z),-1,1))*180/Math.PI,brakePressure:c.physics.controls.brakePressure,steering:c.physics.steer});
  $('#speed').textContent=Math.round(Math.abs(c.speed)*3.6);$('#time').textContent=formatTime(elapsed);$('#lap').innerHTML=`${String(Math.min(c.lap+1,3)).padStart(2,'0')}<small> / 03</small>`;$('#position').innerHTML=`${String(ranking().indexOf(c)+1).padStart(2,'0')}<small> / 04</small>`;$('#nitro-text').textContent=Math.round(c.nitro)+'%';$('#nitro-fill').style.width=c.nitro+'%';const drivetrain=c.powertrain;$('#rpm').textContent=Math.round(drivetrain?.rpm??engineById(c.engineId).idle);$('#gear').textContent=drivetrain?.gear<0?'R':`D${drivetrain?.gear??1}`;
 }
@@ -329,12 +339,12 @@ function updateCamera(dt,snap=false){
 }
 function resize(){
  const w=game.clientWidth,h=game.clientHeight;if(!w||!h)return;
- renderer.setSize(w,h,false);minimap.resize();updateCamera(0,true);
+ renderer.setPixelRatio(renderBudget.pixelRatio(w,h,devicePixelRatio));renderer.setSize(w,h,false);minimap.resize();updateCamera(0,true);
 }
 new ResizeObserver(resize).observe(game);reset();resize();if(new URLSearchParams(location.search).get('mode')==='desert')document.querySelector('[data-mode="desert"]').click();let accumulator=0;
-function frame(now){requestAnimationFrame(frame);const frameStarted=performance.now();framePhysicsMs=framePhysicsSteps=0;tuningPanel.update(now);const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;accumulator+=dt;while(accumulator>=1/60){step(1/60);accumulator-=1/60;}updateEngineSound(dt);updateCamera(dt);scenery.update(phase==='paused'?0:dt);minimap.render(activeTrucks(),selectedColor,viewCorners);renderer.render(scene,camera);statsOverlay.record(now,{cpuMs:performance.now()-frameStarted,physicsMs:framePhysicsMs,steps:framePhysicsSteps});}requestAnimationFrame(frame);
+function frame(now){requestAnimationFrame(frame);const frameStarted=performance.now();framePhysicsMs=framePhysicsSteps=0;tuningPanel.update(now);const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;accumulator+=dt;while(accumulator>=1/60){step(1/60);accumulator-=1/60;}activeTrucks().forEach(c=>c.presentation?.render(phase==='racing'?accumulator*60:1));updateEngineSound(dt);updateCamera(dt);scenery.update(phase==='paused'?0:dt);minimap.render(activeTrucks(),selectedColor,viewCorners);renderer.render(scene,camera);const cpuMs=performance.now()-frameStarted;if(renderBudget.sample(now,cpuMs,phase==='racing'&&!document.hidden)){renderer.setPixelRatio(renderBudget.pixelRatio(game.clientWidth,game.clientHeight,devicePixelRatio));}const timing={cpuMs,physicsMs:framePhysicsMs,steps:framePhysicsSteps};performanceTracker.record(now,timing);statsOverlay.record(now,timing);}requestAnimationFrame(frame);
 // Read-only telemetry makes gameplay and rendering easy to inspect.
-window.__DUST_RUNNER__={getState:()=>({phase,elapsed,mode:freeRide?'desert':'race',desert:{...desertOptions},track:trackIndex,trackVariant,renderer:renderer.info.render,player:{x:trucks[0].x,z:trucks[0].z,speed:trucks[0].speed,lap:trucks[0].lap,nitro:trucks[0].nitro,engineId:trucks[0].engineId,powertrain:{...trucks[0].powertrain}},trucks:trucks.map(c=>({lap:c.lap,index:c.index,x:c.x,z:c.z,airborne:c.airborne,height:c.height,rollover:c.rollover,suspension:c.suspensionLengths})),cash,levels:{...levels}})};
+window.__DUST_RUNNER__={getState:()=>({phase,elapsed,mode:freeRide?'desert':'race',desert:{...desertOptions},track:trackIndex,trackVariant,renderer:{...renderer.info.render,width:canvas.width,height:canvas.height},performance:performanceTracker.snapshot(),player:{x:trucks[0].x,z:trucks[0].z,speed:trucks[0].speed,lap:trucks[0].lap,nitro:trucks[0].nitro,engineId:trucks[0].engineId,powertrain:{...trucks[0].powertrain}},trucks:trucks.map(c=>({lap:c.lap,index:c.index,x:c.x,z:c.z,airborne:c.airborne,height:c.height,rollover:c.rollover,suspension:c.suspensionLengths})),cash,levels:{...levels}})};
 
 }
 boot().catch(error=>{console.error(error);document.querySelector('#message p').textContent='The physics engine could not load. Please reload the game.';});

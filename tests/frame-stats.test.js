@@ -16,3 +16,8 @@ test('pause/reset starts a fresh sampling window and does not count hidden time'
 test('invalid or duplicate timestamps do not corrupt later samples',()=>{
  const stats=new FrameStats();stats.record(100);stats.record(NaN);stats.record(100);stats.record(90);stats.record(120);assert.equal(stats.samples.length,1);close(stats.snapshot().fps,50);
 });
+test('one percent low reveals stalls hidden by the average frame rate',()=>{
+ const stats=new FrameStats(10000);stats.record(0);let now=0;
+ for(let i=0;i<200;i++){now+=i===100?100:10;stats.record(now);}
+ const s=stats.snapshot();assert.ok(s.fps>90);close(s.lowFps,1000/55);assert.equal(s.p99Ms,10);
+});

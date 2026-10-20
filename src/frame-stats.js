@@ -12,6 +12,7 @@ export class FrameStats{
  snapshot(){
   if(!this.samples.length)return null;
   const n=this.samples.length,sum=key=>this.samples.reduce((total,sample)=>total+sample[key],0),sorted=this.samples.map(s=>s.dt).sort((a,b)=>a-b);
-  return {fps:1000*n/this.duration,frameMs:this.duration/n,p95Ms:sorted[Math.ceil(n*.95)-1],cpuMs:sum('cpuMs')/n,physicsMs:sum('physicsMs')/n,physicsHz:sum('steps')*1000/this.duration,stepsPerFrame:sum('steps')/n};
+  const slowest=sorted.slice(-Math.max(1,Math.ceil(n*.01)));
+  return {lowFps:1000/(slowest.reduce((a,b)=>a+b,0)/slowest.length),p99Ms:sorted[Math.ceil(n*.99)-1],fps:1000*n/this.duration,frameMs:this.duration/n,p95Ms:sorted[Math.ceil(n*.95)-1],cpuMs:sum('cpuMs')/n,physicsMs:sum('physicsMs')/n,physicsHz:sum('steps')*1000/this.duration,stepsPerFrame:sum('steps')/n};
  }
 }

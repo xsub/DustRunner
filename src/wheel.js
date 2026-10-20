@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import {batchRigidMeshes} from './mesh-batching.js';
 
 // All trucks share geometry. Detailed tread is merged into one draw call.
 const profile=[[.30,-.205],[.39,-.24],[.49,-.225],[.55,-.17],[.565,-.09],[.565,.09],[.55,.17],[.49,.225],[.39,.24],[.30,.205],[.30,-.205]];
@@ -29,10 +30,12 @@ const metalMaterial=new THREE.MeshStandardMaterial({color:'#c9c6af',metalness:.6
 const innerMaterial=new THREE.MeshStandardMaterial({color:'#34352c',roughness:.85});
 const hubMaterial=new THREE.MeshStandardMaterial({color:'#66685d',metalness:.6,roughness:.55});
 const bronzeMaterial=new THREE.MeshStandardMaterial({color:'#90704a',metalness:.65,roughness:.42});
+const wheelTemplates=new Map();
 export function createOffroadWheel(finish='silver'){
+ if(wheelTemplates.has(finish))return wheelTemplates.get(finish).clone(true);
  const rimMaterial=finish==='bronze'?bronzeMaterial:metalMaterial;
  const group=new THREE.Group();
- const add=(geometry,material,x=0,y=0,z=0)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;m.userData.sharedWheel=true;group.add(m);return m;};
+ const add=(geometry,material,x=0,y=0,z=0)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m;};
  add(tireGeometry,tireMaterial);add(treadGeometry,treadMaterial);add(innerGeometry,innerMaterial);
  for(const side of [-1,1]){
   add(ringGeometry,rimMaterial,side*.213);
@@ -43,5 +46,6 @@ export function createOffroadWheel(finish='silver'){
    const a=i*Math.PI*2/5;add(boltGeometry,metalMaterial,side*.235,Math.cos(a)*.13,Math.sin(a)*.13);
   }
  }
- return group;
+ batchRigidMeshes(group,{shared:true});group.traverse(o=>{if(o.isMesh)o.userData.sharedWheel=true;});
+ wheelTemplates.set(finish,group);return group.clone(true);
 }

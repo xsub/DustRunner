@@ -98,6 +98,20 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
   const tail=[];for(let j=0;j<4;j++){const bead=mesh(bodyGeometry,rattle,group);bead.scale.set(.075-j*.01,.065,.085);tail.push(bead);}
   snakes.push({group,segments,head,tail,x,z,phase:random()*Math.PI*2});
  }
+ // Animated snakes share five draw calls instead of hundreds of meshes.
+ const snakeBatches=new Map();
+ for(const snake of snakes){
+  snake.group.removeFromParent();
+  snake.group.traverse(part=>{
+   if(!part.isMesh)return;
+   const key=part.geometry.uuid+'/'+part.material.uuid;
+   if(!snakeBatches.has(key))snakeBatches.set(key,{geometry:part.geometry,material:part.material,parts:[]});
+   snakeBatches.get(key).parts.push(part);
+  });
+ }
+ for(const data of snakeBatches.values()){
+  data.mesh=new THREE.InstancedMesh(data.geometry,data.material,data.parts.length);data.mesh.castShadow=true;data.mesh.receiveShadow=true;data.mesh.frustumCulled=false;data.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);world.add(data.mesh);
+ }
  let time=0;
  return {resetBarriers(){for(const binding of barrierBindings)binding.version=-1;},update(dt){
   const dirty=new Set();
@@ -121,5 +135,7 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
    const p=point(1),previous=point(.95);snake.head.position.set(p.x,.015,p.z-.08);snake.head.rotation.y=Math.atan2(-(p.x-previous.x),-(p.z-previous.z));
    const end=point(0);snake.tail.forEach((bead,j)=>bead.position.set(end.x,.02+j*.012,end.z+.08+j*.1));
   }
+  for(const snake of snakes)snake.group.updateMatrixWorld(true);
+  for(const {mesh,parts} of snakeBatches.values()){parts.forEach((part,i)=>mesh.setMatrixAt(i,part.matrixWorld));mesh.instanceMatrix.needsUpdate=true;}
  }};
 }

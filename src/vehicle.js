@@ -3,6 +3,7 @@ import {createOffroadWheel} from './wheel.js';
 import {isOpenBody,rollCageSegments} from './body-types.js';
 import {VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
+import {batchRigidMeshes} from './mesh-batching.js';
 
 export const BRONCO_STYLES={
  classic:{name:'HERITAGE · EMERALD',color:'#087a50',roof:'#eee9d9',width:.89,rounded:.055,lights:'round',flares:'#eee9d9'},
@@ -159,6 +160,8 @@ export function createBronco(style='classic',number='07'){
  const numberMaterial=material('#ffffff',{map:texture});
  const roof=part(new THREE.PlaneGeometry(.6,.55),numberMaterial,0,open?1.657:roofY+.067,open?-.92:.64);roof.rotation.x=-Math.PI/2;
  for(const side of [-1,1]){const decal=part(new THREE.PlaneGeometry(.34,.24),numberMaterial,side*(w+.066),1.13,.02);decal.rotation.y=side*Math.PI/2;}
+ batchRigidMeshes(chassis);
+ for(const axle of axles)batchRigidMeshes(axle.group);
  mesh.scale.setScalar(VEHICLE_SCALE);mesh.userData.style=style;
  return {mesh,chassis,body,wheels,axles,dispose(){
   const geometries=new Set(),materials=new Set();mesh.traverse(o=>{if(o.userData.sharedWheel)return;if(o.geometry)geometries.add(o.geometry);if(o.material)materials.add(o.material);});

@@ -34,7 +34,7 @@ test('reduction raises engine RPM and load at the same road speed and crawl stay
  assert.ok(crawl.powertrain.rpm>1800);assert.ok(crawl.powertrain.load>0);
 });
 
-test('low-range selection queues at speed/in flight and never deletes momentum',()=>{
+test('crawler selection queues at speed/in flight and never deletes momentum',()=>{
  const c=car('auto');resetPowertrain(c);c.speed=25;c.vx=2;c.vz=-25;c.x=19;c.z=20;c.nitro=62;c.lap=1;
  selectDriveMode(c,'4x4');assert.equal(c.powertrain.mode,'auto');assert.equal(c.powertrain.pendingMode,'4x4');
  assert.deepEqual([c.speed,c.vx,c.vz,c.x,c.z,c.nitro,c.lap],[25,2,-25,19,20,62,1]);
@@ -43,6 +43,31 @@ test('low-range selection queues at speed/in flight and never deletes momentum',
  assert.deepEqual(c.powertrain.locks,{front:true,rear:true});
  selectDriveMode(c,'hi');assert.equal(c.powertrain.mode,'hi');assert.deepEqual(c.powertrain.locks,{front:false,rear:false});
  assert.throws(()=>selectDriveMode(c,'bad'));
+});
+
+test('HI and LO change while moving, match a gear and retain momentum through an engine swap',()=>{
+ for(const speed of [25,-8]){
+  const c=car('hi');resetPowertrain(c);c.speed=speed;c.vx=2;c.vz=-speed;c.x=19;c.z=20;c.lap=1;c.nitro=62;
+  if(speed<0)c.powertrain.gear=-1;
+  const pose=[c.speed,c.vx,c.vz,c.x,c.z,c.lap,c.nitro];
+  selectDriveMode(c,'lo');assert.equal(c.powertrain.mode,'lo');assert.equal(c.powertrain.pendingMode,null);assert.ok(c.powertrain.shiftTime>0);assert.ok(c.powertrain.rpm<=5500);
+  if(speed<0)assert.equal(c.powertrain.gear,-1);else assert.equal(c.powertrain.gear,3);
+  assert.deepEqual([c.speed,c.vx,c.vz,c.x,c.z,c.lap,c.nitro],pose);
+  swapEngine(c,'351wefi');assert.equal(c.powertrain.mode,'lo');assert.deepEqual([c.speed,c.vx,c.vz,c.x,c.z,c.lap,c.nitro],pose);
+  selectDriveMode(c,'hi');assert.equal(c.powertrain.mode,'hi');assert.equal(c.powertrain.pendingMode,null);
+  selectDriveMode(c,'4x4');assert.equal(c.powertrain.mode,'hi');assert.equal(c.powertrain.pendingMode,'4x4');
+ }
+});
+
+test('a full-physics HI to LO shift coasts down smoothly instead of clamping speed',()=>{
+ const {physics,c}=flat('hi');try{
+  for(let i=0;i<600;i++){physics.input(c,input,dt);physics.step();physics.sync(c,dt);}
+  assert.ok(c.speed>18);const velocity={...c.physics.body.linvel()},speed=c.speed;
+  selectDriveMode(c,'lo');assert.equal(c.powertrain.mode,'lo');assert.deepEqual({...c.physics.body.linvel()},velocity);assert.equal(c.speed,speed);
+  let previous=speed;
+  for(let i=0;i<120;i++){physics.input(c,input,dt);physics.step();physics.sync(c,dt);assert.ok(Math.abs(c.speed-previous)<.2);previous=c.speed;}
+  assert.ok(c.speed>10);assert.equal(c.rollover,false);
+ }finally{physics.dispose();}
 });
 
 test('axle locks are independent, queue safely, and survive an engine hot-swap',()=>{

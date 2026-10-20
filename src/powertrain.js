@@ -12,7 +12,7 @@ function matchGear(state,engine,speed,mode){
 }
 function updateRange(car,state){
  const requested=driveModeById(car.driveMode),speed=Math.abs(car.speed??0),safe=!car.airborne&&speed<=RANGE_SHIFT_SPEED;
- if(state.mode!==requested.id&&(!requested.low||safe)){
+ if(state.mode!==requested.id&&(requested.id!=='4x4'||safe)){
   state.mode=requested.id;matchGear(state,engineById(car.engineId),speed,requested);state.shiftTime=.14;state.cooldown=.35;
  }
  state.pendingMode=state.mode!==requested.id?requested.id:null;
@@ -26,7 +26,7 @@ export function selectDriveMode(car,id){
 }
 export function resetPowertrain(car){
  const engine=engineById(car.engineId),requested=driveModeById(car.driveMode),old=car.powertrain;
- const mode=requested.low&&(car.airborne||Math.abs(car.speed??0)>RANGE_SHIFT_SPEED)?driveModeById(old?.mode):requested;
+ const mode=requested.id==='4x4'&&(car.airborne||Math.abs(car.speed??0)>RANGE_SHIFT_SPEED)?driveModeById(old?.mode):requested;
  car.powertrain={engineId:engine.id,mode:mode.id,locks:{front:false,rear:false},rpm:engine.idle,gear:1,shiftTime:0,cooldown:0,load:0,throttle:0,torque:0,limiter:false,grade:0,roadLoad:0};
  if(mode.id==='4x4'&&old?.mode==='4x4')car.powertrain.locks={...old.locks};
  updateRange(car,car.powertrain);return car.powertrain;

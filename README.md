@@ -337,8 +337,9 @@ claim that all historical Broncos had these exact transfer modes. The roles of
 high/low ranges follow the [Ford Bronco owner's manual](https://www.fordservicecontent.com/Ford_Content/vdirsnet/OwnerManual/Home/Content?ProcUid=G2200206&Uid=G2200205&buildtype=web&countryCode=USA&div=f&languageCode=en&moidRef=G2126349&userMarket=USA&vFilteringEnabled=False&variantid=9666).
 
 Choose presets and front/rear locks from the speed HUD or **Menu → Napęd ·
-Zakres · Blokady**. Requesting LO/4×4 while moving quickly or airborne queues the
-request until grounded below 8 km/h. Axle lock changes use the same safe threshold.
+Zakres · Blokady**. HI/LO engage while moving as an Arcade convenience. Requesting
+crawler 4×4 while moving quickly or airborne queues the request until grounded
+below 8 km/h. Axle lock changes use the same safe threshold.
 A dashed button and **ZWOLNIJ <8 km/h** indicate a pending request; the highlighted
 button shows the active range/lock. No position, velocity, lap, nitro or vehicle
 mass is reset by a range change. The chosen preset and lock preferences save in
@@ -453,3 +454,8 @@ locks are available only with crawler selected and retain the existing safe
 shift queue. Key repeat and Ctrl/Alt/Meta combinations do not toggle options;
 menus keep their existing keyboard isolation. `aria-keyshortcuts` and tooltips
 expose the bindings in both HUD and menu.
+
+HI/LO range changes now engage while moving, with the existing 0.14 s torque
+interruption and automatic gear/RPM matching. Neither selection clamps body
+velocity to the new pace ceiling; the truck coasts down physically. Only crawler
+engagement and axle-lock changes retain the grounded / below-8-km/h gate.

@@ -122,7 +122,7 @@ export function createPhysics(terrain,bounds){
   const pedalBrake=cfg.brakeDeceleration*controls.brakePressure;
   const brakingForward=input.brake&&!controls.reverse;
   const contacts=WHEEL_LAYOUT.map((_,i)=>c.wheelIsInContact(i));
-  const descent=descentDeceleration({enabled:arcade&&car.hillDescent,mode:car.powertrain.mode,speed:car.speed,slope:forward.y,throttle:input.throttle,brake:input.brake,contacts:contacts.filter(Boolean).length,rollover:car.rollover});v.descentActive=descent>0;
+  const descent=descentDeceleration({enabled:!input.ai&&car.hillDescent,mode:car.powertrain.mode,speed:car.speed,slope:forward.y,throttle:input.throttle,brake:input.brake,contacts:contacts.filter(Boolean).length,rollover:car.rollover});v.descentActive=descent>0;
   let acceleration=drive.acceleration+drag;
   let braking=0;
   if(brakingForward||descent>0){

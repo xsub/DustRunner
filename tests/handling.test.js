@@ -30,9 +30,9 @@ test('downhill brakes yield to pedals and require a low range, slope and grounde
  for(const change of [{enabled:false},{mode:'auto'},{mode:'hi'},{speed:1},{slope:.3},{throttle:.5},{brake:true},{contacts:0},{contacts:1},{rollover:true}])assert.equal(descentDeceleration({...input,...change}),0);
  assert.ok(descentDeceleration({...input,speed:-4,slope:.3})>0,'also handles reversing down a slope');
 });
-test('physical downhill control holds about 6 km/h on a 35 percent grade without changing mass or gravity',()=>{
+for(const profile of ['arcade','classic'])test(`${profile}: physical downhill control holds about 6 km/h on a 35 percent grade without changing mass or gravity`,()=>{
  const speeds=[];
- for(const descent of [false,true]){const f=fixture({grade:.35,descent});try{
+ for(const descent of [false,true]){const f=fixture({profile,grade:.35,descent});try{
   let previous=0;
   for(let i=0;i<1800;i++){f.step();assert.ok(Math.abs(f.car.speed-previous)<.3,`braking must act over time: ${f.car.speed-previous}, frame ${i}, HDC ${descent}`);previous=f.car.speed;}
   speeds.push(f.car.speed*3.6);assert.equal(f.car.rollover,false);assert.ok(Math.abs(f.car.physics.body.mass()-2250)<1);assert.equal(f.p.world.gravity.y,-tuning.gravity);

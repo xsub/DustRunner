@@ -9,6 +9,7 @@ import {VehiclePresentation} from './vehicle-presentation.js';
 import {RenderBudget} from './render-budget.js';
 import {createDustPool} from './dust-pool.js';
 import {createSandTrails} from './sand-trails.js';
+import {createRaceKerbs} from './race-kerbs.js';
 import {chunkTerrain} from './terrain-chunks.js';
 import {buildRaceDesert,combineGround,createSandMaterial,createDesertWind} from './desert-scenery.js';
 import {createDesertReflections} from './lighting.js';
@@ -105,6 +106,7 @@ function makeWorld(){
  desertWind=createDesertWind({world,heightAt,anchors:dunes.anchors,random:rand});
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(terrainMesh.positions,3));geometry.setAttribute('uv',new THREE.BufferAttribute(terrainMesh.uv,2));geometry.setIndex(new THREE.BufferAttribute(terrainMesh.indices,1));geometry.computeVertexNormals();
  world.add(chunkTerrain(geometry,dirt));
+ world.add(createRaceKerbs(terrainMesh,N,curve.getLength()));
  ribbon(-3.7,.12,mat('#c29a63',{polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),.025);ribbon(3.7,.12,mat('#c29a63',{polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1}),.025);
  // Conforming painted cross-strips stay flush even on banked, split landings.
  const rampPaint=mat('#e4bb5c',{side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});

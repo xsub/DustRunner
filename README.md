@@ -306,3 +306,72 @@ Rapier trajectories/collisions at 30/60/120/144 display FPS.
 
 The fixed-step/catch-up policy follows [Glenn Fiedler's Fix Your Timestep](https://github.com/mas-bandwidth/gafferongames/blob/main/content/post/fix_your_timestep.md)
 and [Rapier's simulation parameter documentation](https://rapier.rs/docs/user_guides/javascript/simulation_structures/).
+
+
+### Faster road tune, transfer ranges and axle locks
+
+The stronger road tune increases delivered wheel-force scaling by 35% relative
+to the preceding model and raises the arcade road-speed governor. Engine torque
+curves, engine/body mass and the tire traction ceiling retain their individual
+character. The high-range gearing is longer, and an upshift waits if the next
+gear cannot sustain road load, including on level ground. Governor force fades
+rather than clipping velocity. Forward torque remains available while rolling
+backward down a hill; opposite-direction motion does not trigger a false forward
+speed limit. Braking build-up, 120 Hz contacts and physical jump momentum remain
+intact. Existing tuning presets are preserved; their drive/speed scale sliders
+apply to the new model. Historical engine curves remain representative game
+curves, and the arcade force scaling is not a factory horsepower claim.
+
+Four presets combine automatic transmission behavior with transfer-case ranges:
+
+| Button / key | Behavior |
+| --- | --- |
+| **A / 1** | Automatic three-speed gearbox, road range, assisted torque distribution. Default race mode. |
+| **HI / 2** | Longer 4H road range; higher attainable speed on long straights, automatic shifts. |
+| **LO / 3** | 2.2× transfer reduction, gentler pedal, more climbing torque, lower road speed; no nitro. |
+| **4×4 / 4** | 3× transfer reduction, first gear held, gentle crawler response, about 13 km/h on flat ground; independent front/rear differential locks. No nitro. |
+
+**4WD and a low range are separate concepts**: the game's 4×4 preset deliberately
+combines four-wheel drive with crawler reduction. This is a game preset, not a
+claim that all historical Broncos had these exact transfer modes. The roles of
+high/low ranges follow the [Ford Bronco owner's manual](https://www.fordservicecontent.com/Ford_Content/vdirsnet/OwnerManual/Home/Content?ProcUid=G2200206&Uid=G2200205&buildtype=web&countryCode=USA&div=f&languageCode=en&moidRef=G2126349&userMarket=USA&vFilteringEnabled=False&variantid=9666).
+
+Choose presets and front/rear locks from the speed HUD or **Menu → Napęd ·
+Zakres · Blokady**. Requesting LO/4×4 while moving quickly or airborne queues the
+request until grounded below 8 km/h. Axle lock changes use the same safe threshold.
+A dashed button and **ZWOLNIJ <8 km/h** indicate a pending request; the highlighted
+button shows the active range/lock. No position, velocity, lap, nitro or vehicle
+mass is reset by a range change. The chosen preset and lock preferences save in
+browser storage, survive engine hot-swaps, and appear in copied tuning context.
+New users start in A; first use of 4×4 enables both locks, which can then be toggled
+independently. Returning to a road preset disengages the locks.
+
+The virtual raycast differential model transfers a locked axle's available
+torque to its grounded wheel when the other wheel is unloaded. Open axles lose
+most of their pull in that situation; A has a traction-assist approximation.
+Locked wheel visuals share axle angular velocity. This models traction transfer
+and visible shaft rotation rather than full differential/gear-joint mechanics.
+Crawl force allowance rises with uphill load, within the engine and traction
+limits, so gentle flat-ground response can still overcome a climb. A speed
+preset limits propulsion: gravity, coasting or another truck's collision can
+carry the vehicle faster than its nominal drive speed.
+
+Reproduce the full Rapier flat-ground test with
+`node scripts/benchmark-drivetrain.mjs` (optional engine IDs as arguments).
+Default tune, Heritage chassis, no upgrades/nitro, 60 simulated seconds:
+
+| Engine / preset | 0–50 km/h | Speed after 60 s |
+| --- | ---: | ---: |
+| 302, previous road tune | 2.43 s | 78.3 km/h |
+| 302, A | 2.09 s | 109.4 km/h |
+| 302, HI | 2.08 s | 121.9 km/h |
+| 302, LO | target not reached | 47.7 km/h |
+| 302, 4×4 | target not reached | 12.8 km/h |
+| 351W EFI, HI | 1.92 s | 135.8 km/h |
+
+These are game-physics measurements on flat ground, not factory performance
+specifications or a guarantee of speed on a bumpy course. The history/performance
+comparison uses a fresh **A** reference vehicle so changing the player's range
+does not mix low-range results into engine comparisons. Tests cover all presets,
+queued changes, reverse/rollback, air control, independent locks, engine swaps,
+real two-wheel diagonal articulation and a 35% hill start/recovery.

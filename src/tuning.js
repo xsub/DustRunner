@@ -54,7 +54,7 @@ export function parseTuning(text){
  if(typeof text!=='string'||text.length>100000)throw Error('Wklej JSON ustawień (maks. 100 KB).');
  let data;try{data=JSON.parse(text);}catch{throw Error('Nieprawidłowy JSON.');}
  if(data?.format!=='dust-runner-tunning'||data.version!==1)throw Error('To nie jest obsługiwany zestaw Dust Runner (wersja 1).');
- const context={};for(const key of ['track','trackVariant','body','engineId','steeringMode','engineUpgrade','tireUpgrade','applied']){const value=data.context?.[key];if(typeof value==='string'&&value.length<80||typeof value==='number'&&Number.isFinite(value)||typeof value==='boolean')context[key]=value;}
+ const context={};for(const key of ['track','trackVariant','body','engineId','steeringMode','engineUpgrade','tireUpgrade','driveMode','frontLock','rearLock','applied']){const value=data.context?.[key];if(typeof value==='string'&&value.length<80||typeof value==='number'&&Number.isFinite(value)||typeof value==='boolean')context[key]=value;}
  return tuningDocument(data.parameters,data.name,context);
 }
 export function restoreTuning(storage){

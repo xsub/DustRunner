@@ -92,7 +92,7 @@ test('constant road speed stays at a steady RPM rather than sweeping between idl
  for(let i=0;i<1200;i++){powertrainStep(c,{...drive,slope:0},1/120);assert.equal(c.powertrain.gear,3);assert.ok(Math.abs(c.powertrain.rpm-rpm)<.01);}
 });
 test('closed governor and overrun reduce audible engine load',()=>{
- const pulling={...car(),speed:17},governed={...car(),speed:30},coast={...car(),speed:17};
+ const pulling={...car(),speed:17},governed={...car(),speed:45},coast={...car(),speed:17};
  for(const c of [pulling,governed,coast]){resetPowertrain(c);c.powertrain.gear=3;}
  for(let i=0;i<360;i++){
   powertrainStep(pulling,drive,1/120);powertrainStep(governed,drive,1/120);powertrainStep(coast,{...drive,throttle:0},1/120);

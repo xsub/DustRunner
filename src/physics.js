@@ -1,6 +1,7 @@
 import {tuning as cfg,tuningRevision} from './tuning.js';
 import RAPIER from '@dimforge/rapier3d-compat';
 import {Quaternion,Vector3} from 'three';
+import {axleWheelForces,driveModeById} from './drive-modes.js';
 import {powertrainStep} from './powertrain.js';
 import {vehicleMassProperties} from './vehicle-mass.js';
 import {isOpenBody,rollCageSegments} from './body-types.js';
@@ -126,10 +127,13 @@ export function createPhysics(terrain,bounds){
    acceleration=0;
   }else acceleration-=Math.sign(car.speed)*pedalBrake;
   const force=Math.max(-traction,Math.min(traction,acceleration))*v.mass/4;
+  const contacts=WHEEL_LAYOUT.map((_,i)=>c.wheelIsInContact(i));
+  const wheelForces=axleWheelForces(force,contacts,car.powertrain.locks,driveModeById(car.powertrain.mode).id==='auto');
+  v.wheelForces=wheelForces;
   for(let i=0;i<4;i++){
    const layout=WHEEL_LAYOUT[i];
    let angle=0;if(layout.z<0&&Math.abs(v.steer)>.0001){const radius=2.506/Math.tan(v.steer);angle=Math.atan(2.506/(radius+layout.x*1.4));}
-   c.setWheelSteering(i,angle);c.setWheelEngineForce(i,car.rollover?0:-force);c.setWheelBrake(i,braking);
+   c.setWheelSteering(i,angle);c.setWheelEngineForce(i,car.rollover?0:-wheelForces[i]);c.setWheelBrake(i,braking);
    c.setWheelFrictionSlip(i,(input.onDirt?cfg.roadGrip:cfg.offroadGrip)+(input.tires??0)*.08);
   }
   // Only actual wheel contacts can transfer engine/brake/steering forces.

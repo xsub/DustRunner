@@ -30,3 +30,9 @@
 .track-info>span{max-width:min(360px,55vw);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 .desert-seed-row #desert-apply-seed{flex:0 0 105px;background:#344529;color:#e5edda;border:1px solid #61704e}@media(max-width:720px){.desert-seed-row #desert-apply-seed{flex-basis:auto}}
+
+.drive-pad,.axle-pad,.drive-mode-options{display:flex;gap:4px;margin-top:9px}.drive-pad button,.axle-pad button,.drive-mode-options button{border:1px solid #788663;background:#26321eee;color:#cbd7b5;border-radius:3px;padding:6px 3px;font:700 9px Arial,sans-serif;cursor:pointer;flex:1;min-width:0}.drive-pad button[aria-pressed=true],.axle-pad button[aria-pressed=true],.drive-mode-options button[aria-pressed=true]{color:#1b2415;background:#f4cf58;border-color:#f4cf58}.drive-pad button.pending,.axle-pad button.pending,.drive-mode-options button.pending{border-color:#f4cf58;border-style:dashed}.axle-pad button:disabled{opacity:.35;cursor:default}.axle-pad button{font-size:8px}.drive-mode-options{flex-wrap:wrap;margin-top:14px;gap:8px}.drive-mode-options button{padding:12px 8px;font-size:16px;min-width:90px}.drive-mode-options small{display:block;font-size:9px;font-weight:400;margin-top:6px}.menu-axles{gap:8px}.menu-axles button{padding:12px;font-size:10px}#drive-range-status{color:#f4cf58;font-weight:700}.speed .engine-readout b{white-space:nowrap}
+
+#drive-hud-status{display:block;color:#f4cf58;font-size:8px;margin-top:6px}#drive-hud-status[hidden]{display:none}.drive-mode-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}.drive-mode-options button{min-width:0}@media(max-width:520px){.drive-mode-options{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(pointer:coarse){#touch{bottom:max(185px,calc(env(safe-area-inset-bottom) + 175px))}}
+
+.drive-pad button{padding:6px 1px}@media(max-width:380px){.drive-pad{gap:2px}.drive-pad button{padding:6px 0;font-size:8px}}

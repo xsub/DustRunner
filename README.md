@@ -13,7 +13,7 @@
 ## Pick your playground
 
 - **Race:** 16 dirt circuits, each with four mirror layouts — 64 configurations. Race three AI opponents through ramps, split landings, whoops, banks and winding terrain.
-- **Free Ride:** a 1,200 × 600 m desert with three dune styles: storm ridges, giant star dunes and a seeded random expedition. Climb, jump and find your own route.
+- **Free Ride:** a 1,200 × 600 m desert with three dune styles: storm ridges, giant star dunes and a seeded random expedition. Climb, jump and find your own route. Four-wheel sand trails follow the dunes, with tread impressions and stronger marks under braking or sideways slip.
 - **Choose your truck:** seven selectable procedural SUV bodies inspired by classic Bronco® shapes, from emerald/ivory Heritage and open-top crawlers to brown Classic ’78 and the Godzilla ’78 restomod.
 - **Build your drivetrain:** 12 inline-six and V8 profiles, including the 7.3 L Godzilla swap. Each engine has a fixed gearbox profile; choose arcade shifting, full automatic or sequential manual control.
 - **Drive it like a 4×4:** HI/LO ranges, crawler mode, front/rear differential locks, hill-descent control, progressive braking and optional held-angle steering.

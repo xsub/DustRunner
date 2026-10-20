@@ -28,6 +28,8 @@ import {initPhysics,createPhysics,CHASSIS_HEIGHT} from './physics.js';
 import {tuning as cfg,restoreTuning,setTuning} from './tuning.js';
 import {createTuningPanel} from './tuning-panel.js';
 import {createStatsOverlay} from './stats-overlay.js';
+import {readVehicleDiagnostics} from './vehicle-diagnostics.js';
+import {createVehicleDiagnosticsOverlay} from './vehicle-diagnostics-overlay.js';
 
 try{restoreTuning(window.localStorage);}catch{}
 refreshTracks();
@@ -247,6 +249,7 @@ const statsOverlay=createStatsOverlay({game,toggle:$('#show-stats'),onInteract:(
  const c=trucks[0],info=renderer.info,powertrain=c.powertrain;
  return {...physics.getStats(),physicsBudget:simulationClock.budgetMs,limitedFrames:simulationClock.limitedFrames,background:scenery.getStats?.().activeSnakes??0,resolution:Math.round(canvas.width)+' × '+Math.round(canvas.height),calls:info.render.calls,triangles:info.render.triangles,geometries:info.memory.geometries,textures:info.memory.textures,speed:Math.round(Math.abs(c.speed)*3.6),rpm:Math.round(powertrain?.rpm??0),gear:driveModeById(powertrain?.mode).label+' · '+(powertrain?.gear<0?'R':'D'+(powertrain?.gear??1)),mass:Math.round(c.physics.body.mass()),contacts:[0,1,2,3].filter(i=>c.physics.controller.wheelIsInContact(i)).length,vertical:c.vertical.toFixed(2),phase:({ready:'GOTOWY',countdown:'START',racing:'JAZDA',paused:'PAUZA',finished:'META'})[phase]};
 }});
+const vehicleDiagram=createVehicleDiagnosticsOverlay({game,toggle:$('#show-vehicle-diagram'),onInteract:()=>canvas.focus({preventScroll:true}),getDiagnostics:()=>['ready','countdown'].includes(phase)?null:readVehicleDiagnostics(trucks[0],{dt:simulationClock.dt,gravity:cfg.gravity})});
 // During a race, Space belongs to nitro even when a HUD button has focus.
 window.addEventListener('keydown',e=>{if(menuDialog.open||document.querySelector('#tuning-menu')?.open)return;if(e.target instanceof HTMLButtonElement&&e.code==='Space'&&!['racing','countdown','paused'].includes(phase))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.repeat)return;if(/^Digit[1-4]$/.test(e.code)){drivePanel.select(['auto','hi','lo','4x4'][Number(e.code.at(-1))-1]);return;}keys.add(e.code);if(e.code==='Enter'&&['ready','finished'].includes(phase))start();if(e.code==='KeyP'||e.code==='Escape')pause();if(e.code==='KeyR')reset();if(e.code==='KeyF')recover(trucks[0]);});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{audioPreviewTime=0;engineAudio.silence();keys.clear();if(phase==='racing'||phase==='countdown')pause();});
 document.addEventListener('visibilitychange',()=>{simulationClock.reset();lastTime=performance.now();if(document.hidden){audioPreviewTime=0;engineAudio.silence();}});
@@ -368,6 +371,7 @@ function frame(now){
  tuningPanel.update(now);
  if(now-lastHudPaint>=100){drivePanel.update();updateGameHud();minimap.render(activeTrucks(),selectedColor,viewCorners);lastHudPaint=now;}
  renderer.render(scene,camera);
+ vehicleDiagram.update(now);
  const cpuMs=performance.now()-frameStarted;
  if(renderBudget.sample(now,cpuMs,phase==='racing'&&!document.hidden))renderer.setPixelRatio(renderBudget.pixelRatio(game.clientWidth,game.clientHeight,devicePixelRatio));
  const timing={cpuMs,physicsMs:framePhysicsMs,steps:framePhysicsSteps};performanceTracker.record(now,timing);statsOverlay.record(now,timing);

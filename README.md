@@ -375,3 +375,25 @@ comparison uses a fresh **A** reference vehicle so changing the player's range
 does not mix low-range results into engine comparisons. Tests cover all presets,
 queued changes, reverse/rollback, air control, independent locks, engine swaps,
 real two-wheel diagonal articulation and a 35% hill start/recovery.
+
+### Vehicle cutaway telemetry
+
+Menu → **Przekroje auta · siły i zawieszenie** controls the small draggable
+side/front cutaway overlay. Collapse/hide buttons and normalized position persist
+in browser localStorage, independently of tuning presets. It starts collapsed on
+narrow screens. No contact readings are shown before driving begins.
+
+Yellow arrows show individual wheel suspension/contact forces, cyan longitudinal
+tire force, salmon lateral tire force, and purple gravity at the modeled center
+of mass. Tire forces use Rapier's actual last-step impulses divided by the fixed
+physics step (not render time); airborne contacts are zeroed. Arrows have a 5 kN
+reference and a labeled length cap for impacts. These are contact/gravity
+components, not an accounting of every chassis collision impulse.
+
+The four-wheel table shows spring compression relative to rest in mm, steering
+angle, axle articulation relative to the body, absolute wheel RPM, and signed
+circumferential tire speed (positive forward). Far-side/rear components are
+translucent; unsupported wheels are gray. Body pitch/roll follows the rigid body,
+including rollovers. Rotating hub marks are sampled and may alias at speed; use
+the numerical RPM reading. Canvas 2D and table refresh at 10 Hz after physics and
+scene rendering; hidden/collapsed panels skip telemetry reads and drawing.

@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildDesert,desertHeight,DESERT_SPAWN,DESERT_BOUNDS} from '../src/desert.js';
+import {buildDesert,desertHeight,DESERT_SPAWN,DESERT_BOUNDS,DESERT_VARIANTS,createDesertHeight,normalizeDesertOptions} from '../src/desert.js';
 import {initPhysics,createPhysics} from '../src/physics.js';
 const ground=buildDesert();
 test('desert has a full 1200 × 600 m rectangular contact mesh and varied dunes with a calm spawn',()=>{
  assert.equal(ground.positions.length,481*241*3);assert.equal(ground.indices.length,480*240*6);
  assert.equal(desertHeight(DESERT_SPAWN.x,DESERT_SPAWN.z),1);
  let min=Infinity,max=-Infinity;for(let z=-250;z<=250;z+=10)for(let x=-550;x<=550;x+=10){const h=ground.heightAt(x,z);assert.ok(Number.isFinite(h)&&h>=1);min=Math.min(min,h);max=Math.max(max,h);}
- assert.ok(max-min>20);assert.deepEqual(ground.bounds,DESERT_BOUNDS);assert.ok(ground.heightAt(599,0)>ground.heightAt(560,0)+10);assert.ok(ground.heightAt(0,299)>ground.heightAt(0,260)+10);
+ assert.ok(max-min>20);assert.deepEqual(ground.bounds,DESERT_BOUNDS);assert.ok(ground.heightAt(599,0)>ground.heightAt(560,0)+10);assert.ok(ground.heightAt(0,299)>18);
 });
 test('triangle sampler agrees with every sampled desert mesh vertex',()=>{
  for(let i=0;i<ground.positions.length;i+=997*3){const [x,y,z]=ground.positions.slice(i,i+3);assert.ok(Math.abs(ground.heightAt(x,z)-y)<.0001);}
@@ -30,4 +30,29 @@ test('dune districts have distinct, non-repeating heights and traversable slopes
   const low=Math.min(...heights),high=Math.max(...heights);assert.ok(high-low>10,'both basins and tall dunes per district');assert.ok(maxSlope<2,'no vertical mesh cliffs');signatures.push(heights.map(h=>Math.round(h)).join(','));
  }
  assert.equal(new Set(signatures).size,3);
+});
+
+test('three rough desert variants are distinct, reproducible and much taller than the original',()=>{
+ const signatures=[];
+ for(const variant of DESERT_VARIANTS){
+  const sample=createDesertHeight({variant:variant.id}),repeat=createDesertHeight({variant:variant.id});let peak=0,low=Infinity;const signature=[];
+  for(let z=-200;z<=200;z+=20)for(let x=-520;x<=520;x+=20){const h=sample(x,z);assert.equal(h,repeat(x,z));peak=Math.max(peak,h);low=Math.min(low,h);signature.push(h.toFixed(2));}
+  assert.ok(peak-low>35,`${variant.id}: ${peak-low} meters of elevation`);assert.equal(sample(DESERT_SPAWN.x,DESERT_SPAWN.z),1);signatures.push(signature.join(','));
+ }
+ assert.equal(new Set(signatures).size,3);
+ const a=createDesertHeight({variant:'random',seed:123}),b=createDesertHeight({variant:'random',seed:456});assert.notEqual(a(100,50),b(100,50));assert.equal(a(100,50),createDesertHeight({variant:'random',seed:123})(100,50));
+ assert.equal(normalizeDesertOptions({variant:'random',seed:0}).seed,0);assert.equal(normalizeDesertOptions({variant:'random',seed:-1}).seed,43210);
+});
+
+for(const variant of ['stars','random'])test(`${variant}: generated mesh supports four wheels and a physical drive`,async()=>{
+ await initPhysics();const terrain=buildDesert({variant,seed:20261020}),physics=createPhysics(terrain,terrain.bounds),car={...DESERT_SPAWN,style:'classic',engineId:'302',speed:0};physics.reset(car);
+ try{
+  for(let frame=0;frame<1800;frame++){
+   physics.input(car,{throttle:frame>240?1:0,steer:0,onDirt:true},1/120);physics.step();physics.sync(car,1/120);
+   if(frame===240)assert.equal([0,1,2,3].filter(i=>car.physics.controller.wheelIsInContact(i)).length,4);
+   assert.ok(Number.isFinite(car.height)&&car.height>-.25);
+  }
+  assert.ok(Math.hypot(car.x-DESERT_SPAWN.x,car.z-DESERT_SPAWN.z)>40);
+  for(let i=0;i<terrain.positions.length;i+=619*3){const [x,y,z]=terrain.positions.slice(i,i+3);assert.ok(Math.abs(terrain.heightAt(x,z)-y)<.001);}
+ }finally{physics.dispose();}
 });

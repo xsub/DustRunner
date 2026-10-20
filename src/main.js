@@ -14,7 +14,7 @@ import {createHistoryPanel} from './history-panel.js';
 import {EngineAudio} from './engine-audio.js';
 import {clamp,angleDelta,advanceProgress,formatTime} from './race.js';
 import {buildTerrain} from './terrain.js';
-import {buildDesert,DESERT_SPAWN,DESERT_BOUNDS} from './desert.js';
+import {buildDesert,DESERT_SPAWN,DESERT_BOUNDS,DESERT_VARIANTS,normalizeDesertOptions} from './desert.js';
 import {initPhysics,createPhysics,CHASSIS_HEIGHT} from './physics.js';
 import {tuning as cfg,restoreTuning,setTuning} from './tuning.js';
 import {createTuningPanel} from './tuning-panel.js';
@@ -42,6 +42,9 @@ const textureCanvas=document.createElement('canvas');textureCanvas.width=256;tex
 const sand=mat('#b59b65'),dirt=mat('#c8a06f',{map:dirtTexture,side:THREE.DoubleSide}),dark=mat('#252b24'),cream=mat('#e8d7a1'),green=mat('#58633b');
 let world=new THREE.Group();scene.add(world);const trucks=[],particles=[];let samples=[],curve,trackIndex=0,trackVariant=0,freeRide=false,heightAt=()=>0,scenery,physics;
 const N=3600;let roadWidth=ROAD_WIDTH;
+let desertOptions=normalizeDesertOptions();
+try{desertOptions=normalizeDesertOptions(JSON.parse(localStorage.getItem('dust-runner-desert-v1'))??{});}catch{}
+const desertQuery=new URLSearchParams(location.search);if(desertQuery.has('dunes'))desertOptions=normalizeDesertOptions({variant:desertQuery.get('dunes'),seed:desertQuery.get('seed')??undefined});
 function box(w,h,d,material,x=0,y=0,z=0,parent=world){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
 function cylinder(r,h,material,x,y,z,parent=world,segments=10){const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,segments),material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;parent.add(m);return m;}
 let seed=42;function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}
@@ -52,7 +55,7 @@ function ribbon(offset,width,material,y=0){const positions=[],normals=[],uv=[],i
 function sign(text,x,z,rotation=0){const c=document.createElement('canvas');c.width=512;c.height=100;const ctx=c.getContext('2d');ctx.fillStyle='#273321';ctx.fillRect(0,0,512,100);ctx.fillStyle='#f5d363';ctx.font='bold 48px sans-serif';ctx.textAlign='center';ctx.fillText(text,256,68);const m=box(12,2.3,.22,new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(c)}),x,heightAt(x,z)+2.7,z);m.rotation.y=rotation;for(const dx of [-5,5])box(.2,2,.2,dark,x+Math.cos(rotation)*dx,heightAt(x,z)+1,z-Math.sin(rotation)*dx);}
 function activeTrucks(){return freeRide?trucks.slice(0,1):trucks;}
 function makeDesertWorld(){
- const ground=buildDesert();heightAt=ground.heightAt;physics=createPhysics(ground,ground.bounds);
+ const ground=buildDesert(desertOptions);heightAt=ground.heightAt;physics=createPhysics(ground,ground.bounds);
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.BufferAttribute(ground.positions,3));geometry.setAttribute('uv',new THREE.BufferAttribute(ground.uv,2));geometry.setAttribute('color',new THREE.BufferAttribute(ground.colors,3));geometry.setIndex(new THREE.BufferAttribute(ground.indices,1));geometry.computeVertexNormals();
  const surface=new THREE.Mesh(geometry,new THREE.MeshStandardMaterial({color:'#e2bd7d',map:dirtTexture,vertexColors:true,roughness:1}));surface.receiveShadow=true;world.add(surface);
  scenery=createScenery({world,samples:[],curve,roadWidth:0,heightAt,nearest:()=>({distance:Infinity}),bounds:ground.bounds,random:rand});
@@ -182,12 +185,33 @@ document.querySelectorAll('[data-model]').forEach(b=>b.onclick=()=>{
 });
 function rebuildTrack(){
  keys.clear();makeWorld();resize();reset();
- $('#track-name').textContent=freeRide?'FREE RIDE — PUSTYNIA':`0${trackIndex+1} — ${TRACKS[trackIndex].name}${trackVariant?' · '+TRACK_VARIANTS[trackVariant].name:''}`;
+ $('#track-name').textContent=freeRide?'PUSTYNIA — '+DESERT_VARIANTS.find(v=>v.id===desertOptions.variant).name+(desertOptions.variant==='random'?' · #'+desertOptions.seed:''):`${String(trackIndex+1).padStart(2,'0')} — ${TRACKS[trackIndex].name}${trackVariant?' · '+TRACK_VARIANTS[trackVariant].name:''}`;
  $('#track-variant-status').textContent=TRACK_VARIANTS[trackVariant].name+' · VARIANT '+(trackVariant+1)+' / 4';
  document.querySelectorAll('[data-reflection]').forEach(b=>{const active=Boolean(trackVariant&Number(b.dataset.reflection));b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
 }
-document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{freeRide=b.dataset.mode==='desert';document.querySelectorAll('[data-mode]').forEach(el=>{el.classList.toggle('active',el===b);el.setAttribute('aria-pressed',String(el===b));});document.querySelector('.track-select').hidden=freeRide;document.querySelector('.hud').classList.toggle('freeride-hud',freeRide);document.querySelector('.minimap>div>span').textContent=freeRide?'PUSTYNIA':'COURSE';document.querySelector('.minimap>div>small').textContent=freeRide?'➤ TY · 1200 × 600 M':'➤ YOU · ▲ JUMP';$('#minimap').setAttribute('aria-label',freeRide?'Desert dunes and player position':'Full circuit with all four racers and the camera view');rebuildTrack();});
-document.querySelectorAll('[data-track]').forEach(b=>b.onclick=()=>{trackIndex=Number(b.dataset.track);document.querySelectorAll('[data-track]').forEach(el=>el.classList.toggle('active',el===b));rebuildTrack();});
+document.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{freeRide=b.dataset.mode==='desert';document.querySelectorAll('[data-mode]').forEach(el=>{el.classList.toggle('active',el===b);el.setAttribute('aria-pressed',String(el===b));});document.querySelector('.track-select').hidden=freeRide;$('#desert-options').hidden=!freeRide;document.querySelector('.hud').classList.toggle('freeride-hud',freeRide);document.querySelector('.minimap>div>span').textContent=freeRide?'PUSTYNIA':'COURSE';document.querySelector('.minimap>div>small').textContent=freeRide?'➤ TY · 1200 × 600 M':'➤ YOU · ▲ JUMP';$('#minimap').setAttribute('aria-label',freeRide?'Desert dunes and player position':'Full circuit with all four racers and the camera view');rebuildTrack();});
+function renderTrackChoices(){
+ $('#track-grid').innerHTML=TRACKS.map((track,index)=>{
+  const c=createCircuit(index),points=Array.from({length:100},(_,j)=>c.getPointAt(j/100));
+  const xs=points.map(p=>p.x),zs=points.map(p=>p.z),minX=Math.min(...xs),minZ=Math.min(...zs),scale=70/Math.max(Math.max(...xs)-minX,Math.max(...zs)-minZ);
+  const line=points.map(p=>`${5+(p.x-minX)*scale},${5+(p.z-minZ)*scale}`).join(' ');
+  return `<button class="${index===trackIndex?'active':''}" data-track="${index}" aria-pressed="${index===trackIndex}"><svg viewBox="0 0 80 80" aria-hidden="true"><polyline points="${line} ${line.split(' ')[0]}"/></svg><span>${String(index+1).padStart(2,'0')} · ${track.name}</span><small>${(track.length/1000).toFixed(2)} KM · ${track.features.filter(f=>['jump','canyon'].includes(f.kind)).length} SKOKÓW</small></button>`;
+ }).join('');
+}
+renderTrackChoices();
+const desertSelect=$('#desert-variant'),desertSeed=$('#desert-seed');
+desertSelect.innerHTML=DESERT_VARIANTS.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
+function updateDesertOptions(){
+ const profile=DESERT_VARIANTS.find(v=>v.id===desertOptions.variant);desertSelect.value=profile.id;desertSeed.value=desertOptions.seed;
+ $('#desert-generator').hidden=profile.id!=='random';$('#desert-description').textContent=profile.description;
+ try{localStorage.setItem('dust-runner-desert-v1',JSON.stringify(desertOptions));}catch{}
+}
+function applyDesertOptions(options){desertOptions=normalizeDesertOptions(options);updateDesertOptions();if(freeRide)rebuildTrack();}
+desertSelect.onchange=()=>applyDesertOptions({variant:desertSelect.value,...(desertSelect.value==='random'?{seed:crypto.getRandomValues(new Uint32Array(1))[0]}:{})});
+function applyDesertSeed(){if(!desertSeed.checkValidity()){desertSeed.reportValidity();return;}applyDesertOptions({variant:'random',seed:desertSeed.value});}
+desertSeed.onchange=applyDesertSeed;$('#desert-apply-seed').onclick=applyDesertSeed;desertSeed.onkeydown=event=>{if(event.code==='Enter'){event.preventDefault();applyDesertSeed();}};
+$('#desert-generate').onclick=()=>applyDesertOptions({variant:'random',seed:crypto.getRandomValues(new Uint32Array(1))[0]});updateDesertOptions();
+document.querySelectorAll('[data-track]').forEach(b=>b.onclick=()=>{trackIndex=Number(b.dataset.track);document.querySelectorAll('[data-track]').forEach(el=>{el.classList.toggle('active',el===b);el.setAttribute('aria-pressed',String(el===b));});rebuildTrack();});
 document.querySelectorAll('[data-reflection]').forEach(b=>b.onclick=()=>{trackVariant^=Number(b.dataset.reflection);rebuildTrack();});
 document.querySelectorAll('[data-upgrade]').forEach(b=>b.onclick=()=>{const type=b.dataset.upgrade;if(phase==='racing'||phase==='countdown'||phase==='paused'){$('#garage-note').textContent='Upgrades are available between races.';return;}if(cash<300){$('#garage-note').textContent='You need $300. Finish a race to earn more cash.';return;}if(levels[type]<3){cash-=300;levels[type]++;save();$('#garage-note').textContent=`${type==='engine'?'Engine':'Tires'} upgraded to level ${levels[type]}. Ready for the next race.`;}});
 let devResume=false;
@@ -199,7 +223,7 @@ const tuningPanel=createTuningPanel({
   try{setTuning(parameters);refreshTracks();makeWorld();reset();resize();updateEngineMenu();}
   catch(error){setTuning(previous);refreshTracks();makeWorld();reset();resize();updateEngineMenu();throw error;}
  },
- getContext:()=>({mode:freeRide?'desert':'race',track:trackIndex,trackVariant,body:trucks[0].style,engineId:trucks[0].engineId,steeringMode,engineUpgrade:levels.engine,tireUpgrade:levels.grip}),
+ getContext:()=>({mode:freeRide?'desert':'race',desert:{...desertOptions},track:trackIndex,trackVariant,body:trucks[0].style,engineId:trucks[0].engineId,steeringMode,engineUpgrade:levels.engine,tireUpgrade:levels.grip}),
  getStats:()=>{const c=trucks[0];return {mass:Math.round(c.physics.body.mass()),speed:Math.round(Math.abs(c.speed)*3.6),vertical:c.vertical.toFixed(2),contacts:[0,1,2,3].filter(i=>c.physics.controller.wheelIsInContact(i)).length,rpm:Math.round(c.powertrain?.rpm??0)};},
 });
 $('#open-tuning').onclick=$('#quick-dev').onclick=()=>tuningPanel.open();
@@ -307,7 +331,7 @@ function resize(){
 new ResizeObserver(resize).observe(game);reset();resize();if(new URLSearchParams(location.search).get('mode')==='desert')document.querySelector('[data-mode="desert"]').click();let accumulator=0;
 function frame(now){requestAnimationFrame(frame);const frameStarted=performance.now();framePhysicsMs=framePhysicsSteps=0;tuningPanel.update(now);const dt=Math.min((now-lastTime)/1000,.05);lastTime=now;accumulator+=dt;while(accumulator>=1/60){step(1/60);accumulator-=1/60;}scenery.update(phase==='paused'?0:dt);updateEngineSound(dt);updateCamera(dt);minimap.render(activeTrucks(),selectedColor,viewCorners);renderer.render(scene,camera);statsOverlay.record(now,{cpuMs:performance.now()-frameStarted,physicsMs:framePhysicsMs,steps:framePhysicsSteps});}requestAnimationFrame(frame);
 // Read-only telemetry makes gameplay and rendering easy to inspect.
-window.__DUST_RUNNER__={getState:()=>({phase,elapsed,mode:freeRide?'desert':'race',track:trackIndex,trackVariant,renderer:renderer.info.render,player:{x:trucks[0].x,z:trucks[0].z,speed:trucks[0].speed,lap:trucks[0].lap,nitro:trucks[0].nitro,engineId:trucks[0].engineId,powertrain:{...trucks[0].powertrain}},trucks:trucks.map(c=>({lap:c.lap,index:c.index,x:c.x,z:c.z,airborne:c.airborne,height:c.height,rollover:c.rollover,suspension:c.suspensionLengths})),cash,levels:{...levels}})};
+window.__DUST_RUNNER__={getState:()=>({phase,elapsed,mode:freeRide?'desert':'race',desert:{...desertOptions},track:trackIndex,trackVariant,renderer:renderer.info.render,player:{x:trucks[0].x,z:trucks[0].z,speed:trucks[0].speed,lap:trucks[0].lap,nitro:trucks[0].nitro,engineId:trucks[0].engineId,powertrain:{...trucks[0].powertrain}},trucks:trucks.map(c=>({lap:c.lap,index:c.index,x:c.x,z:c.z,airborne:c.airborne,height:c.height,rollover:c.rollover,suspension:c.suspensionLengths})),cash,levels:{...levels}})};
 
 }
 boot().catch(error=>{console.error(error);document.querySelector('#message p').textContent='The physics engine could not load. Please reload the game.';});

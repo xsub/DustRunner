@@ -1,6 +1,6 @@
 # Dust Runner
 
-An original Three.js arcade off-road racer inspired by Super Off Road. Procedural 3D assets, two dirt circuits with tighter corners, four jumps per lap, repeated whoop sections, four detailed Bronco®-inspired SUVs, AI opponents, drifting, jumps, collisions, rechargeable nitro, race rewards, and persistent engine/tire upgrades.
+An original Three.js arcade off-road racer inspired by Super Off Road. Procedural 3D assets, 16 dirt circuits with tighter corners, up to nine jumps per lap, repeated whoop sections, four detailed Bronco®-inspired SUVs, AI opponents, drifting, jumps, collisions, rechargeable nitro, race rewards, and persistent engine/tire upgrades.
 
 ## Play online
 
@@ -21,7 +21,7 @@ Open the local address printed by Vite. `npm run build` produces a static site i
 
 Five selectable bodies take their shapes and colors from the supplied vehicle references: short Heritage in emerald with an ivory cap and round headlights, wider Ranger in orange/ivory with rectangular lights, and Midnight Sunset with a lower raked cap and layered yellow/orange/red stripes. The olive Trail opponent has a utility bumper. Cabins have real window openings, tinted glass, seats and dashboards; exterior details include hood stampings, chrome belt lines, mirrors, markers, live axles and dampers. Outdoor sky/sand reflections support paint and chrome without external assets. All variants retain the shared racing wheelbase and lower-body collision envelope; open models use individual cage contacts above the cabin.
 
-Both circuits now have laps exactly **four times their previous length** (Dustbowl about 1.33 km), with the existing 15.5-unit road width and unchanged Bronco® scale. A long straight leads up a 3.5-unit canyon ramp, across a 10-unit gap and onto two landing lanes with different heights. A 40-unit split landing catches the jump. Four low whoop sections provide 34 crests (0.10–0.175 units high), plus gentler rolling hills, ruts, four 0.65-unit humps and changing cross slopes. The outer shoulder now grades down over 14 units. The north-up minimap marks the big jump; a smooth camera looks ahead while keeping the truck close.
+The original two circuits have laps exactly **four times their previous length** (Dustbowl about 1.33 km), with the existing 15.5-unit road width and unchanged Bronco® scale. A long straight leads up a 3.5-unit canyon ramp, across a 10-unit gap and onto two landing lanes with different heights. A 40-unit split landing catches the jump. Four low whoop sections provide 34 crests (0.10–0.175 units high), plus gentler rolling hills, ruts, four 0.65-unit humps and changing cross slopes. The outer shoulder now grades down over 14 units. The north-up minimap marks the big jump; a smooth camera looks ahead while keeping the truck close.
 
 **Menu → Pick your playground** has two independent mirror toggles: **REVERSE TRACK** reflects left/right across map OY, and **FLIP TRACK** reflects up/down across map OX. Both off gives the original; either alone or both together gives four layouts per circuit. These reflect the course geometry, banks, split landing, collision surface, grid, barriers, AI route and minimap. Driving progress still follows the ramp approach and landing in their original order. The selected mirrors carry over when switching circuits; changing the layout restarts the race.
 
@@ -112,7 +112,7 @@ menu and use the central start button). `?mode=desert` opens the desert setup
 directly. **WYŚCIG** in the same menu returns to the selected racing circuit.
 Switching mode resets the session.
 
-The desert is a 1200 × 600 m playground with 64 varied dune landmarks: crescents,
+The desert is a 1200 × 600 m playground with 80–112 varied dune landmarks: crescents,
 asymmetric ridges, solitary domes and star dunes. The west has rolling swells,
 the center winding crests and rippled sand, and the east higher dunes and bowls.
 A flat starting basin, plants and a shaded elevation minimap with region labels
@@ -122,7 +122,7 @@ developer tuning and FPS panel. There are no opponents, laps, finish condition,
 rewards or time limit; the HUD timer only records session duration. F rights
 the truck in place; R returns to the starting basin. The raised outer rim has
 a solid boundary, so the finite map cannot be driven off. Track/ramp sliders
-apply to race circuits; desert dunes have their own fixed procedural layout.
+apply to race circuits; desert dunes use their own procedural profiles.
 
 ### Open-top vehicles
 
@@ -144,3 +144,28 @@ updates its torque, sound, mass, center of mass and suspension force limits
 without resetting position, velocity, steering, nitro, lap progress or timer.
 The transmission selects a speed-appropriate gear/RPM, retaining reverse
 when reversing. Close the menu to continue. The engine choice saves locally.
+
+### Three rough desert variants and random generation
+
+**Menu → Free Ride → Ukształtowanie terenu** offers **Burzowe Grzbiety**
+(dense ridges, 96 landmarks), **Morze Wielkich Wydm** (80 taller domes/star
+dunes), and **Losowa Ekspedycja** (112 seeded dune formations). The new
+profiles amplify rolling terrain and have over 35 m of interior elevation
+range while retaining a level starting basin. **Losuj nową pustynię** chooses
+a fresh 32-bit seed; typing the same seed and pressing **Generuj z ziarna** recreates the same geometry. The
+variant and seed persist locally. Changing either restarts the session.
+A reproducible link can use `?mode=desert&dunes=random&seed=20261020`.
+
+### Sixteen racing circuits
+
+The track chooser includes 16 independently shaped circuits with outline
+previews, lap lengths and jump counts. Each retains all four mirror variants
+(64 layouts including reflections). The original Dustbowl/Rattlesnake remain
+available. Fourteen added courses occupy roughly 3–4 times Dustbowl's
+map area and have laps around 1.9–2.8 km, including deep coves, hairpins,
+chicanes and sweeping corners. Each new course has one split-landing canyon
+jump, eight broad jumps, six whoop fields, seven dips, rolling hills and
+changing cross slopes. The opening runway stays level before the main ramp.
+All surface triangles are shared by rendering, tire contacts and body
+collisions. Automated checks drive an AI lap on every added circuit with
+the same physical recovery used in the game.

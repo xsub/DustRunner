@@ -5,7 +5,8 @@ import {buildTerrain} from '../src/terrain.js';
 import {initPhysics,createPhysics} from '../src/physics.js';
 before(async()=>await initPhysics());
 const n=3600,dt=1/120;
-for(let track=0;track<TRACKS.length;track++){
+// Legacy calibrated courses; the added circuits are exercised in track-pack.test.js.
+for(let track=0;track<2;track++){
  const original=createCircuit(track),originalSamples=Array.from({length:n},(_,j)=>original.getPointAt(j/n)),originalTerrain=buildTerrain(originalSamples,original,track);
  for(let variant=1;variant<TRACK_VARIANTS.length;variant++){
   const reflection=TRACK_VARIANTS[variant],curve=createCircuit(track,variant),parity=reflection.x*reflection.z;

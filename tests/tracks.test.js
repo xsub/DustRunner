@@ -6,7 +6,8 @@ import {initPhysics,createPhysics} from '../src/physics.js';
 import {advanceProgress} from '../src/race.js';
 before(async()=>await initPhysics());
 const n=3600,dt=1/120;
-for(let track=0;track<TRACKS.length;track++){
+// Legacy calibrated courses; the added circuits are exercised in track-pack.test.js.
+for(let track=0;track<2;track++){
  const curve=createCircuit(track),samples=Array.from({length:n},(_,i)=>curve.getPointAt(i/n));
  const terrain=buildTerrain(samples,curve,track),bounds={min:{x:Math.min(...samples.map(p=>p.x)),z:Math.min(...samples.map(p=>p.z))},max:{x:Math.max(...samples.map(p=>p.x)),z:Math.max(...samples.map(p=>p.z))}};
  test(`${TRACKS[track].name}: lap length is four times the previous track`,()=>{

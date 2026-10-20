@@ -3,7 +3,7 @@ import {TUNING_FIELDS,DEFAULT_TUNING,tuning,validateTuning,tuningDocument,parseT
 export function createTuningPanel({onOpen,onClose,onApply,getContext,getStats}){
  const dialog=document.createElement('dialog');dialog.id='tuning-menu';dialog.setAttribute('aria-labelledby','tuning-title');
  dialog.innerHTML=`<header class="tuning-heading"><div><span class="section-label">DUST RUNNER · DEVELOPER MODE</span><h1 id="tuning-title">DEV / TUNNING</h1></div><button id="tuning-close" aria-label="Zamknij tryb developerski">✕</button></header>
- <p class="tuning-lead">Dostrój symulację. Suwaki przygotowują zmiany; zastosowanie przebuduje tor i zrestartuje próbę. Wszystkie auta korzystają z tych parametrów.</p>
+ <p class="tuning-lead">Dostrój symulację. Suwaki przygotowują zmiany; zastosowanie przebuduje tor i zrestartuje próbę. Parametry fizyki dotyczą wszystkich aut; asysty Arcade dotyczą kierowcy.</p>
  <div id="tuning-readout" class="tuning-readout" aria-label="Bieżące dane symulacji"></div>
  <section class="tuning-presets" aria-label="Zapisane zestawy tunning"><label>Nazwa tunningu<input id="tuning-name" maxlength="80" value="Mój tunning"></label><button id="tuning-save">ZAPISZ TUNNING</button><label>Zapisane w tej przeglądarce<select id="tuning-presets"><option value="">Wybierz zestaw…</option></select></label><button id="tuning-load">WCZYTAJ</button><button id="tuning-delete">USUŃ ZESTAW</button></section>
  <p class="tuning-storage">Zapis tylko w tej przeglądarce i pod tym adresem strony (localStorage). GitHub nie jest zmieniany. Kopia JSON pozwala przenieść tunning albo wkleić go do czatu. Zapis pod tą samą nazwą zastępuje lokalny zestaw.</p>

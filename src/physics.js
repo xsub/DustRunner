@@ -6,6 +6,7 @@ import {powertrainStep} from './powertrain.js';
 import {vehicleMassProperties} from './vehicle-mass.js';
 import {isOpenBody,rollCageSegments} from './body-types.js';
 import {drivingControls,rollingResistance,steeringStep} from './driving-controls.js';
+import {arcadePedals,arcadeSteering,descentDeceleration} from './handling.js';
 import {WHEEL_LAYOUT,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 export const GRAVITY=9.81,CHASSIS_HEIGHT=1.5,REST_LENGTH=.55;
 export const initPhysics=()=>RAPIER.init();
@@ -84,12 +85,12 @@ export function createPhysics(terrain,bounds){
    // A smaller collision envelope catches the tires when the truck is on its side.
    tireColliders.push(world.createCollider(RAPIER.ColliderDesc.ball(.58).setTranslation(w.x*VEHICLE_SCALE,-.15-cfg.restLength,w.z*VEHICLE_SCALE).setMass(0).setFriction(.8),body));
   });
-  const vehicle={body,controller,mass,tireColliders,steer:0,controls:{brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false},massKey:`${car.style}:${car.engineId}:${tuningRevision()}`};car.physics=vehicle;vehicles.add(car);return vehicle;
+  const vehicle={body,controller,mass,tireColliders,steer:0,controls:{brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false},arcade:{},massKey:`${car.style}:${car.engineId}:${tuningRevision()}`};car.physics=vehicle;vehicles.add(car);return vehicle;
  }
  function reset(car){
   const v=car.physics??add(car),rotation=new Quaternion().setFromAxisAngle(new Vector3(0,1,0),car.heading);
   v.body.setTranslation({x:car.x,y:terrain.heightAt(car.x,car.z)+CHASSIS_HEIGHT+.15,z:car.z},true);v.body.setRotation(rotation,true);
-  v.body.setLinvel({x:0,y:0,z:0},true);v.body.setAngvel({x:0,y:0,z:0},true);v.steer=0;v.controls={brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false};car.rolloverTime=0;car.rollover=false;
+  v.body.setLinvel({x:0,y:0,z:0},true);v.body.setAngvel({x:0,y:0,z:0},true);v.steer=0;v.arcade={};v.descentActive=false;v.controls={brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false};car.rolloverTime=0;car.rollover=false;
   for(let i=0;i<4;i++){v.controller.setWheelEngineForce(i,0);v.controller.setWheelBrake(i,0);v.controller.setWheelSteering(i,0);}
  }
  function refreshMass(car){
@@ -104,11 +105,14 @@ export function createPhysics(terrain,bounds){
  function input(car,input,dt){
   activateBarriers(car);refreshMass(car);
   const v=car.physics,c=v.controller;
+  const arcade=car.handlingProfile==='arcade'&&!input.ai;
+  if(arcade)input=arcadePedals(v.arcade,input,dt);
   q.copy(v.body.rotation());forward.set(0,0,-1).applyQuaternion(q);
   const controls=drivingControls(v.controls,{...input,airborne:car.airborne},car.speed,dt);
   const drive=powertrainStep(car,{...input,...controls,slope:forward.y},dt);
   // Keyboard presses build toward full parking lock, with less lock at speed.
-  v.steer=steeringStep(v.steer,input.steer,car.speed,dt,input.ai,input.steeringMode,input.centerSteering);
+  const lateralSpeed=(car.vx??0)*Math.cos(car.heading)-(car.vz??0)*Math.sin(car.heading);
+  v.steer=arcade?arcadeSteering(v.steer,input.steer,car.speed,lateralSpeed,dt,{mode:input.steeringMode,center:input.centerSteering,airborne:car.airborne}):steeringStep(v.steer,input.steer,car.speed,dt,input.ai,input.steeringMode,input.centerSteering);
   const drag=-Math.sign(car.speed)*rollingResistance(car.speed,input.onDirt);
   // Loose dirt cannot turn every extra engine/nitro torque into thrust.
   // Limit longitudinal traction, preserving physical weight transfer and
@@ -116,24 +120,26 @@ export function createPhysics(terrain,bounds){
   const traction=cfg.gravity*(input.onDirt?cfg.roadTraction:cfg.offroadTraction)*(1+(input.tires??0)*.04);
   const pedalBrake=cfg.brakeDeceleration*controls.brakePressure;
   const brakingForward=input.brake&&!controls.reverse;
+  const contacts=WHEEL_LAYOUT.map((_,i)=>c.wheelIsInContact(i));
+  const descent=descentDeceleration({enabled:arcade&&car.hillDescent,mode:car.powertrain.mode,speed:car.speed,slope:forward.y,throttle:input.throttle,brake:input.brake,contacts:contacts.filter(Boolean).length,rollover:car.rollover});v.descentActive=descent>0;
   let acceleration=drive.acceleration+drag;
   let braking=0;
-  if(brakingForward){
+  if(brakingForward||descent>0){
    // Rapier's wheel controller chooses engine force OR brake impulse. Put
    // service brake, engine braking and rolling resistance in one channel.
    const deceleration=pedalBrake+Math.abs(drag)+Math.abs(drive.engineBraking);
    const holding=Math.abs(car.speed)<.2?cfg.gravity*controls.brakePressure:0;
-   braking=Math.max(deceleration,holding)*v.mass*dt/4;
+   braking=Math.max(deceleration,holding,descent)*v.mass*dt/4;
    acceleration=0;
   }else acceleration-=Math.sign(car.speed)*pedalBrake;
   const force=Math.max(-traction,Math.min(traction,acceleration))*v.mass/4;
-  const contacts=WHEEL_LAYOUT.map((_,i)=>c.wheelIsInContact(i));
   const wheelForces=axleWheelForces(force,contacts,car.powertrain.locks,driveModeById(car.powertrain.mode).id==='auto');
   v.wheelForces=wheelForces;
   for(let i=0;i<4;i++){
    const layout=WHEEL_LAYOUT[i];
    let angle=0;if(layout.z<0&&Math.abs(v.steer)>.0001){const radius=2.506/Math.tan(v.steer);angle=Math.atan(2.506/(radius+layout.x*1.4));}
-   c.setWheelSteering(i,angle);c.setWheelEngineForce(i,car.rollover?0:-wheelForces[i]);c.setWheelBrake(i,braking);
+   const rearBrake=layout.z>0?cfg.handbrakeDeceleration*(Number(input.handbrake)||0)*v.mass*dt/2:0;
+   c.setWheelSteering(i,angle);c.setWheelEngineForce(i,car.rollover||rearBrake>0?0:-wheelForces[i]);c.setWheelBrake(i,Math.max(braking,rearBrake));
    c.setWheelFrictionSlip(i,(input.onDirt?cfg.roadGrip:cfg.offroadGrip)+(input.tires??0)*.08);
   }
   // Only actual wheel contacts can transfer engine/brake/steering forces.

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {createDrivePanel} from './drive-panel.js';
+import {createHandlingPanel} from './handling-panel.js';
 import {driveModeById} from './drive-modes.js';
 import {SimulationClock} from './simulation-clock.js';
 import {batchRigidMeshes} from './mesh-batching.js';
@@ -133,6 +134,7 @@ function save(){try{localStorage.setItem('dust-runner-save',JSON.stringify({cash
 function updateGarage(){$('#cash').textContent=cash;for(const type of ['engine','grip']){$(`#${type}-level`).textContent=levels[type];const b=$(`[data-upgrade="${type}"]`);b.disabled=levels[type]>=3;b.title=levels[type]>=3?'Fully upgraded':'Buy upgrade for $300';}}
 updateGarage();
 const drivePanel=createDrivePanel({getPlayer:()=>trucks[0],onChange:save,onInteract:()=>{if(!menuDialog.open)canvas.focus({preventScroll:true});}});
+const handlingPanel=createHandlingPanel({getPlayer:()=>trucks[0],onChange:()=>keys.clear(),onInteract:()=>{if(!menuDialog.open)canvas.focus({preventScroll:true});}});
 function reset(){simulationClock.reset(true);physics.resetBarriers();scenery.resetBarriers();elapsed=0;count=0;phase='ready';$('#race-status').textContent=freeRide?'FREE RIDE · PUSTYNIA':'FREE PRACTICE';$('#countdown').textContent='';$('#pause').textContent='Ⅱ';$('#message').style.display='block';$('#message').innerHTML='<span>DUST RUNNER</span><strong>'+TRACKS[trackIndex].name+'</strong><p>Three laps · '+(curve.getLength()/1000).toFixed(2)+' km per lap · Split landing ahead.</p><button id="start">RACE <span>↗</span></button><button class="setup-link" id="open-setup">TRUCK · TRACK · PIT STOP</button><small>ENTER TO RACE · WASD / ARROWS TO DRIVE</small>';if(freeRide){$('#message').innerHTML='<span>FREE RIDE</span><strong>PUSTYNIA</strong><p>1200 × 600 m · Wydmy sierpowe, długie grzbiety, wysokie kopce i pola nierównego piasku. Bez przeciwników i limitu czasu.</p><button id="start">JEDŹ NA PUSTYNIĘ ↗</button><button class="setup-link" id="open-setup">SAMOCHÓD · SILNIK · MENU</button><small>F · POSTAW AUTO NA KOŁACH &nbsp; R · WRÓĆ NA START</small>';}$('#start').onclick=start;$('#open-setup').onclick=openMenu;updateMenu();
  trucks.forEach((c,i)=>c.mesh.visible=!freeRide||i===0);
  activeTrucks().forEach((c,i)=>{const j=N-20-(i>1?25:0),p=samples[j],t=curve.getTangentAt(j/N),side=(i%2?1:-1)*2.1*curve.lateralSign;Object.assign(c,{x:p.x-t.z*side,z:p.z+t.x*side,vx:0,vz:0,heading:Math.atan2(-t.x,-t.z),speed:0,index:j,checkpoint:-1,lap:0,height:terrain(j),vertical:0,airborne:false,lastGround:terrain(j),suspension:0,suspensionVelocity:0,rampRiseVelocity:0,collisionYaw:0,nitro:100,boosting:false,finish:false});c.mesh.position.set(c.x,0,c.z);c.mesh.rotation.set(0,c.heading,0);c.wheels.forEach(w=>{w.previousRotation=undefined;w.previousX=undefined;w.previousHeading=undefined;w.angle=0;w.steer=0;w.angularVelocity=0;});c.stuckTime=0;c.lane=(i%2?3.5:-3.5)*curve.lateralSign;if(freeRide)Object.assign(c,{...DESERT_SPAWN,height:heightAt(DESERT_SPAWN.x,DESERT_SPAWN.z)});resetPowertrain(c);physics.reset(c);poseTruck(c,0,true);});
@@ -241,7 +243,7 @@ const tuningPanel=createTuningPanel({
   try{setTuning(parameters);refreshTracks();makeWorld();reset();resize();updateEngineMenu();}
   catch(error){setTuning(previous);refreshTracks();makeWorld();reset();resize();updateEngineMenu();throw error;}
  },
- getContext:()=>({mode:freeRide?'desert':'race',desert:{...desertOptions},track:trackIndex,trackVariant,body:trucks[0].style,engineId:trucks[0].engineId,steeringMode,driveMode:trucks[0].driveMode,frontLock:trucks[0].axleLocks.front,rearLock:trucks[0].axleLocks.rear,engineUpgrade:levels.engine,tireUpgrade:levels.grip}),
+ getContext:()=>({mode:freeRide?'desert':'race',desert:{...desertOptions},track:trackIndex,trackVariant,body:trucks[0].style,engineId:trucks[0].engineId,steeringMode,handlingProfile:trucks[0].handlingProfile,hillDescent:trucks[0].hillDescent,driveMode:trucks[0].driveMode,frontLock:trucks[0].axleLocks.front,rearLock:trucks[0].axleLocks.rear,engineUpgrade:levels.engine,tireUpgrade:levels.grip}),
  getStats:()=>{const c=trucks[0];return {mass:Math.round(c.physics.body.mass()),speed:Math.round(Math.abs(c.speed)*3.6),vertical:c.vertical.toFixed(2),contacts:[0,1,2,3].filter(i=>c.physics.controller.wheelIsInContact(i)).length,rpm:Math.round(c.powertrain?.rpm??0)};},
 });
 $('#open-tuning').onclick=$('#quick-dev').onclick=()=>tuningPanel.open();
@@ -251,7 +253,7 @@ const statsOverlay=createStatsOverlay({game,toggle:$('#show-stats'),onInteract:(
 }});
 const vehicleDiagram=createVehicleDiagnosticsOverlay({game,toggle:$('#show-vehicle-diagram'),onInteract:()=>canvas.focus({preventScroll:true}),getDiagnostics:()=>['ready','countdown'].includes(phase)?null:readVehicleDiagnostics(trucks[0],{dt:simulationClock.dt,gravity:cfg.gravity})});
 // During a race, Space belongs to nitro even when a HUD button has focus.
-window.addEventListener('keydown',e=>{if(menuDialog.open||document.querySelector('#tuning-menu')?.open)return;if(e.target instanceof HTMLButtonElement&&e.code==='Space'&&!['racing','countdown','paused'].includes(phase))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.repeat)return;if(/^Digit[1-4]$/.test(e.code)){drivePanel.select(['auto','hi','lo','4x4'][Number(e.code.at(-1))-1]);return;}keys.add(e.code);if(e.code==='Enter'&&['ready','finished'].includes(phase))start();if(e.code==='KeyP'||e.code==='Escape')pause();if(e.code==='KeyR')reset();if(e.code==='KeyF')recover(trucks[0]);});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{audioPreviewTime=0;engineAudio.silence();keys.clear();if(phase==='racing'||phase==='countdown')pause();});
+window.addEventListener('keydown',e=>{if(menuDialog.open||document.querySelector('#tuning-menu')?.open)return;if(e.target instanceof HTMLButtonElement&&e.code==='Space'&&!['racing','countdown','paused'].includes(phase))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.repeat)return;if(/^Digit[1-4]$/.test(e.code)){drivePanel.select(['auto','hi','lo','4x4'][Number(e.code.at(-1))-1]);return;}keys.add(e.code);if(e.code==='Enter'&&['ready','finished'].includes(phase))start();if(e.code==='KeyH')handlingPanel.toggleDescent();if(e.code==='KeyP'||e.code==='Escape')pause();if(e.code==='KeyR')reset();if(e.code==='KeyF')recover(trucks[0]);});window.addEventListener('keyup',e=>keys.delete(e.code));window.addEventListener('blur',()=>{audioPreviewTime=0;engineAudio.silence();keys.clear();if(phase==='racing'||phase==='countdown')pause();});
 document.addEventListener('visibilitychange',()=>{simulationClock.reset();lastTime=performance.now();if(document.hidden){audioPreviewTime=0;engineAudio.silence();}});
 document.querySelectorAll('[data-key]').forEach(b=>{b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);};b.onpointerup=b.onpointercancel=()=>keys.delete(b.dataset.key);});
 function dust(c,dt){if(Math.random()<=Math.min(1,dt*60))dustPool.spawn(c,heightAt(c.x,c.z));}
@@ -311,7 +313,7 @@ function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=
    else ({throttle,steer,brake,boost}=opponentInput(c,near,curve,samples));
    boost=boost&&driveModeById(c.powertrain?.mode).boost&&!c.airborne&&!brake&&!c.rollover;c.boosting=boost;
    c.nitro=clamp(c.nitro+(boost?-cfg.nitroDrain:cfg.nitroRecharge)*dt,0,100);
-   physics.input(c,{throttle,steer,brake,boost,onDirt,steeringMode:i===0?steeringMode:'return',centerSteering:i===0&&(keys.has('KeyC')||((keys.has('ArrowLeft')||keys.has('KeyA'))&&(keys.has('ArrowRight')||keys.has('KeyD')))),engine:i===0?levels.engine:0,tires:i===0?levels.grip:0,ai:i!==0},dt);
+   physics.input(c,{throttle,steer,brake,boost,onDirt,handbrake:i===0&&(keys.has('ShiftLeft')||keys.has('ShiftRight')),steeringMode:i===0?steeringMode:'return',centerSteering:i===0&&(keys.has('KeyC')||((keys.has('ArrowLeft')||keys.has('KeyA'))&&(keys.has('ArrowRight')||keys.has('KeyD')))),engine:i===0?levels.engine:0,tires:i===0?levels.grip:0,ai:i!==0},dt);
   });
   physics.step();activeTrucks().forEach(c=>physics.sync(c,dt));
   framePhysicsMs+=performance.now()-physicsStarted;framePhysicsSteps++;
@@ -369,7 +371,7 @@ function frame(now){
  dustPool.update(phase==='paused'?0:dt);
  scenery.update(phase==='paused'?0:dt,sceneryIsVisible,work.dropped===0&&work.cpuMs<simulationClock.budgetMs);
  tuningPanel.update(now);
- if(now-lastHudPaint>=100){drivePanel.update();updateGameHud();minimap.render(activeTrucks(),selectedColor,viewCorners);lastHudPaint=now;}
+ if(now-lastHudPaint>=100){drivePanel.update();handlingPanel.update();updateGameHud();minimap.render(activeTrucks(),selectedColor,viewCorners);lastHudPaint=now;}
  renderer.render(scene,camera);
  vehicleDiagram.update(now);
  const cpuMs=performance.now()-frameStarted;

@@ -13,6 +13,9 @@ const groups={
  'Hamulce i kierowanie':[
  ['brakeDeceleration','Siła hamowania',3,1,9,.1,'m/s²'],['brakeBuild','Czas narastania hamulca',.32,.05,1,.01,'s'],['brakeRelease','Czas puszczania hamulca',.1,.02,.5,.01,'s'],['reverseDelay','Pauza przed cofaniem',.45,.1,1.5,.05,'s'],['engineBraking','Hamowanie silnikiem ×',.55,0,1.5,.05],['steerLow','Skręt przy małej prędkości',.56,.2,.75,.01,'rad'],['steerHigh','Skręt przy dużej prędkości',.12,.03,.3,.01,'rad'],['steerSlowSpeed','Prędkość pełnego skrętu',4,0,10,.5,'m/s'],['steerFastSpeed','Prędkość ograniczonego skrętu',22,12,40,.5,'m/s'],['steerBuild','Tempo skręcania',3.8,1,12,.1],['steerReturn','Tempo prostowania kół',8,2,20,.5],['heldSteerRate','Tempo zmiany utrzymywanego kąta',.7,.1,2,.05,'rad/s'],
  ],
+ 'Arcade 4×4 · wspomaganie kierowcy':[
+ ['arcadeThrottleBuild','Narastanie pedału gazu',.12,.04,.5,.01,'s'],['arcadeThrottleRelease','Puszczanie pedału gazu',.07,.02,.3,.01,'s'],['arcadeSteerResponse','Reakcja kierownicy Arcade',5.5,2,12,.1],['arcadeLateralG','Docelowe przyspieszenie w zakręcie',.95,.5,1.5,.05,'g'],['arcadeCountersteer','Pomoc w kontrze',.32,0,.8,.02],['descentSpeed','Prędkość kontroli zjazdu',6,3,12,.5,'km/h'],['handbrakeDeceleration','Siła ręcznego na tylnej osi',4,1,8,.1,'m/s²'],
+ ],
  'Napęd i nitro':[
  ['torqueScale','Moment silnika ×',1,.4,2,.05],['driveScale','Siła napędu ×',1.8,.6,3,.05],['topSpeedScale','Prędkość maksymalna ×',1,.5,1.5,.05],['boostScale','Moc nitro ×',1.42,1,2,.02],['finalDrive','Przełożenie główne',4.7,3,7,.1],['gear1','Bieg 1',3,2,4.5,.05],['gear2','Bieg 2',1.75,1.2,2.5,.05],['gear3','Bieg 3',1,.7,1.3,.05],['driveRadius','Promień koła w modelu napędu',.34,.25,.55,.01],['shiftRpm','Próg zmiany biegu / czerwone pole',.78,.6,.95,.01],['nitroDrain','Zużycie nitro',32,5,60,1,'%/s'],['nitroRecharge','Regeneracja nitro',7,0,20,.5,'%/s'],
  ],
@@ -54,7 +57,7 @@ export function parseTuning(text){
  if(typeof text!=='string'||text.length>100000)throw Error('Wklej JSON ustawień (maks. 100 KB).');
  let data;try{data=JSON.parse(text);}catch{throw Error('Nieprawidłowy JSON.');}
  if(data?.format!=='dust-runner-tunning'||data.version!==1)throw Error('To nie jest obsługiwany zestaw Dust Runner (wersja 1).');
- const context={};for(const key of ['track','trackVariant','body','engineId','steeringMode','engineUpgrade','tireUpgrade','driveMode','frontLock','rearLock','applied']){const value=data.context?.[key];if(typeof value==='string'&&value.length<80||typeof value==='number'&&Number.isFinite(value)||typeof value==='boolean')context[key]=value;}
+ const context={};for(const key of ['track','trackVariant','body','engineId','steeringMode','engineUpgrade','tireUpgrade','driveMode','frontLock','rearLock','handlingProfile','hillDescent','applied']){const value=data.context?.[key];if(typeof value==='string'&&value.length<80||typeof value==='number'&&Number.isFinite(value)||typeof value==='boolean')context[key]=value;}
  return tuningDocument(data.parameters,data.name,context);
 }
 export function restoreTuning(storage){

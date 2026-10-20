@@ -397,3 +397,35 @@ translucent; unsupported wheels are gray. Body pitch/roll follows the rigid body
 including rollovers. Rotating hub marks are sampled and may alias at speed; use
 the numerical RPM reading. Canvas 2D and table refresh at 10 Hz after physics and
 scene rendering; hidden/collapsed panels skip telemetry reads and drawing.
+
+### Arcade 4×4 handling profile
+
+New players default to **ARCADE 4×4** in Menu → Charakter jazdy. **Klasyczny**
+retains the previous accelerator/steering path for comparison. Switching profile
+pauses through the normal menu and preserves the vehicle, engine, velocity and
+race. The profile and HDC preference persist under `dust-runner-handling-v1`.
+
+Arcade filters keyboard throttle like pedal travel, uses full parking steering
+lock at low speed and a speed-dependent cornering envelope at pace. Auto-center
+adds at most 0.12 rad of slip-based countersteer through the front-wheel rack;
+held-angle mode preserves the driver's exact held rack instead. Neither mode
+sets chassis orientation, velocity or an artificial stabilizing torque. Braking,
+weight transfer, independent spring travel, axle locks and uneven landings still
+come from the existing 120 Hz shared Rapier world. These remain game-calibrated
+raycast tires, not a validated reproduction of a factory Bronco suspension or
+tire model.
+
+**Shift / touch HB** operates a progressively applied rear handbrake, releasing
+the rear engine forces while engaged. **H / HDC HUD button** arms downhill
+control: in LO or crawler range, when coasting downhill above the configured
+speed with at least two contacts, normal wheel braking limits the descent.
+Accelerator or service brake takes priority; HDC does not pull uphill or hold
+a stopped vehicle. The highlighted HDC ↓ indicator means braking is active;
+HDC ON means armed. Default target is 6 km/h. Seven Arcade settings are available
+in DEV/TUNNING and in copied tuning JSON; context records profile/HDC choice.
+
+Full-physics tests cover a parking U-turn, responsive 0–50 launch, rear-only
+brake impulses, unchanged airborne trajectory, and a 35% downhill comparison:
+about 6.1 km/h with HDC versus 51.5 km/h without after 15 simulated seconds
+(302 engine, LO, default tune). Range and lock selection remain separate from
+handling: A/HI for pace, LO for climbs, crawler with axle locks for articulation.

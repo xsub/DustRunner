@@ -1,7 +1,7 @@
 // Versioned, browser-local simulation settings. Defaults reproduce the shipped tune.
 const groups={
  'Świat i masa':[
- ['gravity','Grawitacja',9.81,3,20,.01,'m/s²'],['solverIterations','Dokładność kontaktów',8,4,20,1],
+ ['gravity','Grawitacja',20,3,20,.01,'m/s²'],['solverIterations','Dokładność kontaktów',8,4,20,1],
  ['compactDryMass','Masa Heritage bez silnika',2025,900,4000,25,'kg'],['fullDryMass','Masa większego nadwozia bez silnika',2525,1000,5000,25,'kg'],['engineMassScale','Masa silnika ×',1,.5,2,.05],['frameY','Położenie masy ramy w pionie',-.95,-1.2,-.4,.01],['engineZ','Położenie silnika przód / tył',-1.03,-1.5,-.5,.01],['inertiaScale','Bezwładność obrotowa ×',1,.5,3,.05],
  ],
  'Zawieszenie i zderzenia':[

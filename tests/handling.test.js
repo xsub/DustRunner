@@ -6,7 +6,7 @@ import {tuning} from '../src/tuning.js';
 const dt=1/120;
 before(initPhysics);
 function fixture({profile='arcade',grade=0,descent=false}={}){
- const h=(x,z)=>80+grade*z,terrain={positions:new Float32Array([-500,h(-500,-500),-500,500,h(500,-500),-500,-500,h(-500,500),500,500,h(500,500),500]),indices:new Uint32Array([0,2,1,1,2,3]),heightAt:h};
+ const h=(x,z)=>500+grade*z,terrain={positions:new Float32Array([-500,h(-500,-500),-500,500,h(500,-500),-500,-500,h(-500,500),500,500,h(500,500),500]),indices:new Uint32Array([0,2,1,1,2,3]),heightAt:h};
  const p=createPhysics(terrain,{min:{x:-500,z:-500},max:{x:500,z:500}}),car={style:'classic',engineId:'302',driveMode:grade?'lo':'auto',handlingProfile:profile,hillDescent:descent,x:0,z:0,heading:0,speed:0};p.reset(car);
  const step=(input={})=>{p.input(car,{throttle:0,steer:0,onDirt:true,...input},dt);p.step();p.sync(car,dt);};
  return {p,car,step};
@@ -34,7 +34,7 @@ test('physical downhill control holds about 6 km/h on a 35 percent grade without
  const speeds=[];
  for(const descent of [false,true]){const f=fixture({grade:.35,descent});try{
   let previous=0;
-  for(let i=0;i<1800;i++){f.step();assert.ok(Math.abs(f.car.speed-previous)<.3,'braking must act over time');previous=f.car.speed;}
+  for(let i=0;i<1800;i++){f.step();assert.ok(Math.abs(f.car.speed-previous)<.3,`braking must act over time: ${f.car.speed-previous}, frame ${i}, HDC ${descent}`);previous=f.car.speed;}
   speeds.push(f.car.speed*3.6);assert.equal(f.car.rollover,false);assert.ok(Math.abs(f.car.physics.body.mass()-2250)<1);assert.equal(f.p.world.gravity.y,-tuning.gravity);
  }finally{f.p.dispose();}}
  assert.ok(speeds[0]>30);assert.ok(speeds[1]>5.5&&speeds[1]<7.5,JSON.stringify(speeds));

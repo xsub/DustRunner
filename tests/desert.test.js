@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {setTuning,DEFAULT_TUNING} from '../src/tuning.js';
 import assert from 'node:assert/strict';
 import {buildDesert,desertHeight,DESERT_SPAWN,DESERT_BOUNDS,DESERT_VARIANTS,createDesertHeight,normalizeDesertOptions} from '../src/desert.js';
 import {initPhysics,createPhysics} from '../src/physics.js';
@@ -12,14 +13,21 @@ test('desert has a full 1200 × 600 m rectangular contact mesh and varied dunes 
 test('triangle sampler agrees with every sampled desert mesh vertex',()=>{
  for(let i=0;i<ground.positions.length;i+=997*3){const [x,y,z]=ground.positions.slice(i,i+3);assert.ok(Math.abs(ground.heightAt(x,z)-y)<.0001);}
 });
-test('single truck settles and drives over desert using the rendered contact surface',async()=>{
+for(const gravity of [9.81,20])test(`single truck settles and drives over desert at gravity ${gravity} using the rendered contact surface`,async()=>{
+ setTuning({...DEFAULT_TUNING,gravity});
  await initPhysics();const physics=createPhysics(ground,ground.bounds),car={...DESERT_SPAWN,style:'classic',engineId:'302',speed:0};physics.reset(car);
- let contacts=0,airtime=0;for(let i=0;i<1800;i++){
-  physics.input(car,{throttle:i>240?1:0,steer:0,onDirt:true},1/120);physics.step();physics.sync(car,1/120);
-  if(i===240){contacts=[0,1,2,3].filter(j=>car.physics.controller.wheelIsInContact(j)).length;assert.ok(Math.abs(car.height-ground.heightAt(car.x,car.z))<.15);}
-  if(i>240&&car.airborne)airtime++;assert.ok(Number.isFinite(car.x)&&Number.isFinite(car.height));
- }
- assert.equal(contacts,4);assert.ok(car.z<DESERT_SPAWN.z-50);assert.ok(airtime>0,'dune crests produce real airtime');assert.equal(physics.getStats().bodies,1);physics.dispose();
+ try{
+  let contacts=0,airtime=0;for(let i=0;i<1800;i++){
+   physics.input(car,{throttle:i>240?1:0,steer:0,onDirt:true},1/120);physics.step();physics.sync(car,1/120);
+   if(i===240){contacts=[0,1,2,3].filter(j=>car.physics.controller.wheelIsInContact(j)).length;assert.ok(Math.abs(car.height-ground.heightAt(car.x,car.z))<.15);}
+   if(i>240&&car.airborne)airtime++;assert.ok(Number.isFinite(car.x)&&Number.isFinite(car.height));
+  }
+  assert.equal(contacts,4);
+  // A stock 302 in AUTO cannot crest the same steep dune under twice the load.
+  assert.ok(car.z<DESERT_SPAWN.z-(gravity===20?10:50));
+  if(gravity===9.81)assert.ok(airtime>0,'dune crests produce real airtime');
+  assert.equal(car.rollover,false);assert.equal(physics.getStats().bodies,1);
+ }finally{physics.dispose();setTuning(DEFAULT_TUNING);}
 });
 
 test('dune districts have distinct, non-repeating heights and traversable slopes',()=>{

@@ -13,7 +13,7 @@ const memory=()=>{const data=new Map();return {getItem:key=>data.get(key)??null,
 test('tuning schema has unique controls, valid defaults and immutable factory settings',()=>{
  assert.equal(new Set(TUNING_FIELDS.map(f=>f.key)).size,TUNING_FIELDS.length);assert.ok(TUNING_FIELDS.length>=70);
  assert.deepEqual(validateTuning(DEFAULT_TUNING),DEFAULT_TUNING);assert.equal(Object.isFrozen(DEFAULT_TUNING),true);
- setTuning({gravity:12});assert.equal(DEFAULT_TUNING.gravity,9.81);assert.equal(tuning.gravity,12);
+ setTuning({gravity:12});assert.equal(DEFAULT_TUNING.gravity,20);assert.equal(tuning.gravity,12);
 });
 test('imports reject malformed JSON, incompatible versions, unknown fields and invalid numeric values',()=>{
  for(const value of [null,[],{gravity:NaN},{gravity:Infinity},{gravity:'12'},{gravity:100},{solverIterations:4.5},{gear1:2,gear2:2.2},{unexpected:1},JSON.parse('{"__proto__":{"gravity":0}}')])assert.throws(()=>validateTuning(value));

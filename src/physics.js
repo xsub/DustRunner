@@ -1,4 +1,4 @@
-import {tuning as cfg,tuningRevision} from './tuning.js';
+import {tuning as cfg,tuningRevision,DEFAULT_TUNING} from './tuning.js';
 import RAPIER from '@dimforge/rapier3d-compat';
 import {Quaternion,Vector3} from 'three';
 import {axleWheelForces,driveModeById} from './drive-modes.js';
@@ -8,7 +8,7 @@ import {isOpenBody,rollCageSegments} from './body-types.js';
 import {drivingControls,rollingResistance,steeringStep} from './driving-controls.js';
 import {arcadePedals,arcadeSteering,descentDeceleration} from './handling.js';
 import {WHEEL_LAYOUT,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
-export const GRAVITY=9.81,CHASSIS_HEIGHT=1.5,REST_LENGTH=.55;
+export const GRAVITY=DEFAULT_TUNING.gravity,CHASSIS_HEIGHT=1.5,REST_LENGTH=.55;
 export const initPhysics=()=>RAPIER.init();
 const q=new Quaternion(),forward=new Vector3(),up=new Vector3();
 export function createPhysics(terrain,bounds){

@@ -1,10 +1,11 @@
 import {Quaternion,Vector3} from 'three';
 import {WHEEL_LAYOUT,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 import {engineById} from './engines.js';
+import {tuning} from './tuning.js';
 
 // Read only, sampled by the HUD. Impulses belong to the last fixed physics
 // step, so divide by that step's duration, never by the display frame time.
-export function readVehicleDiagnostics(car,{dt=1/120,gravity=9.81}={}){
+export function readVehicleDiagnostics(car,{dt=1/120,gravity=tuning.gravity}={}){
  const {body,controller}=car.physics,q=new Quaternion().copy(body.rotation());
  const forward=new Vector3(0,0,-1).applyQuaternion(q),right=new Vector3(1,0,0).applyQuaternion(q),up=new Vector3(0,1,0).applyQuaternion(q);
  const heading=Math.atan2(-forward.x,-forward.z),cos=Math.cos(heading),sin=Math.sin(heading);

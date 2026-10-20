@@ -37,11 +37,12 @@ test('airborne steering, throttle and brakes do not redirect a ballistic flight'
  const p=a.car.physics.body.translation(),other=b.car.physics.body.translation();
  assert.ok(Math.abs(p.x-other.x)<.0001&&Math.abs(p.z-other.z)<.0001&&Math.abs(p.y-other.y)<.0001);
  assert.ok(Math.abs(a.car.heading-b.car.heading)<.00001);
- assert.ok(p.y>18&&p.y<21);assert.equal(GRAVITY,9.81);
+ const flightTime=90*dt;
+ assert.ok(Math.abs(p.y-(20+4*flightTime-.5*GRAVITY*flightTime**2))<.15);assert.equal(GRAVITY,20);
  a.physics.dispose();b.physics.dispose();
 });
 test('asymmetric landing can physically roll a truck onto its side',()=>{
- const f=fixture(x=>3.4*(1-Math.max(0,Math.min(1,(x+.4)/.8))));
+ const f=fixture(x=>4.4*(1-Math.max(0,Math.min(1,(x+.4)/.8))));
  f.car.physics.body.setTranslation({x:0,y:8,z:0},true);f.physics.sync(f.car,0);
  let minUp=1;
  for(let i=0;i<600;i++){step(f);const q=f.car.physics.body.rotation();minUp=Math.min(minUp,1-2*(q.x*q.x+q.z*q.z));}

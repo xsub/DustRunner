@@ -120,7 +120,7 @@ test('crawler catches a rollback and climbs a 35 percent slope without the speed
  const terrain={positions:new Float32Array([-200,150,-200,200,150,-200,-200,10,200,200,10,200]),indices:new Uint32Array([0,2,1,1,2,3]),heightAt:(x,z)=>80-.35*z};
  const physics=createPhysics(terrain,{min:{x:-200,z:-200},max:{x:200,z:200}}),c=car('4x4');physics.reset(c);let rollback=0;
  try{
-  for(let i=0;i<1200;i++){physics.input(c,{...input,throttle:i>180?1:0},dt);physics.step();physics.sync(c,dt);rollback=Math.min(rollback,c.speed);}
-  assert.ok(rollback< -2);assert.ok(c.z< -10);assert.ok(c.speed>2&&c.speed<4);assert.equal(c.rollover,false);
+  for(let i=0;i<1800;i++){physics.input(c,{...input,throttle:i>180?1:0},dt);physics.step();physics.sync(c,dt);rollback=Math.min(rollback,c.speed);}
+  assert.ok(rollback< -2);assert.ok(c.z< -10,`z ${c.z}, speed ${c.speed}`);assert.ok(c.speed>2&&c.speed<4);assert.equal(c.rollover,false);
  }finally{physics.dispose();}
 });

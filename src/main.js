@@ -382,7 +382,8 @@ function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=
   physics.step();activeTrucks().forEach(c=>physics.sync(c,dt));
   framePhysicsMs+=performance.now()-physicsStarted;framePhysicsSteps++;
  activeTrucks().forEach((c,i)=>{
-  if(freeRide){sandTrails.sample(c,heightAt);if(!c.airborne&&Math.abs(c.speed)>5)dust(c,dt);poseTruck(c,dt);return;}
+  sandTrails.sample(c,heightAt);
+  if(freeRide){if(!c.airborne&&Math.abs(c.speed)>5)dust(c,dt);poseTruck(c,dt);return;}
   const next=nearest(c.x,c.z).index;
   if(c.checkpoint===-1){if(c.index>N*.75&&next<N*.25)c.checkpoint=0;}else{const p=advanceProgress(c.index,next,c.checkpoint,c.lap,N);c.checkpoint=p.checkpoint;c.lap=p.lap;}
   c.index=next;if(!c.airborne&&Math.abs(c.speed)>5)dust(c,dt);

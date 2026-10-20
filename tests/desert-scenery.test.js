@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {Box3} from 'three';
-import {buildRaceDesert,combineGround,createDesertWind} from '../src/desert-scenery.js';
+import {buildRaceDesert,combineGround,createDesertWind,raceDesertRelief} from '../src/desert-scenery.js';
 import {createCircuit,ROAD_WIDTH,SHOULDER_WIDTH} from '../src/tracks.js';
 import {buildTerrain} from '../src/terrain.js';
 import {indexedNearest} from '../src/track-index.js';
@@ -34,4 +34,17 @@ test('wind scenery has two render objects and cannot animate when paused or when
  for(let i=0;i<10;i++)wind.update(0,()=>{queries++;return true;});assert.equal(queries,0);
  wind.update(.1,()=>true);assert.ok(world.children.some(o=>o.visible));
  for(const o of world.children){o.geometry.dispose();o.material.dispose();}
+});
+
+test('race sand has broad climbable hills and occasional dunes rather than short repeating ridges',()=>{
+ let min=Infinity,max=-Infinity,small=0,broad=0;
+ for(let x=-500;x<500;x++){
+  const h=raceDesertRelief(x,71),near=raceDesertRelief(x+1,71);min=Math.min(min,h);max=Math.max(max,h);
+  assert.equal(h,raceDesertRelief(x,71));assert.ok(Math.abs(h-near)<.35);
+  small+=Math.abs(h-near);broad+=Math.abs(h-raceDesertRelief(x+24,71));
+ }
+ assert.ok(max-min>5);assert.ok(broad>small*12,'features should change over tens of meters, not tire-sized stripes');
+ // Height-dependent easing beside the track must not create new roadside walls.
+ const p=dunes.positions;
+ for(let i=3;i<p.length;i+=3)if(Math.abs(p[i]-p[i-3]-4)<.01&&p[i+2]===p[i-1])assert.ok(Math.abs(p[i+1]-p[i-2])/4<.6);
 });

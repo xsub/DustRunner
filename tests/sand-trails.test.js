@@ -30,3 +30,13 @@ test('stationary tires do not consume trail storage and sliding/braking leaves s
  f.contacts([true,false,false,false]);f.move(1.5);assert.equal(f.trails.count,9);
  f.trails.dispose();assert.equal(f.scene.children.length,0);
 });
+
+
+test('four race cars share one bounded mesh and keep separate contact histories',()=>{
+ const scene=new THREE.Scene(),trails=createSandTrails(scene,48);
+ const cars=Array.from({length:4},(_,i)=>({x:i*4,z:0,heading:0,vx:0,vz:5,physics:{controls:{brakePressure:0},controller:{wheelIsInContact:()=>true,wheelContactPoint(w,target){return Object.assign(target,{x:i*4+(w%2?1:-1),y:0,z:cars[i].z+(w<2?0:2)});}}}}));
+ for(const car of cars)trails.sample(car,()=>0);assert.equal(trails.count,0);
+ for(const car of cars){car.z=.5;trails.sample(car,()=>0);}assert.equal(trails.count,16);
+ for(let step=2;step<30;step++)for(const car of cars){car.z=step*.5;trails.sample(car,()=>0);}
+ assert.equal(trails.count,48);assert.equal(scene.children.length,1);assert.equal(trails.mesh.geometry.drawRange.count,48*6);
+});

@@ -27,10 +27,11 @@ export function createSandTrails(scene,capacity=8192){
  function emit(a,b,heightAt,intensity){
   const dx=b.x-a.x,dz=b.z-a.z,length=Math.hypot(dx,dz),nx=-dz/length*.27,nz=dx/length*.27;
   const corners=[[a.x+nx,a.z+nz,0,a.distance],[a.x-nx,a.z-nz,1,a.distance],[b.x+nx,b.z+nz,0,b.distance],[b.x-nx,b.z-nz,1,b.distance]];
+  for(const corner of corners)corner.push(heightAt(corner[0],corner[1])+.025);
   const slot=cursor;cursor=(cursor+1)%capacity;count=Math.min(capacity,count+1);
   for(const [j,k] of [0,1,2,2,1,3].entries()){
-   const [x,z,u,v]=corners[k],p=slot*18+j*3,t=slot*12+j*2;
-   positions[p]=x;positions[p+1]=heightAt(x,z)+.025;positions[p+2]=z;uvs[t]=u;uvs[t+1]=v;strengths[slot*6+j]=intensity;
+   const [x,z,u,v,y]=corners[k],p=slot*18+j*3,t=slot*12+j*2;
+   positions[p]=x;positions[p+1]=y;positions[p+2]=z;uvs[t]=u;uvs[t+1]=v;strengths[slot*6+j]=intensity;
   }
   position.addUpdateRange(slot*18,18);uv.addUpdateRange(slot*12,12);strength.addUpdateRange(slot*6,6);
  }

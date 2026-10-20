@@ -2,19 +2,37 @@ import * as THREE from 'three';
 import {indexedNearest} from './track-index.js';
 import {triangleSampler} from './terrain.js';
 
-// Low dunes share their triangles with the vehicle collision mesh. Keep the
-// racing embankment clear; small infield islands still get the sand material.
+const smooth=t=>t*t*(3-2*t);
+const hash=(x,z)=>{const n=Math.sin(x*127.1+z*311.7)*43758.5453;return n-Math.floor(n);};
+function noise(x,z){const ix=Math.floor(x),iz=Math.floor(z),u=smooth(x-ix),v=smooth(z-iz);return (hash(ix,iz)*(1-u)+hash(ix+1,iz)*u)*(1-v)+(hash(ix,iz+1)*(1-u)+hash(ix+1,iz+1)*u)*v;}
+// Broad, non-periodic relief in world meters. Sparse elongated dune patches
+// break up the rolling hills; there is no repeating corrugated wave field.
+export function raceDesertRelief(x,z){
+ const wx=x+25*(noise(x/170+12,z/170)-.5),wz=z+25*(noise(x/170,z/170-19)-.5);
+ let height=.6+9*noise(wx/95,wz/95)+3.5*noise(wx/43+31,wz/43-7);
+ const cell=112,cx=Math.floor(x/cell),cz=Math.floor(z/cell);
+ for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
+  const i=cx+dx,j=cz+dz;if(hash(i+91,j-37)>.45)continue;
+  const centerX=(i+.18+.64*hash(i+4,j))*cell,centerZ=(j+.18+.64*hash(i,j+17))*cell;
+  const a=hash(i-21,j+3)*Math.PI,c=Math.cos(a),s=Math.sin(a),px=x-centerX,pz=z-centerZ;
+  const along=(px*c+pz*s)/(28+14*hash(i+9,j)),across=(-px*s+pz*c)/(14+8*hash(i,j-11));
+  const d=along*along+across*across;
+  if(d<9)height+=(3+4*hash(i-18,j+15))*Math.exp(-d)*(1-smooth(Math.max(0,(d-6)/3)));
+ }
+ return height;
+}
+// Render and collision use the same broad hills and occasional small dunes.
+// A height-dependent blend keeps their base climbable beside the shoulder.
 export function buildRaceDesert(samples,bounds,clearance){
  const positions=[],uv=[],indices=[],anchors=[],step=4;
  const minX=Math.floor((bounds.min.x-80)/step)*step,minZ=Math.floor((bounds.min.z-80)/step)*step;
  const nx=Math.ceil((bounds.max.x+80-minX)/step)+1,nz=Math.ceil((bounds.max.z+80-minZ)/step)+1;
  for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){
   const x=minX+i*step,z=minZ+j*step,distance=indexedNearest(samples,x,z).distance;
-  const t=Math.max(0,Math.min(1,(distance-clearance-2)/18)),fade=t*t*(3-2*t);
-  const u=x*.77+z*.64+5*Math.sin(z*.025),wave=.5+.5*Math.sin(u*.095+Math.sin(z*.04)*1.3);
-  const y=-.25+fade*(.3+2.6*wave*wave+.55*(1+Math.sin(z*.067-x*.024)));
+  const relief=raceDesertRelief(x,z),t=Math.max(0,Math.min(1,(distance-clearance-2)/(26+relief*1.6))),fade=smooth(t);
+  const y=-.25+fade*relief;
   positions.push(x,y,z);uv.push(x/8,z/8);
-  if(fade>.6&&wave>.9&&(i+j)%4===0)anchors.push({x,y,z});
+  if(fade>.9&&(i+j)%4===0&&relief>raceDesertRelief(x+4,z)&&relief>raceDesertRelief(x-4,z))anchors.push({x,y,z});
   if(i<nx-1&&j<nz-1){const a=j*nx+i;indices.push(a,a+nx,a+1,a+1,a+nx,a+nx+1);}
  }
  const mesh={positions:new Float32Array(positions),uv:new Float32Array(uv),indices:new Uint32Array(indices),anchors};
@@ -32,10 +50,13 @@ export function createSandMaterial(){
   shader.fragmentShader='varying vec3 vSandWorld;\nfloat sandHash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}\n'+shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
    vec2 p=vSandWorld.xz;
    float grain=sandHash(floor(p*38.0));
-   float ripple=sin(p.x*10.0+p.y*4.2+sin(p.y*.33)*3.0+sin(p.x*.11+p.y*.09)*5.0);
+   float mottling=sandHash(floor(p*.6));
    float broad=sin(p.x*.037+sin(p.y*.041))*sin(p.y*.061);
-   float aa=1.0-smoothstep(.5,2.0,fwidth(p.x*10.0+p.y*4.2));
-   diffuseColor.rgb*=.86+broad*.06+grain*.15+ripple*.04*aa;
+
+   vec3 duneNormal=inverseTransformDirection(normalize(vNormal),viewMatrix);
+   float slopeLight=clamp(-duneNormal.x*.8+duneNormal.z*.55,-.22,.22);
+   float reliefTone=smoothstep(-.25,14.0,vSandWorld.y);
+   diffuseColor.rgb*=.76+reliefTone*.22+broad*.05+grain*.10+mottling*.025+slopeLight;
   `);
  };
  return material;

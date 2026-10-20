@@ -13,10 +13,11 @@
 ## Pick your playground
 
 - **Race:** 16 dirt circuits, each with four mirror layouts — 64 configurations. Every circuit has **4–10 ramps in three height classes** (default 0.65 / 2.075 / 3.5 m above the local road), with room for takeoff and landing. Race three AI opponents through ramps, split landings, whoops, banks and winding terrain.
-- **Free Ride:** a 1,200 × 600 m desert with three dune styles: storm ridges, giant star dunes and a seeded random expedition. Climb, jump and find your own route. Four-wheel sand trails follow the dunes, with tread impressions and stronger marks under braking or sideways slip.
+- **Free Ride:** a 1,200 × 600 m desert with three dune styles: storm ridges, giant star dunes and a seeded random expedition. Climb, jump and find your own route. Four-wheel trails follow the terrain in Free Ride and races, including all AI cars, with tread impressions and stronger marks under braking or sideways slip.
 - **Choose your truck:** seven selectable procedural SUV bodies inspired by classic Bronco® shapes, from emerald/ivory Heritage and open-top crawlers to brown Classic ’78 and the Godzilla ’78 restomod.
 - **Build your drivetrain:** 12 inline-six and V8 profiles, including the 7.3 L Godzilla swap. Each engine has a fixed gearbox profile; choose arcade shifting, full automatic or sequential manual control.
 - **Drive it like a 4×4:** HI/LO ranges, crawler mode, front/rear differential locks, hill-descent control (independent of the Arcade/Classic steering profile), progressive braking and optional held-angle steering.
+- **Explore beyond the track:** broad irregular sandy hills, hollows and scattered small dunes share their visible geometry with collision. Fine sand grain replaces repetitive surface stripes.
 - **Feel the terrain:** four spring/damper wheel contacts, axle articulation, tire slip, mass distribution, jumps, collisions and rollovers. Recovery searches for a safe, flatter footprint.
 - **Keep driving after the finish:** medal-colored confetti celebrates the result while you continue victory laps. End the race when ready, or stop for the result screen.
 

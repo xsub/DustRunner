@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import {navigationReading} from './navigation.js';
+import {attractRunning,withDemoDrivetrain} from './attract-mode.js';
 import {createDrivePanel} from './drive-panel.js';
 import {createHandlingPanel} from './handling-panel.js';
 import {driveModeById} from './drive-modes.js';
@@ -147,7 +149,7 @@ function makeTruck(style,num){
 }
 makeWorld();['classic','ranger','sunset','expedition'].forEach((c,i)=>trucks.push(makeTruck(c,['07','12','28','03'][i])));
 const completion=new RaceCompletion(),celebration=createRaceCelebration(game);
-const keys=new Set();let phase='ready',previousPhase='racing',elapsed=0,count=0,selectedColor='#087a50',cash=0,levels={engine:0,grip:0},lastTime=0,muted=true,volume=.55,steeringMode='return',audioPreviewTime=0;
+const keys=new Set();let hasStarted=false,phase='ready',previousPhase='racing',elapsed=0,count=0,selectedColor='#087a50',cash=0,levels={engine:0,grip:0},lastTime=0,muted=true,volume=.55,steeringMode='return',audioPreviewTime=0;
 const engineAudio=new EngineAudio(),handbrake=new Handbrake();
 try{const save=JSON.parse(localStorage.getItem('dust-runner-save'));if(save){trucks[0].transmissionMode=transmissionMode({transmissionMode:save.transmissionMode});trucks[0].driveMode=driveModeById(save.driveMode).id;trucks[0].axleLocks={front:typeof save.axleLocks?.front==='boolean'?save.axleLocks.front:true,rear:typeof save.axleLocks?.rear==='boolean'?save.axleLocks.rear:true};if(['return','hold'].includes(save.steeringMode))steeringMode=save.steeringMode;if(ENGINES.some(e=>e.id===save.engineId))trucks[0].engineId=save.engineId;if(Number.isFinite(save.volume))volume=clamp(save.volume,0,1);cash=Math.max(0,Number(save.cash)||0);levels.engine=clamp(Number(save.engine)||0,0,3);levels.grip=clamp(Number(save.grip)||0,0,3);}}catch{}
 function save(){try{localStorage.setItem('dust-runner-save',JSON.stringify({cash,...levels,engineId:trucks[0].engineId,volume,steeringMode,driveMode:trucks[0].driveMode,transmissionMode:transmissionMode(trucks[0]),axleLocks:trucks[0].axleLocks}));}catch{}updateGarage();}
@@ -156,11 +158,12 @@ updateGarage();
 const drivePanel=createDrivePanel({getPlayer:()=>trucks[0],onChange:()=>{completion.interrupt();save();},onInteract:()=>{if(!menuDialog.open)canvas.focus({preventScroll:true});}});
 const transmissionPanel=createTransmissionPanel({getPlayer:()=>trucks[0],onChange:()=>{completion.interrupt();save();},onInteract:()=>{if(!menuDialog.open)canvas.focus({preventScroll:true});}});
 const handlingPanel=createHandlingPanel({getPlayer:()=>trucks[0],onChange:()=>{completion.interrupt();keys.clear();},onInteract:()=>{if(!menuDialog.open)canvas.focus({preventScroll:true});}});
-function reset(){handbrake.reset();completion.reset();celebration.reset();$('#race-victory').hidden=true;simulationClock.reset(true);physics.resetBarriers();scenery.resetBarriers();elapsed=0;count=0;phase='ready';$('#race-status').textContent=freeRide?'FREE RIDE · PUSTYNIA':'FREE PRACTICE';$('#countdown').textContent='';$('#pause').textContent='Ⅱ';$('#message').style.display='block';$('#message').innerHTML='<span>DUST RUNNER</span><strong>'+TRACKS[trackIndex].name+'</strong><p>Three laps · '+(curve.getLength()/1000).toFixed(2)+' km per lap · Split landing ahead.</p><button id="start">RACE <span>↗</span></button><button class="setup-link" id="open-setup">TRUCK · TRACK · PIT STOP</button><small>ENTER TO RACE · WASD / ARROWS TO DRIVE</small>';if(freeRide){$('#message').innerHTML='<span>FREE RIDE</span><strong>PUSTYNIA</strong><p>1200 × 600 m · Wydmy sierpowe, długie grzbiety, wysokie kopce i pola nierównego piasku. Bez przeciwników i limitu czasu.</p><button id="start">JEDŹ NA PUSTYNIĘ ↗</button><button class="setup-link" id="open-setup">SAMOCHÓD · SILNIK · MENU</button><small>F · POSTAW AUTO NA KOŁACH &nbsp; R · WRÓĆ NA START</small>';}$('#start').onclick=start;$('#open-setup').onclick=openMenu;updateMenu();
+function isAttract(){if(hasStarted||freeRide||phase!=='ready'||document.hidden)return false;return attractRunning({started:hasStarted,freeRide,phase,hidden:document.hidden,editing:!!document.querySelector('dialog[open]')});}
+function reset(){game.classList.toggle('prestart',!hasStarted);handbrake.reset();completion.reset();celebration.reset();$('#race-victory').hidden=true;simulationClock.reset(true);physics.resetBarriers();scenery.resetBarriers();elapsed=0;count=0;phase='ready';$('#race-status').textContent=freeRide?'FREE RIDE · PUSTYNIA':'FREE PRACTICE';$('#countdown').textContent='';$('#pause').textContent='Ⅱ';$('#message').style.display='block';$('#message').innerHTML='<span>DUST RUNNER</span><strong>'+TRACKS[trackIndex].name+'</strong><p>Three laps · '+(curve.getLength()/1000).toFixed(2)+' km per lap · Split landing ahead.</p><button id="start">RACE <span>↗</span></button><button class="setup-link" id="open-setup">TRUCK · TRACK · PIT STOP</button><small>ENTER TO RACE · WASD / ARROWS TO DRIVE</small>';if(freeRide){$('#message').innerHTML='<span>FREE RIDE</span><strong>PUSTYNIA</strong><p>1200 × 600 m · Wydmy sierpowe, długie grzbiety, wysokie kopce i pola nierównego piasku. Bez przeciwników i limitu czasu.</p><button id="start">JEDŹ NA PUSTYNIĘ ↗</button><button class="setup-link" id="open-setup">SAMOCHÓD · SILNIK · MENU</button><small>F · POSTAW AUTO NA KOŁACH &nbsp; R · WRÓĆ NA START</small>';}if(!hasStarted&&!freeRide){$('#message>span').textContent='DUST RUNNER · POKAZ 4 AUT';$('#message p').textContent='Cztery auta, prawdziwy wyścig. Wskocz za kierownicę!';}$('#start').onclick=start;$('#open-setup').onclick=openMenu;updateMenu();
  trucks.forEach((c,i)=>c.mesh.visible=!freeRide||i===0);
  activeTrucks().forEach((c,i)=>{const j=N-20-(i>1?25:0),p=samples[j],t=curve.getTangentAt(j/N),side=(i%2?1:-1)*2.1*curve.lateralSign;Object.assign(c,{x:p.x-t.z*side,z:p.z+t.x*side,vx:0,vz:0,heading:Math.atan2(-t.x,-t.z),speed:0,index:j,checkpoint:-1,lap:0,height:terrain(j),vertical:0,airborne:false,lastGround:terrain(j),suspension:0,suspensionVelocity:0,rampRiseVelocity:0,collisionYaw:0,nitro:100,boosting:false,finish:false});c.mesh.position.set(c.x,0,c.z);c.mesh.rotation.set(0,c.heading,0);c.wheels.forEach(w=>{w.previousRotation=undefined;w.previousX=undefined;w.previousHeading=undefined;w.angle=0;w.steer=0;w.angularVelocity=0;});c.stuckTime=0;c.lane=(i%2?3.5:-3.5)*curve.lateralSign;if(freeRide)Object.assign(c,{...DESERT_SPAWN,height:heightAt(DESERT_SPAWN.x,DESERT_SPAWN.z)});resetPowertrain(c);physics.reset(c);poseTruck(c,0,true);});
  sandTrails.reset();dustPool.reset();updateCamera(0,true);}
-function start(){if(phase==='racing'||phase==='countdown')return;audioPreviewTime=0;reset();phase=freeRide?'racing':'countdown';count=3.4;$('#message').style.display='none';$('#race-status').textContent=freeRide?'FREE RIDE · PUSTYNIA':'GET READY';canvas.focus({preventScroll:true});initAudio();}
+function start(){if(phase==='racing'||phase==='countdown')return;hasStarted=true;keys.clear();audioPreviewTime=0;reset();phase=freeRide?'racing':'countdown';count=3.4;$('#message').style.display='none';$('#race-status').textContent=freeRide?'FREE RIDE · PUSTYNIA':'GET READY';canvas.focus({preventScroll:true});initAudio();}
 function pause(){handbrake.cancelHold();completion.interrupt();if(!['racing','countdown','paused'].includes(phase))return;if(phase==='paused'){phase=previousPhase;$('#countdown').textContent='';$('#pause').textContent='Ⅱ';}else{previousPhase=phase;phase='paused';$('#countdown').textContent='PAUSED';$('#pause').textContent='▶';engineAudio.silence();}keys.clear();canvas.focus({preventScroll:true});}
 let menuPaused=false;
 function updateMenu(){$('#menu-play').textContent=freeRide?(phase==='paused'?'WRÓĆ NA PUSTYNIĘ ↗':'JEDŹ NA PUSTYNIĘ ↗'):(phase==='paused'?'RESUME RACE ↗':'START RACE ↗');}
@@ -212,7 +215,7 @@ function updateEngineSound(dt){
  const e=engineById(trucks[0].engineId);let state=trucks[0].powertrain,preview=audioPreviewTime>0&&!['racing','countdown'].includes(phase);
  if(preview){audioPreviewTime=Math.max(0,audioPreviewTime-dt);const t=1-audioPreviewTime/3.4;state={rpm:e.idle+(e.redline-e.idle)*Math.sin(t*Math.PI)*.9,load:t<.62?.85:.1};}
  const powered=engineDriverAudible(trucks[0],{preview,accelerator:keys.has('ArrowUp')||keys.has('KeyW'),brake:keys.has('ArrowDown')||keys.has('KeyS')});
- const enabled=powered&&!muted&&!document.hidden&&document.hasFocus()&&(preview||(!menuDialog.open&&!document.querySelector('#tuning-menu')?.open&&phase!=='paused'));
+ const enabled=powered&&!muted&&!document.hidden&&document.hasFocus()&&(preview||(!menuDialog.open&&!document.querySelector('#tuning-menu')?.open&&phase!=='paused'&&hasStarted));
  if(import.meta.env.DEV)canvas.dataset.engineAudible=String(enabled);
  engineAudio.update(e,state,{enabled,volume});
 }
@@ -306,7 +309,7 @@ const statsOverlay=createStatsOverlay({game,toggle:$('#show-stats'),onInteract:(
 }});
 const vehicleDiagram=createVehicleDiagnosticsOverlay({game,toggle:$('#show-vehicle-diagram'),getEnginePreview:()=>({engine:engineById(trucks[0].engineId),rpm:0,running:false}),onInteract:()=>canvas.focus({preventScroll:true}),getDiagnostics:()=>['ready','countdown'].includes(phase)?null:{...readVehicleDiagnostics(trucks[0],{dt:simulationClock.dt,gravity:cfg.gravity}),running:phase==='racing'}});
 // During a race, Space belongs to nitro even when a HUD button has focus.
-window.addEventListener('keydown',e=>{if(menuDialog.open||document.querySelector('#tuning-menu')?.open)return;if(e.target instanceof HTMLButtonElement&&e.code==='Space'&&!['racing','countdown','paused'].includes(phase))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.repeat)return;if(transmissionPanel.shortcut(e)||drivePanel.shortcut(e)){e.preventDefault();return;}keys.add(e.code);if(['ShiftLeft','ShiftRight'].includes(e.code)){handbrake.press();updateGameHud();}if(e.code==='Enter'&&['ready','finished'].includes(phase))start();if(e.code==='KeyH')handlingPanel.toggleDescent();if(e.code==='KeyP'||e.code==='Escape')pause();if(e.code==='KeyR')reset();if(e.code==='KeyF')recover(trucks[0]);});window.addEventListener('keyup',e=>{keys.delete(e.code);if(['ShiftLeft','ShiftRight'].includes(e.code)&&!keys.has('ShiftLeft')&&!keys.has('ShiftRight')){handbrake.release();updateGameHud();}});window.addEventListener('blur',()=>{handbrake.cancelHold();audioPreviewTime=0;engineAudio.silence();keys.clear();if(phase==='racing'||phase==='countdown')pause();});
+window.addEventListener('keydown',e=>{if(menuDialog.open||document.querySelector('#tuning-menu')?.open)return;if(e.target instanceof HTMLButtonElement&&e.code==='Space'&&!['racing','countdown','paused'].includes(phase))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.repeat)return;if(!hasStarted){if(e.code==='Enter'){e.preventDefault();start();}return;}if(transmissionPanel.shortcut(e)||drivePanel.shortcut(e)){e.preventDefault();return;}keys.add(e.code);if(['ShiftLeft','ShiftRight'].includes(e.code)){handbrake.press();updateGameHud();}if(e.code==='Enter'&&['ready','finished'].includes(phase))start();if(e.code==='KeyH')handlingPanel.toggleDescent();if(e.code==='KeyP'||e.code==='Escape')pause();if(e.code==='KeyR')reset();if(e.code==='KeyF')recover(trucks[0]);});window.addEventListener('keyup',e=>{keys.delete(e.code);if(['ShiftLeft','ShiftRight'].includes(e.code)&&!keys.has('ShiftLeft')&&!keys.has('ShiftRight')){handbrake.release();updateGameHud();}});window.addEventListener('blur',()=>{handbrake.cancelHold();audioPreviewTime=0;engineAudio.silence();keys.clear();if(phase==='racing'||phase==='countdown')pause();});
 document.addEventListener('visibilitychange',()=>{simulationClock.reset();lastTime=performance.now();if(document.hidden){handbrake.cancelHold();keys.clear();audioPreviewTime=0;engineAudio.silence();}});
 document.querySelectorAll('[data-key]').forEach(b=>{b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);if(b.dataset.key==='ShiftLeft'){handbrake.press();updateGameHud();}};b.onpointerup=b.onpointercancel=()=>{keys.delete(b.dataset.key);if(b.dataset.key==='ShiftLeft'&&!keys.has('ShiftRight')){handbrake.release();updateGameHud();}};});
 function dust(c,dt){if(Math.random()<=Math.min(1,dt*60))dustPool.spawn(c,heightAt(c.x,c.z));}
@@ -387,19 +390,20 @@ function recover(c,advance=0){
 }
 
 let framePhysicsMs=0,framePhysicsSteps=0;
-function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=count>.4?Math.ceil(count-.4):'GO!';if(count<=0){phase='racing';$('#countdown').textContent='';$('#race-status').textContent='RACE IN PROGRESS';}}if(phase==='racing'){
- elapsed+=dt;
- handbrake.update(keys.has('ShiftLeft')||keys.has('ShiftRight'),dt);
+function step(dt){const demo=isAttract();if(phase==='countdown'){count-=dt;$('#countdown').textContent=count>.4?Math.ceil(count-.4):'GO!';if(count<=0){phase='racing';$('#countdown').textContent='';$('#race-status').textContent='RACE IN PROGRESS';}}if(phase==='racing'||demo){
+ if(!demo)elapsed+=dt;
+ if(!demo)handbrake.update(keys.has('ShiftLeft')||keys.has('ShiftRight'),dt);
  // One complete shared-world 120 Hz step; display refresh is independent.
   const physicsStarted=performance.now();
   activeTrucks().forEach((c,i)=>{
    const near=nearest(c.x,c.z),onDirt=freeRide||near.distance<roadWidth;
    let throttle=0,steer=0,brake=false,boost=false;
-   if(i===0){throttle=keys.has('ArrowUp')||keys.has('KeyW')?1:0;brake=keys.has('ArrowDown')||keys.has('KeyS');steer=((keys.has('ArrowLeft')||keys.has('KeyA')?1:0)-(keys.has('ArrowRight')||keys.has('KeyD')?1:0));boost=keys.has('Space')&&c.nitro>0&&throttle>0;}
+   if(i===0&&!demo){throttle=keys.has('ArrowUp')||keys.has('KeyW')?1:0;brake=keys.has('ArrowDown')||keys.has('KeyS');steer=((keys.has('ArrowLeft')||keys.has('KeyA')?1:0)-(keys.has('ArrowRight')||keys.has('KeyD')?1:0));boost=keys.has('Space')&&c.nitro>0&&throttle>0;}
    else ({throttle,steer,brake,boost}=opponentInput(c,near,curve,samples));
    boost=boost&&driveModeById(c.powertrain?.mode).boost&&!c.airborne&&!brake&&!c.rollover;c.boosting=boost;
    c.nitro=clamp(c.nitro+(boost?-cfg.nitroDrain:cfg.nitroRecharge)*dt,0,100);
-   physics.input(c,{throttle,steer,brake,boost,onDirt,handbrake:i===0&&handbrake.active,steeringMode:i===0?steeringMode:'return',centerSteering:i===0&&(keys.has('KeyC')||((keys.has('ArrowLeft')||keys.has('KeyA'))&&(keys.has('ArrowRight')||keys.has('KeyD')))),engine:i===0?levels.engine:0,tires:i===0?levels.grip:0,ai:i!==0},dt);
+   const drive=()=>physics.input(c,{throttle,steer,brake,boost,onDirt,handbrake:!demo&&i===0&&handbrake.active,steeringMode:i===0&&!demo?steeringMode:'return',centerSteering:!demo&&i===0&&(keys.has('KeyC')||((keys.has('ArrowLeft')||keys.has('KeyA'))&&(keys.has('ArrowRight')||keys.has('KeyD')))),engine:i===0?levels.engine:0,tires:i===0?levels.grip:0,ai:demo||i!==0},dt);
+   if(demo)withDemoDrivetrain(c,drive);else drive();
   });
   physics.step();activeTrucks().forEach(c=>physics.sync(c,dt));
   framePhysicsMs+=performance.now()-physicsStarted;framePhysicsSteps++;
@@ -410,13 +414,20 @@ function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=
   if(c.checkpoint===-1){if(c.index>N*.75&&next<N*.25)c.checkpoint=0;}else{const p=advanceProgress(c.index,next,c.checkpoint,c.lap,N);c.checkpoint=p.checkpoint;c.lap=p.lap;}
   c.index=next;if(!c.airborne&&Math.abs(c.speed)>5)dust(c,dt);
   c.stuckTime=Math.abs(c.speed)<1?(c.stuckTime??0)+dt:0;
-  if(i>0&&(c.rolloverTime>3||nearest(c.x,c.z).distance>roadWidth+12||c.stuckTime>6)){recover(c,c.stuckTime>6?6:0);c.stuckTime=0;}
+  if((i>0||demo)&&(c.rolloverTime>3||nearest(c.x,c.z).distance>roadWidth+12||c.stuckTime>6)){recover(c,c.stuckTime>6?6:0);c.stuckTime=0;}
   poseTruck(c,dt);
  });
- if(!freeRide&&trucks[0].lap>=3&&!completion.result)finish();
+ if(!demo&&!freeRide&&trucks[0].lap>=3&&!completion.result)finish();
  }
 }
 function updateGameHud(){
+ const nav=navigationReading(trucks[0],heightAt),signed=n=>`${n>=0?'+':''}${n.toFixed(1)}°`;
+ $('#compass-bearing').textContent=`${nav.direction} · ${Math.round(nav.bearing)%360}°`;
+ $('#compass-rose').style.transform=`rotate(${-nav.bearing}deg)`;
+ $('#slope-total').textContent=`${nav.slope.toFixed(1)}°`;
+ $('#slope-detail').textContent=`WZDŁUŻ ${signed(nav.longitudinal)} · W POPRZEK ${signed(nav.lateral)}`;
+ $('#slope-line').style.transform=`rotate(${-nav.longitudinal}deg)`;
+ if(import.meta.env.DEV)canvas.dataset.attract=JSON.stringify({running:isAttract(),elapsed,cash,cars:activeTrucks().map(c=>({x:c.x,z:c.z,lap:c.lap}))});
  const hb=$('#handbrake-hud');hb.textContent=handbrake.latched?'RĘCZNY · ZACIĄGNIĘTY 🔒':handbrake.active?`ZACIĄGANIE · ${Math.round(handbrake.progress*100)}%`:'RĘCZNY · PRZYTRZYMAJ 2 s';hb.style.setProperty('--hold',`${handbrake.progress*100}%`);hb.classList.toggle('latched',handbrake.latched);
  document.querySelectorAll('[data-key="ShiftLeft"]').forEach(button=>button.setAttribute('aria-pressed',String(handbrake.active)));
 
@@ -455,10 +466,10 @@ function frame(now){
  // Driving and contacts run before optional UI/scenery work. Catch-up has a
  // time and step cap, so a slow frame cannot create an ever-growing backlog.
  let work={alpha:1,dropped:0,cpuMs:0};
- if(!document.hidden&&(phase==='racing'||phase==='countdown'))work=simulationClock.advance(elapsedFrame,step);else simulationClock.reset();
+ if(!document.hidden&&(phase==='racing'||phase==='countdown'||isAttract()))work=simulationClock.advance(elapsedFrame,step);else simulationClock.reset();
  if(completion.tick(dt,{speed:Math.hypot(trucks[0].vx??0,trucks[0].vz??0),vertical:trucks[0].vertical,airborne:trucks[0].airborne,driving:[...keys].some(key=>['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','KeyW','KeyA','KeyS','KeyD','Space','KeyQ','KeyE','KeyN'].includes(key)),editing:menuDialog.open||document.querySelector('#tuning-menu')?.open,active:phase==='racing'&&!document.hidden&&document.hasFocus()}))showResults();
  celebration.update(dt,phase==='racing'&&!document.hidden);
- activeTrucks().forEach(c=>c.presentation?.render(phase==='racing'?work.alpha:1));
+ activeTrucks().forEach(c=>c.presentation?.render(phase==='racing'||isAttract()?work.alpha:1));
  updateEngineSound(dt);updateCamera(dt);
  dustPool.update(phase==='paused'?0:dt);
  scenery.update(phase==='paused'?0:dt,sceneryIsVisible,work.dropped===0&&work.cpuMs<simulationClock.budgetMs,activeTrucks());
@@ -466,7 +477,7 @@ function frame(now){
  tuningPanel.update(now);
  if(now-lastHudPaint>=100){drivePanel.update();transmissionPanel.update();handlingPanel.update();updateGameHud();minimap.render(activeTrucks(),selectedColor,viewCorners);lastHudPaint=now;}
  renderer.render(scene,camera);
- vehicleDiagram.update(now);
+ if(hasStarted)vehicleDiagram.update(now);
  const cpuMs=performance.now()-frameStarted;
  if(renderBudget.sample(now,cpuMs,phase==='racing'&&!document.hidden))renderer.setPixelRatio(renderBudget.pixelRatio(game.clientWidth,game.clientHeight,devicePixelRatio));
  const timing={cpuMs,physicsMs:framePhysicsMs,steps:framePhysicsSteps};performanceTracker.record(now,timing);statsOverlay.record(now,timing);

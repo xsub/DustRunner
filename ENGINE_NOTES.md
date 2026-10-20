@@ -180,3 +180,28 @@ launches a truck; gravity and airborne steering remain physical.
 - Audio continues to use the recorded V8 layers and displacement/RPM/load-based
   combustion synthesis. The AudioWorklet displacement range now accommodates
   7.3L; these are not newly recorded authentic Godzilla audio samples.
+
+## Engine-locked full gearboxes
+
+The full gearbox option binds one representative game pairing to each engine. It is not a claim that a given engine was historically offered with only one gearbox. Full AUTO uses all that profile's forward gears; full MANUAL is a sequential game selector with an automatic clutch, including when the chosen transmission was historically automatic. HI/LO/crawl remain independent transfer presets. Arcade preserves the prior adjustable three ratios. Axle gearing, effective drive radius and shift behavior remain game calibration.
+
+| Engine profile | Fixed full gearbox | Forward ratios |
+|---|---|---|
+| 170 / 200 I6 | Ford I6 three-speed | 3.41, 1.86, 1.00 |
+| 289 V8 | Ford RAT/RAN three-speed | 2.99, 1.75, 1.00 |
+| 302 V8 | Ford C4 | 2.46, 1.46, 1.00 |
+| 351M / 400 / carb 351W | Ford C6 | 2.46, 1.46, 1.00 |
+| 300 carb / EFI I6 | NP435, chosen truck/conversion pairing | 6.69, 3.34, 1.79, 1.00 |
+| 302 EFI | Ford AOD | 2.40, 1.47, 1.00, 0.67 |
+| 351W EFI | Ford E4OD | 2.71, 1.538, 1.00, 0.712 |
+| 7.3 Godzilla | TorqShift 10R140, 2020 reference | 4.615, 2.919, 2.132, 1.773, 1.519, 1.277, 1.00, 0.851, 0.687, 0.632 |
+
+Primary reference sources:
+- [Wild Horses: original early Bronco three-speed manual families and engine applications](https://www.wildhorses4x4.com/early-bronco-3-speed-transmissions). Early I6/manual ratios and reverse ratios are representative game selections rather than identification of a particular factory gearbox tag; the game does not model every RAT/RAN/HEF variant.
+- [Wild Horses: C4 availability](https://www.wildhorses4x4.com/early-bronco-automatic-c4), [TCI: C4/C6 gear ratios](https://www.tciauto.com/gear-ratios).
+- [Advance Adapters: Ford NP435 ratios](https://www.advanceadapters.com/2-new-process-435). This page gives 1.79 third and 8.00 reverse. Other catalog/NP435 variants differ; the profile deliberately selects that published set. The EFI I6 pairing is a game/conversion choice, not a claim for every EFI Bronco year.
+- [Advance Adapters: AOD ratios](https://www.advanceadapters.com/3-ford-aod).
+- [Baumann Electronic Controls: E4OD ratios](https://www.becontrols.com/ourfaqs/e4odfaq_1.htm).
+- [Ford 2020 Super Duty manufacturer specification sheet](https://madocumentupload.marketingassociates.com/api/Document/GetFile?v1=5302770&v2=022720111008&v3=60&v4=6929ca792854f69c062f49eb42969ffa7d0962a65807e5003628c65b&v5=False). The 2020 reference uses seventh 1.000 and reverse 4.695, rather than mixing later TorqShift-G revisions. It is a modern restomod pairing, not a factory 1978 option.
+
+All forward ratios plus R/N are available through the game selector. Manual controls never change chassis velocity directly. Opposite-direction engagements are blocked while moving, reductions that would exceed the engine redline are rejected, and a brief clutch/torque interruption accompanies shifts. Neutral allows free revving and removes driveline braking. Holding the brake in manual mode cannot automatically select reverse; select R then use the accelerator. Engine hot-swaps retain control mode and rematch a valid gear for the replacement engine/gearbox without resetting momentum.

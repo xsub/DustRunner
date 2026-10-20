@@ -7,6 +7,7 @@ import {vehicleMassProperties} from './vehicle-mass.js';
 import {isOpenBody,rollCageSegments} from './body-types.js';
 import {drivingControls,rollingResistance,steeringStep} from './driving-controls.js';
 import {arcadePedals,arcadeSteering,descentDeceleration} from './handling.js';
+import {transmissionMode} from './transmissions.js';
 import {WHEEL_LAYOUT,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 export const GRAVITY=DEFAULT_TUNING.gravity,CHASSIS_HEIGHT=1.5,REST_LENGTH=.55;
 export const initPhysics=()=>RAPIER.init();
@@ -108,7 +109,7 @@ export function createPhysics(terrain,bounds){
   const arcade=car.handlingProfile==='arcade'&&!input.ai;
   if(arcade)input=arcadePedals(v.arcade,input,dt);
   q.copy(v.body.rotation());forward.set(0,0,-1).applyQuaternion(q);
-  const controls=drivingControls(v.controls,{...input,airborne:car.airborne},car.speed,dt);
+  const controls=drivingControls(v.controls,{...input,airborne:car.airborne,manualGearbox:transmissionMode(car)==='manual'},car.speed,dt);
   const drive=powertrainStep(car,{...input,...controls,slope:forward.y},dt);
   // Keyboard presses build toward full parking lock, with less lock at speed.
   const lateralSpeed=(car.vx??0)*Math.cos(car.heading)-(car.vz??0)*Math.sin(car.heading);

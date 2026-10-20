@@ -5,7 +5,7 @@ export function rollingResistance(speed,onDirt=true){return Math.abs(speed)*(onD
 export function drivingControls(state,input,speed,dt){
  const pressed=Boolean(input.brake);
  if(!pressed){state.reverse=false;state.stoppedTime=0;if((input.throttle??0)>0)state.reverseTravel=false;}
- else if(!input.airborne){
+ else if(!input.airborne&&!input.manualGearbox){
   if(speed>.6)state.reverse=false;
   if(speed<-.25&&state.reverseTravel)state.reverse=true;
   if(!state.reverse){
@@ -13,6 +13,7 @@ export function drivingControls(state,input,speed,dt){
    if(state.stoppedTime>=cfg.reverseDelay){state.reverse=true;state.reverseTravel=true;}
   }
  }
+ if(input.manualGearbox){state.reverse=false;state.reverseTravel=false;state.stoppedTime=0;}
  const target=pressed&&!state.reverse?1:0,tau=target>.5?cfg.brakeBuild:cfg.brakeRelease;
  state.brakePressure=(state.brakePressure??0)+(target-(state.brakePressure??0))*(1-Math.exp(-dt/tau));
  if(state.brakePressure<.0001)state.brakePressure=0;

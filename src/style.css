@@ -58,3 +58,5 @@
 .race-generator .desert-seed-row{display:grid;grid-template-columns:minmax(120px,1fr) 145px 145px}.race-generator .desert-seed-row input{min-width:0}.race-generator .desert-seed-row button{line-height:1.35;padding:10px 8px}.race-generator #race-apply-seed{background:#344529;color:#e5edda;border:1px solid #61704e}@media(max-width:720px){.race-generator .desert-seed-row{grid-template-columns:1fr 1fr}.race-generator .desert-seed-row input{grid-column:1/-1}}
 
 #sand-waves-apply{padding:12px 16px;background:#f4cf58;color:#172016;border:0;border-radius:3px;font-weight:700}.desert-options #sand-ruffles{width:auto}.desert-options output{float:right;color:#f4cf58}.desert-options input[type="range"]{padding:0;accent-color:#f4cf58}
+
+#handbrake-hud{display:block;width:100%;margin:8px 0;padding:7px 4px;border:1px solid #a7ad78;background:linear-gradient(90deg,#e9b54f66 var(--hold,0%),#27301e var(--hold,0%));color:#e5e7cd;font:inherit;font-size:9px;font-weight:700;touch-action:none;user-select:none}#handbrake-hud.latched{background:#a22e28;color:#fff4d1;border-color:#ffbc77}

@@ -72,7 +72,7 @@ This is an arcade simulation: engine curves, loaded masses and performance are g
 | A / D or ← / → | Steer |
 | C | Center steering |
 | Space | Rechargeable nitro |
-| Shift | Handbrake |
+| Shift / HB | Hold the rear handbrake; after 2 seconds it latches. Press again to release. |
 | 1 / 2 / 3 / 4 | AUTO / HI / LO / 4×4 crawler |
 | Z / X | Front / rear differential lock in crawler mode |
 | H | Hill-descent control |
@@ -83,7 +83,7 @@ This is an arcade simulation: engine curves, loaded masses and performance are g
 | R | Reset session |
 | Enter | Start / race again |
 
-Touch controls are available on touch devices. Enable sound with **♪ ON** or in the menu. The menu also contains truck selection, engine hot-swaps, the five-generation history guide, tuning and display options.
+Touch controls are available on touch devices. The handbrake HUD shows hold progress and its latched state; pausing preserves a latched brake, while recovery or reset releases it. A rolling truck without accelerator input is quiet; engine RPM remains physically modeled, while deliberate throttle and automatic reverse restore engine sound. Enable sound with **♪ ON** or in the menu. The menu also contains truck selection, engine hot-swaps, the five-generation history guide, tuning and display options.
 
 ## Tuning and telemetry
 

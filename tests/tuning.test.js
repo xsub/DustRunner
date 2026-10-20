@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {TUNING_FIELDS,DEFAULT_TUNING,tuning,setTuning,validateTuning,tuningDocument,parseTuning,restoreTuning,readPresets,storePreset,ACTIVE_TUNING_KEY,PRESETS_KEY} from '../src/tuning.js';
 import {vehicleMass,vehicleMassProperties} from '../src/vehicle-mass.js';
 import {initPhysics,createPhysics} from '../src/physics.js';
-import {TRACKS,ROAD_WIDTH,SHOULDER_WIDTH,refreshTracks,createCircuit,terrainHeight} from '../src/tracks.js';
+import {TRACKS,ROAD_WIDTH,SHOULDER_WIDTH,refreshTracks,createCircuit,terrainHeight,roadBaseHeight} from '../src/tracks.js';
 import {buildTerrain} from '../src/terrain.js';
 import {powertrainStep,resetPowertrain} from '../src/powertrain.js';
 import {steeringStep,drivingControls} from '../src/driving-controls.js';
@@ -62,7 +62,7 @@ test('drive, steering and brake settings alter their real simulation outputs',()
 test('terrain settings rebuild width, ramp geometry and matching contact triangles',()=>{
  setTuning({roadWidth:9,shoulderWidth:20,rampHeight:4.5,jumpGap:8,rampRunup:35,landingLength:45,whoopsScale:.5});refreshTracks();
  assert.equal(ROAD_WIDTH,9);assert.equal(SHOULDER_WIDTH,20);const f=TRACKS[0].features[0];assert.equal(f.height,4.5);assert.equal(f.gap,8);
- const t=f.start+(f.runup-.001)/TRACKS[0].length;assert.ok(Math.abs(terrainHeight(t,0)-7.5)<.002);
+ const t=f.start+(f.runup-.001)/TRACKS[0].length;assert.ok(Math.abs(terrainHeight(t,0)-roadBaseHeight(t,0)-4.5)<.002);
  const curve=createCircuit(0,1),samples=Array.from({length:600},(_,i)=>curve.getPointAt(i/600)),terrain=buildTerrain(samples,curve,0);
  for(let i=0;i<terrain.positions.length;i+=387){const v=terrain.positions;assert.ok(Math.abs(terrain.heightAt(v[i],v[i+2])-v[i+1])<.003);}
 });

@@ -84,7 +84,8 @@ export function rampHeights(){return [cfg.smallJumpHeight,(cfg.smallJumpHeight+c
 function populateRamps(track,index){
  const path=spline(track.points.map(([x,z])=>new THREE.Vector3(x,0,z))),offset=index===0?.04:index>=2?.10:0;
  const tangent=t=>path.getTangentAt(((t+offset)%1+1)%1);
- const canyon={...track.features[0],tier:2},heights=rampHeights(),count=track.rampCount??(index<2?5:4+(index%7));
+ const canyon={...track.features[0],tier:2};canyon.landing=Math.max(canyon.landing,1.5*canyon.height/.30-canyon.gap);canyon.length=(canyon.runup+canyon.gap+canyon.landing)/track.length;
+ const heights=rampHeights(),count=track.rampCount??(index<2?5:4+(index%7));
  const ramps=[canyon],occupied=[[canyon.start-12/track.length,canyon.start+canyon.length+12/track.length]];
  for(let i=0;i<count-1;i++){
   const tier=i%3,runup=[18,24,30][tier],gap=[3,6,10][tier],landing=[22,28,40][tier],length=(runup+gap+landing)/track.length;
@@ -103,7 +104,7 @@ function populateRamps(track,index){
   if(!best)throw Error('Not enough road for the requested ramp count');
   ramps.push({kind:'jump',start:best.start,length,height:heights[tier],tier,runup,gap,landing});occupied.push([best.start-10/track.length,best.start+length+10/track.length]);
  }
- return {...track,rampCount:count,features:[...ramps,...track.features.filter(f=>!['jump','canyon'].includes(f.kind))]};
+ return {...track,rampCount:count,ramps,features:[...ramps,...track.features.filter(f=>!['jump','canyon'].includes(f.kind))]};
 }
 let generatedSeed=null;
 function allTracks(){const tracks=[...BASE_TRACKS.map(buildTrack),...extraTrackDefinitions().map(buildExtraTrack)];if(generatedSeed!==null)tracks.push(buildExtraTrack(randomTrackDefinition(generatedSeed),16));return tracks.map(populateRamps);}
@@ -127,7 +128,7 @@ export function createCircuit(index,variant=0){
  return circuit;
 }
 const smooth=t=>t*t*(3-2*t);
-export function terrainHeight(progress,index=0,lateral=0,variant=0){
+export function roadBaseHeight(progress,index=0,lateral=0,variant=0){
  const reflection=TRACK_VARIANTS[variant];
  // A single reflection swaps left/right, including banks and split landings.
  lateral*=reflection.x*reflection.z;
@@ -138,30 +139,53 @@ export function terrainHeight(progress,index=0,lateral=0,variant=0){
  // Broad rolling ground, bank changes and offset wheel ruts share one mesh.
  let height=3+hills*cfg.rollingScale+cfg.rollingScale*(.30*Math.sin(t*Math.PI*8)+.14*Math.sin(t*Math.PI*22));
  height+=cfg.bankScale*lateral*(.06+rough*envelope*.035)*Math.sin(t*Math.PI*12)+cfg.rutScale*(.025*Math.sin(s*.43+lateral*1.7)+.020*Math.sin(s*.71-lateral*.9));
+ return height;
+}
+export function terrainHeight(progress,index=0,lateral=0,variant=0){
+ const t=((progress%1)+1)%1,track=TRACKS[index];
+ let height=roadBaseHeight(t,index,lateral,variant);
+ lateral*=TRACK_VARIANTS[variant].x*TRACK_VARIANTS[variant].z;
+ // Suppress incidental bumps through a ramp, blending them out before its
+ // start and back in after its end. Hard early returns used to cut these
+ // heights (and, for the canyon, the entire local road) off in one triangle.
+ const ramps=track.ramps;
+ let roughWeight=1;
+ for(const f of ramps){
+  const d=(t-f.start)*track.length,total=f.length*track.length,blend=8;
+  if(d>-blend&&d<total+blend){
+   const weight=d<0?1-smooth((d+blend)/blend):d>total?smooth((d-total)/blend):0;
+   roughWeight=Math.min(roughWeight,weight);
+  }
+ }
  for(const f of track.features){
   const u=(t-f.start)/f.length;if(u<=0||u>=1)continue;
-  if(f.kind==='canyon'){
+  if(f.runup){
    const d=(t-f.start)*track.length;
-   if(d<f.runup){const r=d/f.runup;return 3+f.height*r*r*(1.5-.5*r);}
-   if(d<f.runup+.8)return 3+f.height*(1-smooth((d-f.runup)/.8));
-   if(d<f.runup+f.gap)return 3;
-   // Two landing lanes: straddling the seam loads one side first.
-   const lane=smooth(Math.max(0,Math.min(1,(lateral+.55)/1.1)));
-   const landingHeight=cfg.landingLow+lane*cfg.landingSplit;
-   const r=(d-f.runup-f.gap)/f.landing;
-   // A short nose bevel avoids an invisible vertical collision wall.
-   return 3+landingHeight*Math.min(1,r*f.landing/7)*(1-smooth(r));
-  }
-  if(f.kind==='jump'&&f.runup){
-   const d=(t-f.start)*track.length;
-   let lift=0;
+   let lift;
    if(d<f.runup){const r=d/f.runup;lift=f.height*r*r*(1.5-.5*r);}
-   else if(d<f.runup+.8)lift=f.height*(1-smooth((d-f.runup)/.8));
-   else if(d>=f.runup+f.gap){const r=(d-f.runup-f.gap)/f.landing;lift=f.height*.35*Math.min(1,r*f.landing/5)*(1-smooth(r));}
-   // Keep the takeoff and landing clear of overlapping whoops/dips.
-   return height+lift;
-  }
-  height+=f.height*(f.kind==='whoops'?Math.sin(u*Math.PI*f.count)**2:Math.sin(u*Math.PI)**2);
+   else{
+    // A wheel-friendly back slope replaces the former 0.8 m cliff. Keep a
+    // clear crest for takeoff, but make the face climbable from either side.
+    const descent=Math.max(f.gap,1.5*f.height/.30),r=Math.min(1,(d-f.runup)/descent);
+    const back=f.height*(1-smooth(r));
+    let landing=0;
+    if(d>=f.runup+f.gap){
+     const lane=smooth(Math.max(0,Math.min(1,(lateral+.55)/1.1)));
+     const landingHeight=f.kind==='canyon'?cfg.landingLow+lane*cfg.landingSplit:f.height*.35;
+     const r=(d-f.runup-f.gap)/f.landing;
+     landing=landingHeight*smooth(Math.min(1,r*f.landing/8))*(1-smooth(r));
+    }
+    lift=Math.max(back,landing);
+   }
+   // Preserve the two landing lanes: ordinary road banking must not erase
+   // their height difference. Ease the bank out/in instead of snapping flat.
+   if(f.kind==='canyon'){
+    const unbank=smooth(Math.min(1,d/8))*smooth(Math.min(1,(f.length*track.length-d)/8));
+    const originalLateral=lateral*TRACK_VARIANTS[variant].x*TRACK_VARIANTS[variant].z;
+    height+=(roadBaseHeight(t,index,0,variant)-roadBaseHeight(t,index,originalLateral,variant))*unbank;
+   }
+   height+=lift;
+  }else height+=roughWeight*f.height*(f.kind==='whoops'?Math.sin(u*Math.PI*f.count)**2:Math.sin(u*Math.PI)**2);
  }
  return height;
 }

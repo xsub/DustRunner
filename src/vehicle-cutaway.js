@@ -1,4 +1,5 @@
-import {isOpenBody} from './body-types.js';
+import {isOpenBody,isBiminiBody} from './body-types.js';
+import {drawInstalledEngine} from './engine-anatomy.js';
 
 // Original engineering illustration, in the game's chassis coordinates. Body
 // details are illustrative; hubs, springs, axles, CG and forces use telemetry.
@@ -18,7 +19,7 @@ export function drawVehicleCutaway(ctx,d,{expanded=false}={}){
  text('01 / PRZEKRÓJ WZDŁUŻNY',18,24,C.ink,12);text('02 / WIDOK OD PRZODU',477,24,C.ink,12);
  text('BRONCO® · RAMA / NAPĘD / ZAWIESZENIE',18,43,C.muted,9);
  if(!d){text('ODCZYT PO ROZPOCZĘCIU JAZDY',196,191,C.ink,13);ctx.restore();return;}
- const open=isOpenBody(d.style),square=d.style==='ranger'||d.style==='sunset';
+ const open=isOpenBody(d.style),bimini=isBiminiBody(d.style),square=['ranger','sunset','copper78','godzilla78'].includes(d.style);
  for(const side of [true,false]){
   const scale=side?72*(1-.22*Math.min(1,Math.abs(Math.sin(d.pitch))*1.4)):60*(1-.1*Math.abs(Math.sin(d.roll))),cx=side?229:586,cy=side?195:191;
   const p=v=>[cx+(side?-v.forward:-v.x)*scale,cy-v.y*scale];
@@ -42,10 +43,7 @@ export function drawVehicleCutaway(ctx,d,{expanded=false}={}){
    // Chassis rail, transfer case, gear housing and the exposed engine block.
    shape([[-2.07,-.45],[2.09,-.45],[2.09,-.61],[-2.07,-.61]],'#80bbc623',C.frame,2);
    seg([-1.9,-.53],[1.94,-.53],'#d5e4e550',.8);
-   shape([[-1.55,.36],[-.88,.36],[-.73,-.04],[-1.46,-.09]],'#dda06b35',C.engine,2);
-   const cylinders=d.engine?.cylinders===6?6:4;
-   for(let i=0;i<cylinders;i++){const z=-1.49+i*.57/cylinders;shape([[z,.38],[z+.10,.38],[z+.16,.22],[z+.05,.22]],'#dda06b45',C.engine,1);}
-   disc(-1.18,.47,.11,'#dda06b28',C.engine);seg([-1.18,.36],[-1.18,.18],C.engine,1);
+   drawInstalledEngine({side,shape,seg,disc,engine:d.engine});
    shape([[-.79,-.12],[-.47,-.15],[.10,-.28],[.10,-.48],[-.57,-.42]],'#80bbc62e',C.frame,1.6);
    shape([[.02,-.25],[.39,-.25],[.39,-.52],[.02,-.52]],'#dda06b25',C.engine,1.6);
    // Cooling stack, fan, exhaust and fuel tank.
@@ -53,10 +51,7 @@ export function drawVehicleCutaway(ctx,d,{expanded=false}={}){
    for(let y=-.03;y<.43;y+=.07)seg([-1.97,y],[-1.89,y],C.frame,.7);
    seg([-1.84,.19],[-1.61,.19],C.engine,2);seg([-1.45,-.14],[-.77,-.35],C.engine,1.2);seg([-.77,-.35],[1.99,-.70],C.engine,1.2);
    shape([[1.44,-.46],[2,-.46],[2,-.68],[1.44,-.68]],'#80bbc61a',C.frame,1.2);
-   // Seats, steering column and footwell stay visible through the body.
-   for(const z of [.20,1.23]){shape([[z,.53],[z+.40,.53],[z+.40,.68],[z+.12,.68],[z+.04,1.20],[z-.11,1.20]],'#a9bec315','#a9bec377',1);}
-   seg([-.24,.65],[.11,1.02],C.frame,1.3);seg([-.05,1.10],[.25,.92],C.ink,2);
-   if(!open){shape([[-.32,.76],[-.10,1.48],[.66,1.48],[.66,.76]],'#6cd8dc0c','#a5c9d0aa',1.3);shape([[.85,.76],[.85,1.48],[1.92,1.48],[1.98,.76]],'#6cd8dc0c','#a5c9d0aa',1.3);seg([-.14,1.55],[1.98,1.55],C.ink,1);}
+   if(!open){shape([[-.32,.76],[-.10,1.48],[.66,1.48],[.66,.76]],'#6cd8dc0c','#a5c9d0aa',1.3);if(!bimini)shape([[.85,.76],[.85,1.48],[1.92,1.48],[1.98,.76]],'#6cd8dc0c','#a5c9d0aa',1.3);else{seg([.85,.76],[1.92,1.48],C.muted,1);seg([1.98,.76],[.85,1.48],C.muted,1);}seg([-.14,1.55],[1.98,1.55],C.ink,1);}
    else{seg([.73,.66],[.73,1.57],C.frame,3);seg([.73,1.57],[1.91,.72],C.frame,2);if(d.style==='crawler')seg([-.14,1.57],[1.91,1.57],C.frame,2);}
    seg([-.35,.70],[-.35,-.33],'#d5e4e577',1);seg([.76,.70],[.76,-.33],'#d5e4e577',1);seg([.49,.65],[.66,.65],C.ink,2.5);
    seg([-2.15,.60],[2.13,.60],'#d5e4e566',1);seg([-2.26,-.30],[-2.04,-.30],C.ink,4);seg([2.10,-.30],[2.30,-.30],C.ink,4);
@@ -65,8 +60,6 @@ export function drawVehicleCutaway(ctx,d,{expanded=false}={}){
   }else{
    // Windshield, roof seam, fender shoulders, grille and proper headlamp bezels.
    shape([[-.98,.82],[-.88,1.48],[.88,1.48],[.98,.82]],'#6cd8dc10','#a5c9d0bb',1.4);
-   for(const x of [-.46,.46])shape([[x-.12,.89],[x-.12,1.20],[x+.12,1.20],[x+.12,.89]],'#a9bec30c','#a9bec355',.8);
-   disc(-.46,.91,.16,null,'#a9bec377',1);
    seg([-1.02,1.56],[1.02,1.56],C.ink,1.6);seg([-.13,.85],[.08,.85],C.ink,1);seg([-.83,.79],[-.48,.90],C.ink,1.4);seg([.05,.79],[.40,.90],C.ink,1.4);
    shape([[-1.17,.52],[1.17,.52],[1.17,-.01],[-1.17,-.01]],'#d5e4e508',C.ink,1.4);
    shape([[-.72,.47],[.72,.47],[.72,.03],[-.72,.03]],'#0a1720',C.muted,1);
@@ -80,7 +73,7 @@ export function drawVehicleCutaway(ctx,d,{expanded=false}={}){
    seg([-1.31,-.24],[1.31,-.24],C.rim,5);seg([-1.31,-.29],[1.31,-.29],C.muted,1);
    // Crossmember and the engine behind the grille, visible in cutaway.
    seg([-.9,-.45],[.9,-.45],C.frame,5);
-   shape(d.engine?.cylinders===6?[[-.22,-.4],[-.22,.15],[.22,.15],[.22,-.4]]:[[-.34,-.40],[-.46,-.02],[-.22,.15],[0,-.02],[.22,.15],[.46,-.02],[.34,-.40]],'#dda06b24',C.engine,1.6);
+   drawInstalledEngine({side,shape,seg,disc,engine:d.engine});
   }
 
   // Springs and dampers connect the body's true mount to each live wheel hub.

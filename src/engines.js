@@ -13,7 +13,8 @@ export const ENGINES=Object.freeze([
  make('300efi','300 · 4.9L I6 EFI','1980–1996',6,4.9,700,4300,.36,2.2,[[700,235],[1400,325],[2200,359],[3200,285],[4300,165]],'EFI response · smooth low-end pull'),
  make('302efi','302 · 5.0L V8 EFI','1980–1996',8,5,700,5200,.26,2,[[700,218],[1600,305],[3000,366],[4200,320],[5200,225]],'EFI small block · wider power band'),
  make('351w','351W · 5.8L V8 CARB','1980–1996',8,5.8,700,5000,.35,2.5,[[700,240],[1600,345],[2800,390],[3900,355],[5000,235]],'Windsor truck V8 · strong midrange'),
- make('351wefi','351W · 5.8L V8 EFI','1980–1996',8,5.8,700,5100,.32,2.5,[[700,260],[1600,365],[2800,425],[4000,385],[5100,260]],'EFI torque · strongest midrange')
+ make('351wefi','351W · 5.8L V8 EFI','1980–1996',8,5.8,700,5100,.32,2.5,[[700,260],[1600,365],[2800,425],[4000,385],[5100,260]],'EFI torque · strongest midrange'),
+ make('godzilla73','GODZILLA · 7.3L V8 EFI','RESTOMOD · 2020+ SWAP',8,7.3,650,6000,.46,3,[[650,390],[1500,510],[2500,600],[4000,644],[5500,557],[6000,470]],'Modern OHV swap · 430 hp / 644 N·m reference · broad loaded pull')
 ]);
 export const engineById=id=>ENGINES.find(e=>e.id===id)??ENGINES.find(e=>e.id==='302');
 export function engineTorque(engine,rpm){
@@ -22,4 +23,4 @@ export function engineTorque(engine,rpm){
  for(let i=1;i<curve.length;i++)if(rpm<=curve[i][0]){const [x,y]=curve[i-1],[xx,yy]=curve[i];return y+(yy-y)*(rpm-x)/(xx-x);}
  return Math.max(0,curve.at(-1)[1]*(1-(rpm-engine.redline)/350));
 }
-export const defaultEngine=style=>({classic:'302',ranger:'351m',sunset:'302efi',expedition:'300efi',sky:'302',crawler:'351w'}[style]??'302');
+export const defaultEngine=style=>({classic:'302',ranger:'351m',sunset:'302efi',expedition:'300efi',sky:'302',crawler:'351w',copper78:'400',godzilla78:'godzilla73'}[style]??'302');

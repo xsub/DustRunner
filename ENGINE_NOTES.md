@@ -150,3 +150,33 @@ The main ramp is 3.5 units high with a 30-unit run-up, 10-unit gap and
 humps peak at 0.65, dips at -0.45, and cross slopes/ruts are reduced.
 Outer shoulders grade down over 14 units. This changes the terrain that
 launches a truck; gravity and airborne steering remain physical.
+
+## 1978 body additions / Godzilla swap and engine cutaway
+
+- Copper ’78 uses the existing 400 / 6.6L engine profile; the brown/cream/orange
+  trim and bimini rear cover are an original procedural interpretation of the
+  user's supplied 1978 photograph.
+- Godzilla ’78 is a custom restomod body, not a factory 1978 option. Its dedicated
+  `godzilla73` default is the modern 7.3L OHV EFI V8. The reference rating is the
+  original 2020 Super Duty's **430 hp / 475 lb-ft** (~644 N·m):
+  [Ford's 2020 towing guide](https://www.ford.com/cmslibs/content/dam/brand_ford/en_us/brand/resources/general/pdf/guides/20Towing_Ford_SuperDutyPU_r2_Dec17.pdf).
+  The 5,500 rpm power point approximates that rating; remaining torque samples,
+  idle/redline, inertia and 315 kg dressed/swap engine mass are game calibrations,
+  not a factory dyno trace or a verified scale weight. This is not Megazilla.
+- Long-block visual references were inspected on
+  [Reman Engine 351M](https://reman-engine.com/remanufactured-engines/ford/bronco/1978/8-351m-5.8l)
+  and [400](https://reman-engine.com/remanufactured-engines/ford/bronco/1978/8-400-6.6l),
+  alongside the user's front/end/top/head views. Original vector artwork depicts
+  separate cast block/head/rocker covers, sump, timing drive, ports, cooling stack
+  and accessory drive. Godzilla substitutes an EFI plenum/runners for the round
+  carburetor air cleaner. Product photography is not bundled with the game.
+- The SILNIK / OHV inspector shows a normalized slider-crank mechanism with fixed
+  conrod length and two 45-degree banks, cam speed 1/2 crank speed and four-stroke
+  valve timing. It is an illustrative kinematic model, not factory CAD, a
+  model-specific cam/firing-order reconstruction, or a thermodynamic/CFD solver.
+  Animation is explicitly slowed 1/50; displayed RPM remains the drivetrain's
+  real game telemetry. Pausing freezes animation. I6 selections show a straight
+  bank instead. No extra rigid bodies or WebGL passes are created.
+- Audio continues to use the recorded V8 layers and displacement/RPM/load-based
+  combustion synthesis. The AudioWorklet displacement range now accommodates
+  7.3L; these are not newly recorded authentic Godzilla audio samples.

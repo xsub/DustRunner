@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {createOffroadWheel} from './wheel.js';
-import {isOpenBody,rollCageSegments} from './body-types.js';
+import {isOpenBody,isBiminiBody,rollCageSegments} from './body-types.js';
 import {VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {batchRigidMeshes} from './mesh-batching.js';
@@ -11,13 +11,15 @@ export const BRONCO_STYLES={
  sunset:{name:'SUNSET · MIDNIGHT',color:'#172433',roof:'#172433',width:.96,rounded:.10,lights:'square',flares:'#172433'},
  sky:{name:'SKY · OPEN AIR',color:'#9dbfc9',roof:'#eee9d5',width:.89,rounded:.055,lights:'round',flares:'#eee9d5'},
  crawler:{name:'CRAWLER · OLIVE',color:'#525d32',roof:'#242a21',width:.89,rounded:.055,lights:'round',flares:'#525d32'},
- expedition:{name:'TRAIL · OLIVE',color:'#686c55',roof:'#393e33',width:.89,rounded:.055,lights:'round',flares:'#686c55'}
+ expedition:{name:'TRAIL · OLIVE',color:'#686c55',roof:'#393e33',width:.89,rounded:.055,lights:'round',flares:'#686c55'},
+ copper78:{name:'CLASSIC ’78 · COPPER',color:'#693a24',roof:'#573c2b',width:.99,rounded:.06,lights:'square',flares:'#693a24'},
+ godzilla78:{name:'GODZILLA ’78 · 7.3',color:'#182a31',roof:'#182025',width:.99,rounded:.06,lights:'square',flares:'#182a31'}
 };
 
 // Original procedural bodies inspired by the supplied classic / two-tone / sunset references.
 // Shared racing wheelbase; open variants use matching tube contacts above the cabin.
 export function createBronco(style='classic',number='07'){
- const spec=BRONCO_STYLES[style]??BRONCO_STYLES.classic,later=spec.lights==='square',w=spec.width,open=isOpenBody(style),utility=style==='expedition'||style==='crawler';
+ const spec=BRONCO_STYLES[style]??BRONCO_STYLES.classic,later=spec.lights==='square',w=spec.width,open=isOpenBody(style),bimini=isBiminiBody(style),utility=style==='expedition'||style==='crawler'||style==='godzilla78';
  const mesh=new THREE.Group(),chassis=new THREE.Group(),wheels=[],axles=[];mesh.add(chassis);
  const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.55,...extra});
  const body=new THREE.MeshPhysicalMaterial({color:spec.color,metalness:.22,roughness:utility?.72:.38,clearcoat:utility?.12:.45,clearcoatRoughness:.18});
@@ -75,7 +77,13 @@ export function createBronco(style='classic',number='07'){
  rod([-.39,1.65,-.29],[-.39,1.82,-.12],.025,trim);
  // Roof and posts frame real glass openings; the rear cap is narrower at the top.
  const roofY=style==='sunset'?2.29:later?2.33:2.36,front=style==='sunset'?-.29:-.35,back=1.49,rearTop=style==='sunset'?1.31:1.45;
- if(!open)round(w*2+.07,.13,1.91,spec.rounded,ivory,0,roofY,.59);
+ if(!open&&!bimini)round(w*2+.07,.13,1.91,spec.rounded,ivory,0,roofY,.59);
+ if(bimini){
+  round(w*2+.06,.12,.88,.045,body,0,roofY,-.04);
+  const canvasTop=material(style==='copper78'?'#6c5037':'#262b28',{roughness:.98});
+  round(w*1.92,.035,1.02,.018,canvasTop,0,roofY-.03,1.00);
+  for(const side of [-1,1]){rod([side*w,1.56,1.4],[side*(w-.09),roofY-.07,.53],.025,trim);rod([side*w,1.56,.48],[side*(w-.09),roofY-.07,1.43],.022,trim);}
+ }
  if(open){for(const [a,b] of rollCageSegments(style,w))rod(a,b,style==='sky'?.046:.055,ivory);}
  for(const side of [-1,1]){
   const x=side*w,topX=side*(w-.065);
@@ -85,7 +93,7 @@ export function createBronco(style='classic',number='07'){
   }
   box(.07,.09,1.92,body,x,1.56,.54);
   if(!open){pane([[x,1.63,-.49],[x,1.63,.32],[topX,roofY-.09,.32],[topX,roofY-.09,front+.06]]);
-  pane([[x+.006*side,1.63,.47],[x+.006*side,1.63,1.4],[topX,roofY-.10,rearTop-.05],[topX,roofY-.10,.47]]);
+  if(!bimini)pane([[x+.006*side,1.63,.47],[x+.006*side,1.63,1.4],[topX,roofY-.10,rearTop-.05],[topX,roofY-.10,.47]]);
   rod([x,1.63,.46],[x,1.63,1.41],.022,trim);
   rod([topX,roofY-.09,.45],[topX,roofY-.09,rearTop-.04],.02,trim);
   }
@@ -105,9 +113,19 @@ export function createBronco(style='classic',number='07'){
    colors.forEach((color,i)=>box(.027,.055,2.99,material(color),side*(w+.043),1.46-i*.058,0));
    colors.slice(0,3).forEach((color,i)=>{const stripe=box(.018,.62,.042,material(color),side*(w+.049),1.92,.37+i*.042);stripe.rotation.x=-.06;});
   }
+  if(bimini){
+   const colors=style==='copper78'?['#eee0b2','#dd762f','#f2cb79']:['#b89b68','#d2b783','#e5d8ac'];
+   colors.forEach((color,i)=>{
+    const stripe=material(color),y=1.44-i*.045;
+    box(.028,.033,2.99,stripe,side*(w+.045),y,0);
+    // Free Wheeling-style rise at the cab's rear edge, above the side belt.
+    rod([side*(w+.047),1.49,.40+i*.045],[side*(w-.045),roofY-.07,.40+i*.045],.017,stripe);
+    box(.035,.030,.95,stripe,side*(w+.045),1.53-i*.045,1.0);
+   });
+  }
  }
  pane([[-w+.05,1.65,-.51],[w-.05,1.65,-.51],[w-.105,roofY-.10,front-.015],[-w+.105,roofY-.10,front-.015]]);
- if(!open)pane([[-w+.07,1.64,1.505],[-w+.12,roofY-.1,rearTop+.01],[w-.12,roofY-.1,rearTop+.01],[w-.07,1.64,1.505]]);
+ if(!open&&!bimini)pane([[-w+.07,1.64,1.505],[-w+.12,roofY-.1,rearTop+.01],[w-.12,roofY-.1,rearTop+.01],[w-.07,1.64,1.505]]);
  for(const x of [-.45,.36])rod([x,1.66,-.535],[x+.26,1.69,-.54],.012,trim);
  // Distinct front fascias: early circular lamps versus broad rectangular lamps.
  round(w*2,.55,.12,.06,body,0,1.21,-1.55);
@@ -126,6 +144,15 @@ export function createBronco(style='classic',number='07'){
  for(const side of [-1,1]){box(.10,.26,.05,red,side*(w-.09),1.21,1.57);box(.09,.12,.06,ivory,side*(w-.09),1.01,1.58);}
  if(utility){
   box(.42,.21,.15,trim,0,1.01,-1.64);rod([-.66,.88,-1.69],[-.66,1.17,-1.69],.03,trim);rod([.66,.88,-1.69],[.66,1.17,-1.69],.03,trim);rod([-.66,1.17,-1.69],[.66,1.17,-1.69],.03,trim);
+ }
+ if(bimini){
+  const creamStripe=material(style==='copper78'?'#f1d9a6':'#bc9a5c');
+  for(const x of [-.15,.15])box(.037,.012,1.12,creamStripe,x,1.665,-.94);
+  box(.33,.012,.04,creamStripe,0,1.665,-1.50);
+  if(style==='godzilla78'){round(.66,.12,.72,.05,trim,0,1.73,-.87);for(const x of [-.21,-.07,.07,.21])box(.025,.014,.45,metal,x,1.795,-.88);}
+  const badgeCanvas=document.createElement('canvas');badgeCanvas.width=256;badgeCanvas.height=64;const badge=badgeCanvas.getContext('2d');badge.fillStyle=style==='copper78'?'#693a24':'#182a31';badge.fillRect(0,0,256,64);badge.fillStyle='#eee0b2';badge.font='bold 27px sans-serif';badge.textAlign='center';badge.fillText(style==='copper78'?'BRONCO® 1978':'7.3 GODZILLA',128,42);
+  const badgeMaterial=material('#ffffff',{map:new THREE.CanvasTexture(badgeCanvas)});
+  for(const side of [-1,1]){const plate=part(new THREE.PlaneGeometry(.62,.15),badgeMaterial,side*(w+.065),1.34,-.45);plate.rotation.y=side*Math.PI/2;}
  }
  if(open){
   const suit=material(style==='sky'?'#bd643a':'#b49d64'),skin=material('#bd8c65'),helmet=material('#e8dfc7'),visor=material('#273e40',{roughness:.2,metalness:.25});
@@ -150,7 +177,7 @@ export function createBronco(style='classic',number='07'){
   }
  }
  for(const x of [-1,1])for(const z of [-.88,.91]){
-  const pivot=new THREE.Group(),wheel=createOffroadWheel(style==='crawler'?'bronze':'silver');pivot.position.set(x,TIRE_RADIUS,z);pivot.add(wheel);mesh.add(pivot);wheels.push({pivot,spin:wheel,x,z});
+  const pivot=new THREE.Group(),wheel=createOffroadWheel(style==='crawler'||style==='godzilla78'?'bronze':'silver');pivot.position.set(x,TIRE_RADIUS,z);pivot.add(wheel);mesh.add(pivot);wheels.push({pivot,spin:wheel,x,z});
  }
  const spare=createOffroadWheel(style==='crawler'?'bronze':'silver');spare.rotation.y=Math.PI/2;spare.scale.setScalar(.86);spare.position.set(.15,1.42,1.59);chassis.add(spare);
  // Small rally numbers leave the reference paint and roof silhouette visible.

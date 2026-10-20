@@ -51,10 +51,10 @@ test('vehicle presentation interpolates position, rotation and suspension withou
  view.render(1);assert.equal(car.mesh.position.x,10);car.mesh.position.x=200;view.capture(true);view.render(0);assert.equal(car.mesh.position.x,200);
 });
 
-test('all six vehicle styles retain detailed geometry, independent wheels and functional disposal',()=>{
+test('all eight vehicle styles retain detailed geometry, independent wheels and functional disposal',()=>{
  const previous=globalThis.document;
  globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){},fillText(){}})})};
- try{for(const style of ['classic','ranger','sunset','sky','crawler','expedition']){
+ try{for(const style of ['classic','ranger','sunset','sky','crawler','expedition','copper78','godzilla78']){
   const car=createBronco(style);assert.equal(car.wheels.length,4);assert.equal(car.axles.length,2);
   let meshes=0;car.mesh.traverse(o=>{if(o.isMesh)meshes++;});assert.ok(meshes<70,`${style}: ${meshes} meshes`);
   assert.ok(car.body.color.isColor);car.dispose();

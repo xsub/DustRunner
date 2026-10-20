@@ -38,7 +38,7 @@ test('every engine keeps bounded RPM and stable acceleration at 60 / 120 Hz',()=
   const a=run(car(e.id),drive,8,60),b=run(car(e.id),drive,8,120);
   assert.ok(Math.abs(a.speed-b.speed)<.45,`${e.id} speed differs by ${a.speed-b.speed}`);
   assert.ok(a.powertrain.rpm>=e.idle&&a.powertrain.rpm<=e.redline+100);
-  assert.ok(a.speed>10&&a.speed<30);
+  assert.ok(a.speed>10&&a.speed<(e.id==='godzilla73'?38:30));
  }
 });
 test('engine free-revs in flight while throttle, braking and nitro leave motion unchanged',()=>{

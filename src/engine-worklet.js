@@ -4,7 +4,7 @@ class EngineProcessor extends AudioWorkletProcessor{
   {name:'rpm',defaultValue:700,minValue:300,maxValue:6500,automationRate:'k-rate'},
   {name:'load',defaultValue:0,minValue:0,maxValue:1,automationRate:'k-rate'},
   {name:'cylinders',defaultValue:8,minValue:6,maxValue:8,automationRate:'k-rate'},
-  {name:'liters',defaultValue:4.9,minValue:2,maxValue:7,automationRate:'k-rate'}
+  {name:'liters',defaultValue:4.9,minValue:2,maxValue:10,automationRate:'k-rate'}
  ];}
  constructor(){super();this.voice=new CombustionVoice(sampleRate);}
  process(inputs,outputs,p){

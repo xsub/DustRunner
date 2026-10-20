@@ -1,5 +1,6 @@
 export const isOpenBody=style=>style==='sky'||style==='crawler';
 export const isCompactBody=style=>style==='classic'||style==='sky'||style==='crawler';
+export const isBiminiBody=style=>style==='copper78'||style==='godzilla78';
 // Model-space tubes shared by visual cages and physical rollover contacts.
 export function rollCageSegments(style,width=.89){
  const x=width-.065,top=2.30,hoop=.39,segments=[];

@@ -259,7 +259,7 @@ initial shader compilation and course-loading stalls from steady-state results.
 
 The implementation follows the primary-source batching/instancing and shadow
 cost references linked above. Tests check exact triangle/attribute preservation,
-rigid-part transforms, six body styles, shared wheel resources, bounded dust
+rigid-part transforms, eight body styles, shared wheel resources, bounded dust
 reuse, frame statistics, pose interpolation and resolution-controller hysteresis.
 
 
@@ -459,3 +459,18 @@ HI/LO range changes now engage while moving, with the existing 0.14 s torque
 interruption and automatic gear/RPM matching. Neither selection clamps body
 velocity to the new pace ceiling; the truck coasts down physically. Only crawler
 engagement and axle-lock changes retain the grounded / below-8-km/h gate.
+
+### Copper ’78 and Godzilla ’78
+
+The garage now includes **CLASSIC ’78 · COPPER** (brown, cream/orange stripes,
+rear bimini, square lamps, 400/6.6 V8 by default) and **GODZILLA ’78 · 7.3**
+(dark restomod, bronze accents, revised hood and dedicated modern 7.3L EFI V8).
+Selecting either body installs its dedicated default; subsequent engine hot-swaps
+remain available. The new bodies use the full-size mass calibration.
+
+The telemetry window has **AUTO / ZAWIESZENIE** and **SILNIK / OHV** tabs. Seats
+and the crude steering-wheel sketch have been removed from the cutaway. Engine
+view has its own larger animated sections and also permits a static pre-race
+inspection. Expand with ⤢. Mechanical geometry, source links, physical calibration
+and audio limits are documented in [ENGINE_NOTES.md](ENGINE_NOTES.md). Both tabs
+remain Canvas 2D at 10 Hz and stop work while the panel is hidden/collapsed.

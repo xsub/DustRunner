@@ -30,6 +30,7 @@ import {createTransmissionPanel} from './transmission-panel.js';
 import {transmissionMode,gearLabel} from './transmissions.js';
 import {RaceCompletion} from './race-completion.js';
 import {createRaceCelebration} from './race-celebration.js';
+import {desertInvitation} from './desert-share.js';
 import {buildDesert,DESERT_SPAWN,DESERT_BOUNDS,DESERT_VARIANTS,normalizeDesertOptions} from './desert.js';
 import {initPhysics,createPhysics,CHASSIS_HEIGHT} from './physics.js';
 import {tuning as cfg,restoreTuning,setTuning} from './tuning.js';
@@ -237,6 +238,7 @@ renderTrackChoices();
 const desertSelect=$('#desert-variant'),desertSeed=$('#desert-seed');
 desertSelect.innerHTML=DESERT_VARIANTS.map(v=>`<option value="${v.id}">${v.name}</option>`).join('');
 function updateDesertOptions(){
+ $('#desert-share-status').textContent='';$('#desert-share-text').hidden=true;
  const profile=DESERT_VARIANTS.find(v=>v.id===desertOptions.variant);desertSelect.value=profile.id;desertSeed.value=desertOptions.seed;
  $('#desert-generator').hidden=profile.id!=='random';$('#desert-description').textContent=profile.description;
  try{localStorage.setItem('dust-runner-desert-v1',JSON.stringify(desertOptions));}catch{}
@@ -245,6 +247,11 @@ function applyDesertOptions(options){desertOptions=normalizeDesertOptions(option
 desertSelect.onchange=()=>applyDesertOptions({variant:desertSelect.value,...(desertSelect.value==='random'?{seed:crypto.getRandomValues(new Uint32Array(1))[0]}:{})});
 function applyDesertSeed(){if(!desertSeed.checkValidity()){desertSeed.reportValidity();return;}applyDesertOptions({variant:'random',seed:desertSeed.value});}
 desertSeed.onchange=applyDesertSeed;$('#desert-apply-seed').onclick=applyDesertSeed;desertSeed.onkeydown=event=>{if(event.code==='Enter'){event.preventDefault();applyDesertSeed();}};
+$('#desert-share').onclick=async()=>{
+ const invitation=desertInvitation(desertOptions),field=$('#desert-share-text');field.value=invitation.text;
+ try{await navigator.clipboard.writeText(invitation.text);field.hidden=true;$('#desert-share-status').textContent='Skopiowano zaproszenie i link do tej pustyni. Wyślij je znajomym!';}
+ catch{field.hidden=false;field.focus();field.select();$('#desert-share-status').textContent='Skopiuj zaznaczone zaproszenie: Ctrl/Cmd+C lub przytrzymaj tekst.';}
+};
 $('#desert-generate').onclick=()=>applyDesertOptions({variant:'random',seed:crypto.getRandomValues(new Uint32Array(1))[0]});updateDesertOptions();
 document.querySelectorAll('[data-track]').forEach(b=>b.onclick=()=>{trackIndex=Number(b.dataset.track);document.querySelectorAll('[data-track]').forEach(el=>{el.classList.toggle('active',el===b);el.setAttribute('aria-pressed',String(el===b));});rebuildTrack();});
 document.querySelectorAll('[data-reflection]').forEach(b=>b.onclick=()=>{trackVariant^=Number(b.dataset.reflection);rebuildTrack();});

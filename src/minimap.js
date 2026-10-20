@@ -24,9 +24,9 @@ export function createMinimap(canvas){
    const a=project({x:p.x-(t.z-p.z)/segmentLength*halfWidth,z:p.z+(t.x-p.x)/segmentLength*halfWidth});
    const b=project({x:p.x+(t.z-p.z)/segmentLength*halfWidth,z:p.z-(t.x-p.x)/segmentLength*halfWidth});
    bg.beginPath();bg.moveTo(a.x,a.y);bg.lineTo(b.x,b.y);bg.strokeStyle='#f4f2dd';bg.lineWidth=2;bg.stroke();
-   for(const feature of features.filter(f=>f.kind==='canyon')){
-    const q=project(points[Math.round((feature.start+feature.runup/length)*points.length)%points.length]);
-    bg.fillStyle='#ffda63';bg.beginPath();bg.moveTo(q.x,q.y-4);bg.lineTo(q.x+4,q.y+3);bg.lineTo(q.x-4,q.y+3);bg.closePath();bg.fill();
+   for(const feature of features.filter(f=>['canyon','jump'].includes(f.kind))){
+    const q=project(points[Math.round((feature.start+(feature.runup??feature.length*length*.5)/length)*points.length)%points.length]);
+    bg.fillStyle=['#d9ddb2','#eda95d','#ffda63'][feature.tier??2];bg.beginPath();bg.moveTo(q.x,q.y-4);bg.lineTo(q.x+4,q.y+3);bg.lineTo(q.x-4,q.y+3);bg.closePath();bg.fill();
    }
  }
  return {

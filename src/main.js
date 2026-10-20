@@ -19,7 +19,7 @@ import {createScenery} from './scenery.js';
 import {createBronco} from './vehicle.js';
 import {followCameraStep} from './view.js';
 import {createMinimap} from './minimap.js';
-import {TRACKS,TRACK_VARIANTS,ROAD_WIDTH,refreshTracks,createCircuit,terrainHeight,nearestPoint,opponentInput} from './tracks.js';
+import {TRACKS,TRACK_VARIANTS,ROAD_WIDTH,refreshTracks,setGeneratedTrack,createCircuit,terrainHeight,nearestPoint,opponentInput} from './tracks.js';
 import {ENGINES,engineById,defaultEngine} from './engines.js';
 import {resetPowertrain,swapEngine} from './powertrain.js';
 import {createHistoryPanel} from './history-panel.js';
@@ -232,7 +232,7 @@ function renderTrackChoices(){
   const c=createCircuit(index),points=Array.from({length:100},(_,j)=>c.getPointAt(j/100));
   const xs=points.map(p=>p.x),zs=points.map(p=>p.z),minX=Math.min(...xs),minZ=Math.min(...zs),scale=70/Math.max(Math.max(...xs)-minX,Math.max(...zs)-minZ);
   const line=points.map(p=>`${5+(p.x-minX)*scale},${5+(p.z-minZ)*scale}`).join(' ');
-  return `<button class="${index===trackIndex?'active':''}" data-track="${index}" aria-pressed="${index===trackIndex}"><svg viewBox="0 0 80 80" aria-hidden="true"><polyline points="${line} ${line.split(' ')[0]}"/></svg><span>${String(index+1).padStart(2,'0')} · ${track.name}</span><small>${(track.length/1000).toFixed(2)} KM · ${track.features.filter(f=>['jump','canyon'].includes(f.kind)).length} SKOKÓW</small></button>`;
+  return `<button class="${index===trackIndex?'active':''}" data-track="${index}" aria-pressed="${index===trackIndex}"><svg viewBox="0 0 80 80" aria-hidden="true"><polyline points="${line} ${line.split(' ')[0]}"/></svg><span>${String(index+1).padStart(2,'0')} · ${track.name}</span><small>${(track.length/1000).toFixed(2)} KM · ${track.features.filter(f=>['jump','canyon'].includes(f.kind)).length} SKOKÓW · 3 WYS.</small></button>`;
  }).join('');
 }
 renderTrackChoices();
@@ -254,7 +254,17 @@ $('#desert-share').onclick=async()=>{
  catch{field.hidden=false;field.focus();field.select();$('#desert-share-status').textContent='Skopiuj zaznaczone zaproszenie: Ctrl/Cmd+C lub przytrzymaj tekst.';}
 };
 $('#desert-generate').onclick=()=>applyDesertOptions({variant:'random',seed:crypto.getRandomValues(new Uint32Array(1))[0]});updateDesertOptions();
-document.querySelectorAll('[data-track]').forEach(b=>b.onclick=()=>{trackIndex=Number(b.dataset.track);document.querySelectorAll('[data-track]').forEach(el=>{el.classList.toggle('active',el===b);el.setAttribute('aria-pressed',String(el===b));});rebuildTrack();});
+$('#track-grid').onclick=event=>{const b=event.target.closest('[data-track]');if(!b)return;trackIndex=Number(b.dataset.track);renderTrackChoices();rebuildTrack();};
+try{const saved=localStorage.getItem('dust-runner-race-seed');if(saved!==null)$('#race-seed').value=String(Number(saved)>>>0);}catch{}
+function generateRace(random=false){
+ const field=$('#race-seed');if(random)field.value=String(crypto.getRandomValues(new Uint32Array(1))[0]);
+ if(!field.checkValidity()){field.reportValidity();return;}
+ trackIndex=setGeneratedTrack(field.value);field.value=String(TRACKS[trackIndex].seed);renderTrackChoices();rebuildTrack();
+ try{localStorage.setItem('dust-runner-race-seed',field.value);}catch{}
+ const track=TRACKS[trackIndex];$('#race-generator-status').textContent=`Gotowe · #${track.seed} · ${(track.length/1000).toFixed(2)} km · ${track.rampCount} ramp · 3 wysokości. Naciśnij START RACE, aby jechać.`;
+}
+$('#race-generate').onclick=()=>generateRace(true);$('#race-apply-seed').onclick=()=>generateRace();
+$('#race-seed').onkeydown=event=>{if(event.code==='Enter'){event.preventDefault();generateRace();}};
 document.querySelectorAll('[data-reflection]').forEach(b=>b.onclick=()=>{trackVariant^=Number(b.dataset.reflection);rebuildTrack();});
 document.querySelectorAll('[data-upgrade]').forEach(b=>b.onclick=()=>{const type=b.dataset.upgrade;if(phase==='racing'||phase==='countdown'||phase==='paused'){$('#garage-note').textContent='Upgrades are available between races.';return;}if(cash<300){$('#garage-note').textContent='You need $300. Finish a race to earn more cash.';return;}if(levels[type]<3){cash-=300;levels[type]++;save();$('#garage-note').textContent=`${type==='engine'?'Engine':'Tires'} upgraded to level ${levels[type]}. Ready for the next race.`;}});
 let devResume=false;

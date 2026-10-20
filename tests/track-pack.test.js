@@ -12,7 +12,7 @@ test('16 independent circuits have unique outlines and larger new maps',()=>{
  TRACKS.forEach((track,index)=>{
   const curve=createCircuit(index),points=Array.from({length:400},(_,i)=>curve.getPointAt(i/400)),xs=points.map(p=>p.x),zs=points.map(p=>p.z);
   const area=(Math.max(...xs)-Math.min(...xs))*(Math.max(...zs)-Math.min(...zs));if(index===0)originalArea=area;
-  if(index>=2){assert.ok(area>originalArea*2.5&&area<originalArea*4.5);assert.ok(track.features.filter(f=>f.kind==='jump').length>=8);assert.ok(track.features.filter(f=>f.kind==='whoops').length>=6);}
+  if(index>=2){assert.ok(area>originalArea*2.5&&area<originalArea*4.5);assert.ok(track.rampCount>=4&&track.rampCount<=10);assert.ok(track.features.filter(f=>f.kind==='whoops').length>=6);}
   outlines.add(points.map(p=>p.x.toFixed(2)+','+p.z.toFixed(2)).join('|'));assert.ok(points[0].distanceTo(curve.getPointAt(1))<1e-7);
  });assert.equal(outlines.size,16);
 });

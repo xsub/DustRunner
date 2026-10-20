@@ -1,5 +1,6 @@
 import {tuning as cfg} from './tuning.js';
 import {extraTrackDefinitions} from './track-pack.js';
+import {randomTrackDefinition,normalizeTrackSeed} from './random-track.js';
 import * as THREE from 'three';
 import {angleDelta,clamp} from './race.js';
 import {indexedNearest} from './track-index.js';
@@ -78,7 +79,35 @@ function buildExtraTrack(track,index){
  for(let i=0;i<7;i++)features.push({kind:'dip',start:.175+i*.113,length:34/length,height:-cfg.dipDepth*(1.4+i%3*.3)});
  return {...track,length,features,packIndex:index};
 }
-function allTracks(){return [...BASE_TRACKS.map(buildTrack),...extraTrackDefinitions().map(buildExtraTrack)];}
+// Ramp classes are nominal heights above the local road; tuning scales them.
+export function rampHeights(){return [cfg.smallJumpHeight,(cfg.smallJumpHeight+cfg.rampHeight)/2,cfg.rampHeight];}
+function populateRamps(track,index){
+ const path=spline(track.points.map(([x,z])=>new THREE.Vector3(x,0,z))),offset=index===0?.04:index>=2?.10:0;
+ const tangent=t=>path.getTangentAt(((t+offset)%1+1)%1);
+ const canyon={...track.features[0],tier:2},heights=rampHeights(),count=track.rampCount??(index<2?5:4+(index%7));
+ const ramps=[canyon],occupied=[[canyon.start-12/track.length,canyon.start+canyon.length+12/track.length]];
+ for(let i=0;i<count-1;i++){
+  const tier=i%3,runup=[18,24,30][tier],gap=[3,6,10][tier],landing=[22,28,40][tier],length=(runup+gap+landing)/track.length;
+  const target=.19+i*(.74/(count-1));let best;
+  for(let k=-12;k<=12;k++){
+   const start=target+k*.004,end=start+length;
+   if(start<.13||end>.98||occupied.some(([a,b])=>start<b&&end+10/track.length>a))continue;
+   const approach=tangent(start-8/track.length),takeoff=tangent(start+length*.4),landing=tangent(end);
+   const score=approach.dot(takeoff)+takeoff.dot(landing)-Math.abs(k)*.006;
+   if(!best||score>best.score)best={start,score};
+  }
+  // Long laps leave generous slots; use a complete scan if the local target is busy.
+  if(!best)for(let start=.14;start+length<.98;start+=.005){
+   if(!occupied.some(([a,b])=>start<b&&start+length+10/track.length>a)){best={start};break;}
+  }
+  if(!best)throw Error('Not enough road for the requested ramp count');
+  ramps.push({kind:'jump',start:best.start,length,height:heights[tier],tier,runup,gap,landing});occupied.push([best.start-10/track.length,best.start+length+10/track.length]);
+ }
+ return {...track,rampCount:count,features:[...ramps,...track.features.filter(f=>!['jump','canyon'].includes(f.kind))]};
+}
+let generatedSeed=null;
+function allTracks(){const tracks=[...BASE_TRACKS.map(buildTrack),...extraTrackDefinitions().map(buildExtraTrack)];if(generatedSeed!==null)tracks.push(buildExtraTrack(randomTrackDefinition(generatedSeed),16));return tracks.map(populateRamps);}
+export function setGeneratedTrack(seed){generatedSeed=normalizeTrackSeed(seed);refreshTracks();return 16;}
 export const TRACKS=allTracks();
 export function refreshTracks(){ROAD_WIDTH=cfg.roadWidth;SHOULDER_WIDTH=cfg.shoulderWidth;TRACKS.splice(0,TRACKS.length,...allTracks());}
 class ShiftedCircuit extends THREE.Curve{
@@ -122,6 +151,15 @@ export function terrainHeight(progress,index=0,lateral=0,variant=0){
    const r=(d-f.runup-f.gap)/f.landing;
    // A short nose bevel avoids an invisible vertical collision wall.
    return 3+landingHeight*Math.min(1,r*f.landing/7)*(1-smooth(r));
+  }
+  if(f.kind==='jump'&&f.runup){
+   const d=(t-f.start)*track.length;
+   let lift=0;
+   if(d<f.runup){const r=d/f.runup;lift=f.height*r*r*(1.5-.5*r);}
+   else if(d<f.runup+.8)lift=f.height*(1-smooth((d-f.runup)/.8));
+   else if(d>=f.runup+f.gap){const r=(d-f.runup-f.gap)/f.landing;lift=f.height*.35*Math.min(1,r*f.landing/5)*(1-smooth(r));}
+   // Keep the takeoff and landing clear of overlapping whoops/dips.
+   return height+lift;
   }
   height+=f.height*(f.kind==='whoops'?Math.sin(u*Math.PI*f.count)**2:Math.sin(u*Math.PI)**2);
  }

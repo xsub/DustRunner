@@ -12,7 +12,7 @@
 
 ## Pick your playground
 
-- **Race:** 16 dirt circuits, each with four mirror layouts — 64 configurations. Race three AI opponents through ramps, split landings, whoops, banks and winding terrain.
+- **Race:** 16 dirt circuits, each with four mirror layouts — 64 configurations. Every circuit has **4–10 ramps in three height classes** (default 0.65 / 2.075 / 3.5 m above the local road), with room for takeoff and landing. Race three AI opponents through ramps, split landings, whoops, banks and winding terrain.
 - **Free Ride:** a 1,200 × 600 m desert with three dune styles: storm ridges, giant star dunes and a seeded random expedition. Climb, jump and find your own route. Four-wheel sand trails follow the dunes, with tread impressions and stronger marks under braking or sideways slip.
 - **Choose your truck:** seven selectable procedural SUV bodies inspired by classic Bronco® shapes, from emerald/ivory Heritage and open-top crawlers to brown Classic ’78 and the Godzilla ’78 restomod.
 - **Build your drivetrain:** 12 inline-six and V8 profiles, including the 7.3 L Godzilla swap. Each engine has a fixed gearbox profile; choose arcade shifting, full automatic or sequential manual control.
@@ -23,6 +23,12 @@
 ![Four trucks racing on the dirt circuit, including the brown Classic ’78](docs/screenshots/dirt-race.jpg)
 
 *Four-car racing on Dustbowl, with Classic ’78 Copper as the player truck.*
+
+## Generate a race circuit
+
+Open **Menu → WYŚCIG → GENERATOR LOSOWYCH TRAS** below the circuit cards. Use **LOSUJ NOWĄ TRASĘ** for a fresh layout, or enter an unsigned 32-bit seed and choose **GENERUJ Z ZIARNA**. The generated circuit appears as a selected seventeenth card; start the race with **START RACE**. It has 4–10 ramps in all three heights, rolling terrain and a straight opening runway. Both mirror toggles work on generated circuits, too. The most recently entered seed is kept in browser storage; regenerate it to return to that layout.
+
+The same seed and simulation tuning recreate the same track. Generating replaces the temporary random circuit, while keeping the 16 presets available. Ramp locations are chosen for clear spacing and gentler approach/landing direction changes; the main canyon jump keeps its split landing. Small triangles on the minimap identify ramp takeoffs.
 
 ## Share your desert
 

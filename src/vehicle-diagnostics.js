@@ -1,5 +1,6 @@
 import {Quaternion,Vector3} from 'three';
 import {WHEEL_LAYOUT,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
+import {engineById} from './engines.js';
 
 // Read only, sampled by the HUD. Impulses belong to the last fixed physics
 // step, so divide by that step's duration, never by the display frame time.
@@ -31,6 +32,6 @@ export function readVehicleDiagnostics(car,{dt=1/120,gravity=9.81}={}){
    mount:point(attach),hub,ground,support,longitudinal,lateral,
    supportVector:project(normal.multiplyScalar(support)),tractionVector:project(tangent.multiplyScalar(-longitudinal)),sideVector:project(axle.multiplyScalar(-lateral))};
  });
- return {mass,weight:mass*gravity,center:point(body.localCom()),pitch:Math.atan2(forward.y,Math.hypot(forward.x,forward.z)),roll:Math.atan2(right.y,up.y),
+ return {style:car.style,engine:engineById(car.engineId),mass,weight:mass*gravity,center:point(body.localCom()),pitch:Math.atan2(forward.y,Math.hypot(forward.x,forward.z)),roll:Math.atan2(right.y,up.y),
   wheels,point,support:wheels.reduce((sum,w)=>sum+w.support,0),contacts:wheels.filter(w=>w.contact).length};
 }

@@ -429,3 +429,20 @@ brake impulses, unchanged airborne trajectory, and a 35% downhill comparison:
 about 6.1 km/h with HDC versus 51.5 km/h without after 15 simulated seconds
 (302 engine, LO, default tune). Range and lock selection remain separate from
 handling: A/HI for pace, LO for climbs, crawler with axle locks for articulation.
+
+The cutaway HUD uses an original workshop-style vector illustration: shaped
+wheel arches, windows/cabin, eight-hole rims with five lugs and rotating tread,
+engine/cooling stack, transmission, transfer case, prop shafts, chassis rails,
+axles/differential, front coils, rear leaf-spring depiction and dampers. Engine
+bank layout and open/square-headlamp body details follow the selected vehicle.
+Illustrative mechanical parts are not extra simulated joints; live mounts,
+hubs, spring lengths, body orientation and force arrows retain the telemetry
+coordinates. X-ray suspension is drawn over the near tires for readability.
+
+**⤢** in the cutaway header switches between compact and detailed technical
+views, with component leaders/color keys in the enlarged view. Zoom/collapse
+preserve the panel's top-left anchor within viewport bounds; expanded content
+scrolls if needed. The zoom preference persists locally. Canvas 2D still refreshes
+at 10 Hz, skips work when hidden/collapsed, and adds no WebGL render pass. Arrow
+reference is 5 kN with a labeled cap above approximately 14 kN. Dimensions and
+artwork reflect the game chassis rather than factory engineering measurements.

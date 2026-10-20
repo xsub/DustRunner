@@ -35,7 +35,7 @@ import {createRaceCelebration} from './race-celebration.js';
 import {desertInvitation} from './desert-share.js';
 import {buildDesert,DESERT_SPAWN,DESERT_BOUNDS,DESERT_VARIANTS,normalizeDesertOptions} from './desert.js';
 import {initPhysics,createPhysics,CHASSIS_HEIGHT} from './physics.js';
-import {tuning as cfg,restoreTuning,setTuning} from './tuning.js';
+import {tuning as cfg,restoreTuning,setTuning,tuningDocument,ACTIVE_TUNING_KEY} from './tuning.js';
 import {createTuningPanel} from './tuning-panel.js';
 import {createStatsOverlay} from './stats-overlay.js';
 import {readVehicleDiagnostics} from './vehicle-diagnostics.js';
@@ -91,6 +91,7 @@ function makeDesertWorld(){
  minimap.setDesert(ground);
 }
 function makeWorld(){
+ sand.userData.updateWaves();
  roadWidth=ROAD_WIDTH;
  physics?.dispose();
  const geometries=new Set(),materials=new Set();for(const child of [...world.children]){world.remove(child);child.traverse(o=>{if(o.geometry)geometries.add(o.geometry);if(o.material)materials.add(o.material);});}geometries.forEach(g=>g.dispose());materials.forEach(m=>{if(![sand,dirt,dark,cream,green].includes(m))m.dispose();});seed=42+trackIndex;
@@ -161,7 +162,7 @@ function start(){if(phase==='racing'||phase==='countdown')return;audioPreviewTim
 function pause(){completion.interrupt();if(!['racing','countdown','paused'].includes(phase))return;if(phase==='paused'){phase=previousPhase;$('#countdown').textContent='';$('#pause').textContent='Ⅱ';}else{previousPhase=phase;phase='paused';$('#countdown').textContent='PAUSED';$('#pause').textContent='▶';engineAudio.silence();}keys.clear();canvas.focus({preventScroll:true});}
 let menuPaused=false;
 function updateMenu(){$('#menu-play').textContent=freeRide?(phase==='paused'?'WRÓĆ NA PUSTYNIĘ ↗':'JEDŹ NA PUSTYNIĘ ↗'):(phase==='paused'?'RESUME RACE ↗':'START RACE ↗');}
-function openMenu(){if(menuDialog.open)return;completion.interrupt();menuPaused=phase==='racing'||phase==='countdown';if(menuPaused)pause();keys.clear();updateMenu();menuDialog.showModal();}
+function openMenu(){if(menuDialog.open)return;syncSandWaves();completion.interrupt();menuPaused=phase==='racing'||phase==='countdown';if(menuPaused)pause();keys.clear();updateMenu();menuDialog.showModal();}
 function closeMenu(){completion.interrupt();menuDialog.close();if(menuPaused&&phase==='paused')pause();menuPaused=false;canvas.focus({preventScroll:true});}
 $('#menu').onclick=openMenu;$('#menu-close').onclick=closeMenu;
 $('#menu-play').onclick=()=>{closeMenu();if(['ready','finished'].includes(phase))start();else if(phase==='paused')pause();};
@@ -269,15 +270,28 @@ $('#race-generate').onclick=()=>generateRace(true);$('#race-apply-seed').onclick
 $('#race-seed').onkeydown=event=>{if(event.code==='Enter'){event.preventDefault();generateRace();}};
 document.querySelectorAll('[data-reflection]').forEach(b=>b.onclick=()=>{trackVariant^=Number(b.dataset.reflection);rebuildTrack();});
 document.querySelectorAll('[data-upgrade]').forEach(b=>b.onclick=()=>{const type=b.dataset.upgrade;if(phase==='racing'||phase==='countdown'||phase==='paused'){$('#garage-note').textContent='Upgrades are available between races.';return;}if(cash<300){$('#garage-note').textContent='You need $300. Finish a race to earn more cash.';return;}if(levels[type]<3){cash-=300;levels[type]++;save();$('#garage-note').textContent=`${type==='engine'?'Engine':'Tires'} upgraded to level ${levels[type]}. Ready for the next race.`;}});
+function syncSandWaves(){
+ $('#sand-ruffles').checked=Boolean(cfg.sandRuffles);$('#sand-wave-size').value=cfg.sandWaveSize;$('#sand-wave-height').value=cfg.sandWaveHeight;paintSandWaveValues();
+}
+function paintSandWaveValues(){
+ $('#sand-wave-size-value').textContent=$('#sand-wave-size').value+' m';$('#sand-wave-height-value').textContent=Number($('#sand-wave-height').value).toFixed(2)+' m';
+}
+$('#sand-wave-size').oninput=$('#sand-wave-height').oninput=paintSandWaveValues;
+$('#sand-waves-apply').onclick=()=>{
+ completion.interrupt();applyParameters({...cfg,sandRuffles:Number($('#sand-ruffles').checked),sandWaveSize:Number($('#sand-wave-size').value),sandWaveHeight:Number($('#sand-wave-height').value)});
+ try{localStorage.setItem(ACTIVE_TUNING_KEY,JSON.stringify(tuningDocument(cfg,'Aktywne ustawienia')));$('#sand-waves-status').textContent='Zastosowano i zapisano w tej przeglądarce.';}
+ catch{$('#sand-waves-status').textContent='Zastosowano. Przeglądarka nie pozwoliła zapisać ustawień.';}
+};
+function applyParameters(parameters){
+ const previous={...cfg};
+ try{setTuning(parameters);refreshTracks();makeWorld();reset();resize();updateEngineMenu();}
+ catch(error){setTuning(previous);refreshTracks();makeWorld();reset();resize();updateEngineMenu();throw error;}
+}
 let devResume=false;
 const tuningPanel=createTuningPanel({
  onOpen(){completion.interrupt();devResume=menuPaused||phase==='racing'||phase==='countdown';if(menuDialog.open){menuDialog.close();menuPaused=false;}if(phase==='racing'||phase==='countdown')pause();keys.clear();engineAudio.silence();},
  onClose(drive){completion.interrupt();if(drive)start();else if(devResume&&phase==='paused')pause();devResume=false;canvas.focus({preventScroll:true});},
- onApply(parameters){
-  const previous={...cfg};
-  try{setTuning(parameters);refreshTracks();makeWorld();reset();resize();updateEngineMenu();}
-  catch(error){setTuning(previous);refreshTracks();makeWorld();reset();resize();updateEngineMenu();throw error;}
- },
+ onApply:applyParameters,
  getContext:()=>({mode:freeRide?'desert':'race',desert:{...desertOptions},track:trackIndex,trackVariant,body:trucks[0].style,engineId:trucks[0].engineId,steeringMode,handlingProfile:trucks[0].handlingProfile,hillDescent:trucks[0].hillDescent,driveMode:trucks[0].driveMode,transmissionMode:transmissionMode(trucks[0]),frontLock:trucks[0].axleLocks.front,rearLock:trucks[0].axleLocks.rear,engineUpgrade:levels.engine,tireUpgrade:levels.grip}),
  getStats:()=>{const c=trucks[0];return {mass:Math.round(c.physics.body.mass()),speed:Math.round(Math.abs(c.speed)*3.6),vertical:c.vertical.toFixed(2),contacts:[0,1,2,3].filter(i=>c.physics.controller.wheelIsInContact(i)).length,rpm:Math.round(c.powertrain?.rpm??0)};},
 });

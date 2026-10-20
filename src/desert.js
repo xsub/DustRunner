@@ -1,4 +1,5 @@
 import {triangleSampler} from './terrain.js';
+import {sandWaveHeight} from './sand-waves.js';
 export const DESERT_WIDTH=1200,DESERT_DEPTH=600;
 export const DESERT_BOUNDS={min:{x:-DESERT_WIDTH/2,z:-DESERT_DEPTH/2},max:{x:DESERT_WIDTH/2,z:DESERT_DEPTH/2}};
 export const DESERT_SPAWN={x:0,z:210,heading:0};
@@ -61,7 +62,8 @@ export function createDesertHeight(options={}){
 }
 export function desertHeight(x,z,options={}){return createDesertHeight(options)(x,z);}
 export function buildDesert(options={}){
- const configuration=normalizeDesertOptions(options),sampleHeight=createDesertHeight(configuration);
+ const configuration=normalizeDesertOptions(options),baseHeight=createDesertHeight(configuration);
+ const sampleHeight=(x,z)=>baseHeight(x,z)+sandWaveHeight(x,z)*smooth((Math.hypot(x-DESERT_SPAWN.x,z-DESERT_SPAWN.z)-8)/28);
  const step=2.5,cols=DESERT_WIDTH/step,rows=DESERT_DEPTH/step,positions=[],indices=[],uv=[],colors=[];
  for(let z=0;z<=rows;z++)for(let x=0;x<=cols;x++){
   const wx=DESERT_BOUNDS.min.x+x*step,wz=DESERT_BOUNDS.min.z+z*step,h=sampleHeight(wx,wz);

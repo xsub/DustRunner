@@ -25,6 +25,12 @@
 
 *Four-car racing on Dustbowl, with Classic ’78 Copper as the player truck.*
 
+## Optional “Ruffles” sand
+
+In **Menu → PIASEK · OPCJONALNE FALE „RUFFLES”**, enable regular waves, set their spacing (16–120 m) and trough-to-crest height (0–3 m), then choose **ZASTOSUJ FALE · RESTART**. The option adds visible bands and actual terrain waves in races and Free Ride; racing shoulders and the Free Ride spawn remain clear. It is off by default, preserving the irregular desert hills. Applying restarts the current session.
+
+The same controls live in **DEV → Piasek · Ruffles**, are included in tuning JSON/presets and save in browser-local active settings. Shared desert links carry the seed/variant; use the same wave settings to reproduce optional Ruffles relief.
+
 ## Generate a race circuit
 
 Open **Menu → WYŚCIG → GENERATOR LOSOWYCH TRAS** below the circuit cards. Use **LOSUJ NOWĄ TRASĘ** for a fresh layout, or enter an unsigned 32-bit seed and choose **GENERUJ Z ZIARNA**. The generated circuit appears as a selected seventeenth card; start the race with **START RACE**. It has 4–10 ramps in all three heights, rolling terrain and a straight opening runway. Both mirror toggles work on generated circuits, too. The most recently entered seed is kept in browser storage; regenerate it to return to that layout.

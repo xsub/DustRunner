@@ -56,3 +56,5 @@
 
 .race-generator{margin:20px 0;padding:16px;border:1px solid #77825b66;background:#333b2433}.race-generator p{font-size:.8rem;line-height:1.5;color:#bdc6a3}.race-generator label{display:block;font-size:.7rem;letter-spacing:.12em;margin-bottom:8px}.race-generator input{min-width:100px;width:100%;background:#202719;color:#f5e7b5;border:1px solid #798363;padding:10px}
 .race-generator .desert-seed-row{display:grid;grid-template-columns:minmax(120px,1fr) 145px 145px}.race-generator .desert-seed-row input{min-width:0}.race-generator .desert-seed-row button{line-height:1.35;padding:10px 8px}.race-generator #race-apply-seed{background:#344529;color:#e5edda;border:1px solid #61704e}@media(max-width:720px){.race-generator .desert-seed-row{grid-template-columns:1fr 1fr}.race-generator .desert-seed-row input{grid-column:1/-1}}
+
+#sand-waves-apply{padding:12px 16px;background:#f4cf58;color:#172016;border:0;border-radius:3px;font-weight:700}.desert-options #sand-ruffles{width:auto}.desert-options output{float:right;color:#f4cf58}.desert-options input[type="range"]{padding:0;accent-color:#f4cf58}

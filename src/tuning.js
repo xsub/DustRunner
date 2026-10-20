@@ -22,6 +22,9 @@ const groups={
  'Tor i skoki':[
  ['roadWidth','Połowa szerokości toru',7.75,6,12,.25],['shoulderWidth','Szerokość pobocza',14,9,24,.5],['rampHeight','Wysokość głównej rampy',3.5,.5,7.5,.1],['rampRunup','Długość najazdu',30,20,50,1],['jumpGap','Przerwa po rampie',10,0,20,.5],['landingLength','Długość lądowania',40,20,60,1],['landingLow','Wysokość niższego lądowania',.8,.2,3,.1],['landingSplit','Różnica wysokości lądowań',1,0,3,.1],['whoopsScale','Wysokość muld ×',1,0,3,.1],['smallJumpHeight','Wysokość małych garbów',.65,0,2.5,.05],['dipDepth','Głębokość dołków',.45,0,1.5,.05],['rollingScale','Pofalowanie terenu ×',1,0,3,.1],['bankScale','Pochylenie poprzeczne ×',1,0,3,.1],['rutScale','Drobne nierówności ×',1,0,3,.1],
  ],
+ 'Piasek · Ruffles': [
+ ['sandRuffles','Ruffles · wyłączone 0 / włączone 1',0,0,1,1],['sandWaveSize','Rozstaw fal piasku',32,16,120,1,'m'],['sandWaveHeight','Wysokość fali piasku',1,0,3,.05,'m'],
+ ],
  'Opony i pachołki przy trasie':[
  ['tireMass','Masa luźnej opony',10,3,40,1,'kg'],['coneMass','Masa pachołka',3,.5,15,.5,'kg'],['tireFriction','Tarcie luźnych opon',.35,.1,1,.05],['coneFriction','Tarcie pachołków',.4,.1,1,.05],['propBounce','Sprężystość oznaczeń',0,0,.3,.01],['propLinearDamping','Opór ruchu oznaczeń',.35,0,2,.05],['propAngularDamping','Opór obrotu oznaczeń',.45,0,3,.05],
  ],

@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import {indexedNearest} from './track-index.js';
 import {triangleSampler} from './terrain.js';
+import {tuning} from './tuning.js';
+import {sandWaveHeight} from './sand-waves.js';
 
 const smooth=t=>t*t*(3-2*t);
 const hash=(x,z)=>{const n=Math.sin(x*127.1+z*311.7)*43758.5453;return n-Math.floor(n);};
@@ -29,7 +31,7 @@ export function buildRaceDesert(samples,bounds,clearance){
  const nx=Math.ceil((bounds.max.x+80-minX)/step)+1,nz=Math.ceil((bounds.max.z+80-minZ)/step)+1;
  for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){
   const x=minX+i*step,z=minZ+j*step,distance=indexedNearest(samples,x,z).distance;
-  const relief=raceDesertRelief(x,z),t=Math.max(0,Math.min(1,(distance-clearance-2)/(26+relief*1.6))),fade=smooth(t);
+  const relief=raceDesertRelief(x,z)+sandWaveHeight(x,z),t=Math.max(0,Math.min(1,(distance-clearance-2)/(26+relief*1.6))),fade=smooth(t);
   const y=-.25+fade*relief;
   positions.push(x,y,z);uv.push(x/8,z/8);
   if(fade>.9&&(i+j)%4===0&&relief>raceDesertRelief(x+4,z)&&relief>raceDesertRelief(x-4,z))anchors.push({x,y,z});
@@ -45,18 +47,22 @@ export function combineGround(a,b){
 }
 export function createSandMaterial(){
  const material=new THREE.MeshStandardMaterial({color:'#96713e',roughness:1,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1});
+ const waves={sandRuffles:{value:tuning.sandRuffles},sandWaveSize:{value:tuning.sandWaveSize}};
+ material.userData.updateWaves=()=>{waves.sandRuffles.value=tuning.sandRuffles;waves.sandWaveSize.value=tuning.sandWaveSize;};
  material.onBeforeCompile=shader=>{
+  Object.assign(shader.uniforms,waves);
   shader.vertexShader='varying vec3 vSandWorld;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvSandWorld=(modelMatrix*vec4(transformed,1.0)).xyz;');
-  shader.fragmentShader='varying vec3 vSandWorld;\nfloat sandHash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}\n'+shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+  shader.fragmentShader='uniform float sandRuffles; uniform float sandWaveSize; varying vec3 vSandWorld;\nfloat sandHash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}\n'+shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
    vec2 p=vSandWorld.xz;
    float grain=sandHash(floor(p*38.0));
    float mottling=sandHash(floor(p*.6));
    float broad=sin(p.x*.037+sin(p.y*.041))*sin(p.y*.061);
+   float ruffles=sandRuffles*sin((dot(p,vec2(.77,.64))+5.0*sin(p.y*.025))*6.28318530718/sandWaveSize);
 
    vec3 duneNormal=inverseTransformDirection(normalize(vNormal),viewMatrix);
    float slopeLight=clamp(-duneNormal.x*.8+duneNormal.z*.55,-.22,.22);
    float reliefTone=smoothstep(-.25,14.0,vSandWorld.y);
-   diffuseColor.rgb*=.76+reliefTone*.22+broad*.05+grain*.10+mottling*.025+slopeLight;
+   diffuseColor.rgb*=.76+reliefTone*.22+broad*.05+grain*.10+mottling*.025+slopeLight+ruffles*.10;
   `);
  };
  return material;

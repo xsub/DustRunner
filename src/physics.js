@@ -87,9 +87,9 @@ export function createPhysics(terrain,bounds){
   });
   const vehicle={body,controller,mass,tireColliders,steer:0,controls:{brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false},arcade:{},massKey:`${car.style}:${car.engineId}:${tuningRevision()}`};car.physics=vehicle;vehicles.add(car);return vehicle;
  }
- function reset(car){
+ function reset(car,{groundHeight=terrain.heightAt(car.x,car.z)}={}){
   const v=car.physics??add(car),rotation=new Quaternion().setFromAxisAngle(new Vector3(0,1,0),car.heading);
-  v.body.setTranslation({x:car.x,y:terrain.heightAt(car.x,car.z)+CHASSIS_HEIGHT+.15,z:car.z},true);v.body.setRotation(rotation,true);
+  v.body.setTranslation({x:car.x,y:groundHeight+CHASSIS_HEIGHT+.15,z:car.z},true);v.body.setRotation(rotation,true);
   v.body.setLinvel({x:0,y:0,z:0},true);v.body.setAngvel({x:0,y:0,z:0},true);v.steer=0;v.arcade={};v.descentActive=false;v.controls={brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false};car.rolloverTime=0;car.rollover=false;
   for(let i=0;i<4;i++){v.controller.setWheelEngineForce(i,0);v.controller.setWheelBrake(i,0);v.controller.setWheelSteering(i,0);}
  }

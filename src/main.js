@@ -25,6 +25,7 @@ import {createHistoryPanel} from './history-panel.js';
 import {EngineAudio} from './engine-audio.js';
 import {clamp,angleDelta,advanceProgress,formatTime} from './race.js';
 import {buildTerrain} from './terrain.js';
+import {findRecoverySpot} from './recovery.js';
 import {buildDesert,DESERT_SPAWN,DESERT_BOUNDS,DESERT_VARIANTS,normalizeDesertOptions} from './desert.js';
 import {initPhysics,createPhysics,CHASSIS_HEIGHT} from './physics.js';
 import {tuning as cfg,restoreTuning,setTuning} from './tuning.js';
@@ -304,11 +305,26 @@ function poseTruck(c,dt,snap=false){
  c.presentation.capture(snap);
 }
 function recover(c,advance=0){
- if(freeRide){c.x=clamp(c.x,DESERT_BOUNDS.min.x+25,DESERT_BOUNDS.max.x-25);c.z=clamp(c.z,DESERT_BOUNDS.min.z+25,DESERT_BOUNDS.max.z-25);c.speed=0;physics.reset(c);physics.sync(c,0);poseTruck(c,0,true);return;}
- const near=nearest(c.x,c.z),index=(near.index+Math.round(advance*N/curve.getLength()))%N,t=curve.getTangentAt(index/N),p=samples[index];
- c.x=p.x-t.z*(c.lane??-3.5);c.z=p.z+t.x*(c.lane??-3.5);c.heading=Math.atan2(-t.x,-t.z);c.speed=0;
- physics.reset(c);physics.sync(c,0);poseTruck(c,0,true);
+ let spot;
+ if(freeRide){
+  spot=findRecoverySpot({x:c.x,z:c.z,heading:c.heading,heightAt,bounds:{min:{x:DESERT_BOUNDS.min.x+20,z:DESERT_BOUNDS.min.z+20},max:{x:DESERT_BOUNDS.max.x-20,z:DESERT_BOUNDS.max.z-20}},fallback:DESERT_SPAWN});
+ }else{
+  const near=nearest(c.x,c.z),origin=(near.index+Math.round(advance*N/curve.getLength()))%N,candidates=[];
+  // Search along the course, avoiding ramps and heavily banked corners.
+  for(let distance=0;distance<=120;distance+=6)for(const direction of distance?[1,-1]:[1]){
+   const index=(origin+Math.round(direction*distance*N/curve.getLength())+N)%N,t=curve.getTangentAt(index/N),p=samples[index];
+   for(const lane of [c.lane??-3.5,0,3.5,-3.5])candidates.push({x:p.x-t.z*lane,z:p.z+t.x*lane,heading:Math.atan2(-t.x,-t.z),index});
+  }
+  spot=findRecoverySpot({x:c.x,z:c.z,heading:c.heading,heightAt,candidates});
+ }
+ Object.assign(c,{x:spot.x,z:spot.z,heading:spot.heading,speed:0,vx:0,vz:0,vertical:0,stuckTime:0,boosting:false});
+ if(spot.index!==undefined)c.index=spot.index;
+ resetPowertrain(c);physics.reset(c,{groundHeight:spot.height});physics.sync(c,0);poseTruck(c,0,true);
+ // The normal camera follow pans to the safe patch, including its elevation.
+ // Recovery while paused must also bring the destination into view.
+ if(c===trucks[0]&&phase==='paused')updateCamera(0,true);
 }
+
 let framePhysicsMs=0,framePhysicsSteps=0;
 function step(dt){if(phase==='countdown'){count-=dt;$('#countdown').textContent=count>.4?Math.ceil(count-.4):'GO!';if(count<=0){phase='racing';$('#countdown').textContent='';$('#race-status').textContent='RACE IN PROGRESS';}}if(phase==='racing'){
  elapsed+=dt;

@@ -480,3 +480,7 @@ remain Canvas 2D at 10 Hz and stop work while the panel is hidden/collapsed.
 The former plain infield uses warm, procedurally shaded sand with wind ripples and low dunes beyond the racing shoulders. Rendered dune triangles are included in the terrain collider and spawn height sampling. The track and its graded shoulders retain their existing shape. Terrain is chunked for camera culling.
 
 A single optional wind event starts after 18–40 seconds, then leaves a 30–75 second quiet interval: either one rolling tumbleweed or a faint sand plume over a visible dune crest. These two render objects add no rigid bodies, update at at most 20 Hz, freeze when paused, skip invisible anchors, and yield whenever physics uses the frame budget. The same sand material and wind details are used in desert Free Ride.
+
+### Safe recovery on deformed terrain
+
+**F** and the touch recovery control search for a flat placement using 35 height samples across a 6 × 4 m footprint. Free Ride searches outward to 120 m, stays clear of the desert boundary, and uses the known flat starting area if no safe patch is found. Circuit recovery searches nearby positions along the course instead of resetting onto a ramp. The truck is placed above the highest sampled ground point, with drivetrain and motion reset, and the camera follows the new location and elevation. Recovery during pause also updates the camera. Terrain search runs only on recovery.

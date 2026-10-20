@@ -220,8 +220,8 @@ Grandstand spectators share material batches instead of one draw per person.
 Snakes use five instance batches. Dust uses one bounded instance batch and
 recycled particle slots, eliminating geometry/material allocation during driving.
 
-Render-only pose interpolation smooths body, wheels and axles between 60 Hz
-gameplay ticks on 120 Hz displays. The Rapier contact solver remains at 120 Hz.
+Render-only pose interpolation smooths body, wheels and axles between 120 Hz
+gameplay ticks and display frames. The Rapier contact solver remains at 120 Hz.
 A resolution controller starts with at most 2.1 million scene pixels (DPR cap
 1.5) and, after sustained slow frames over 2.5 s, reduces scene resolution in
 12% steps to a bounded floor. It recovers slowly when there is clear headroom.
@@ -261,3 +261,48 @@ The implementation follows the primary-source batching/instancing and shadow
 cost references linked above. Tests check exact triangle/attribute preservation,
 rigid-part transforms, six body styles, shared wheel resources, bounded dust
 reuse, frame statistics, pose interpolation and resolution-controller hysteresis.
+
+
+### Gameplay-first simulation scheduling
+
+The shared vehicle/contact world advances in fixed **1/120 s** steps directly
+from the display accumulator (normally two steps at 60 FPS, one at 120 FPS).
+Steering, powertrain, suspension and car-to-car collisions retain the same
+step on every truck, including offscreen opponents. Every completed step
+captures a pose for render interpolation. Display FPS never changes the
+contact timestep or collision accuracy. Course lookup now uses an exact cached
+spatial tree instead of scanning 3,600 samples repeatedly: earliest-index ties,
+hairpins, reflections and off-road positions match exhaustive lookup.
+
+Mandatory gameplay steps run before decorative animation, tuning UI, HUD and
+rendering. Catch-up stops after **4 ms or four complete physics steps** per
+frame, keeping only the fractional interpolation remainder. An individual
+atomic step can exceed that soft time budget: it is always completed for all
+vehicles. Under sustained overload, overdue wall time is discarded and the
+simulation can run slower than wall time; physics is never sped up with a
+larger timestep, and there is no growing catch-up backlog. The countdown/race
+clock uses simulated time. Pausing or hiding the tab clears the accumulator.
+The FPS panel reports **Budżet fizyki** (4 ms · number of catch-up limits in
+this session); read-only telemetry also exposes dropped seconds.
+
+Marker render poses remain synchronized each frame, including when decorative
+work is deferred. Only snakes in the camera view plus a 5 m safety envelope
+are animated, at up to **30 Hz**; offscreen snakes perform no animated terrain
+height queries or instance uploads. Decorations wait when catch-up consumes
+the simulation budget. HUD/minimap updates run at **10 Hz**, while driving,
+camera and rendering remain responsive at their normal rates. **Tło · 30 Hz**
+shows the number of active decorative snakes. All existing anchored-marker
+and ten-percent movement limits remain in force.
+
+On the development machine, 12,000 Ravine Rush spatial queries took 90.29 ms
+for exhaustive lookup and 21.21 ms for indexed lookup (construction excluded).
+The four-AI-truck headless benchmark averaged 0.253 ms before and 0.210 ms
+after this pass; P95 was essentially unchanged (0.276 / 0.280 ms). These small
+CPU samples do not establish a new minimum browser FPS. A local four-truck
+browser drive showed 120 FPS, about 0.4 ms physics per display frame and no
+catch-up limits. Tests separately verify overload yielding, exact nearest-point
+results on all 64 track layouts, visible-only decoration, and identical two-car
+Rapier trajectories/collisions at 30/60/120/144 display FPS.
+
+The fixed-step/catch-up policy follows [Glenn Fiedler's Fix Your Timestep](https://github.com/mas-bandwidth/gafferongames/blob/main/content/post/fix_your_timestep.md)
+and [Rapier's simulation parameter documentation](https://rapier.rs/docs/user_guides/javascript/simulation_structures/).

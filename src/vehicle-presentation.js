@@ -1,4 +1,4 @@
-// Interpolate the 60 Hz gameplay poses at the display refresh rate. Rapier
+// Interpolate the 120 Hz gameplay poses at the display refresh rate. Rapier
 // remains at 120 Hz; presentation never writes positions back to physics.
 export class VehiclePresentation{
  constructor(car){

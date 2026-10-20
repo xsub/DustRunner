@@ -96,7 +96,7 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
   const head=mesh(headGeometry,skin,group);head.scale.set(.2,.12,.28);
   for(const side of [-1,1]){const eye=mesh(bodyGeometry,black,head);eye.position.set(side*.75,.5,-.4);eye.scale.set(.15,.2,.14);}
   const tail=[];for(let j=0;j<4;j++){const bead=mesh(bodyGeometry,rattle,group);bead.scale.set(.075-j*.01,.065,.085);tail.push(bead);}
-  snakes.push({group,segments,head,tail,x,z,phase:random()*Math.PI*2});
+  snakes.push({group,segments,head,tail,x,z,groundY:heightAt(x,z),phase:random()*Math.PI*2,visible:false});
  }
  // Animated snakes share five draw calls instead of hundreds of meshes.
  const snakeBatches=new Map();
@@ -106,14 +106,14 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
    if(!part.isMesh)return;
    const key=part.geometry.uuid+'/'+part.material.uuid;
    if(!snakeBatches.has(key))snakeBatches.set(key,{geometry:part.geometry,material:part.material,parts:[]});
-   snakeBatches.get(key).parts.push(part);
+   snakeBatches.get(key).parts.push({part,snake});
   });
  }
  for(const data of snakeBatches.values()){
-  data.mesh=new THREE.InstancedMesh(data.geometry,data.material,data.parts.length);data.mesh.castShadow=true;data.mesh.receiveShadow=true;data.mesh.frustumCulled=false;data.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);world.add(data.mesh);
+  data.mesh=new THREE.InstancedMesh(data.geometry,data.material,data.parts.length);data.mesh.count=0;data.mesh.castShadow=true;data.mesh.receiveShadow=true;data.mesh.frustumCulled=false;data.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);world.add(data.mesh);
  }
- let time=0;
- return {resetBarriers(){for(const binding of barrierBindings)binding.version=-1;},update(dt){
+ let time=0,lastDecorTime=-Infinity,activeSnakes=0,decorUpdates=0;
+ return {getStats:()=>({activeSnakes,decorUpdates}),resetBarriers(){for(const binding of barrierBindings)binding.version=-1;},update(dt,isVisible=()=>true,allowDecor=true){
   const dirty=new Set();
   for(const binding of barrierBindings){
    const state=binding.body.markerState;if(!state||binding.version===state.version)continue;binding.version=state.version;
@@ -123,7 +123,13 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
   }
   for(const batch of dirty)batch.instanceMatrix.needsUpdate=true;
   time+=dt;
+  // Contacts are synchronized above every frame. Decorative animation may
+  // wait for headroom, runs at 30 Hz, and never evaluates offscreen terrain.
+  if(!allowDecor||time-lastDecorTime<1/30-1e-9)return;
+  lastDecorTime=time;decorUpdates++;activeSnakes=0;
   for(const snake of snakes){
+   snake.visible=Boolean(isVisible(snake.x,snake.groundY+.2,snake.z));
+   if(!snake.visible)continue;activeSnakes++;
    const a=snake.phase+time*.12;
    snake.group.position.set(snake.x+Math.cos(a)*1.25,heightAt(snake.x+Math.cos(a)*1.25,snake.z+Math.sin(a)*1.25)+.14,snake.z+Math.sin(a)*1.25);
    snake.group.rotation.y=Math.PI-a;
@@ -135,7 +141,7 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
    const p=point(1),previous=point(.95);snake.head.position.set(p.x,.015,p.z-.08);snake.head.rotation.y=Math.atan2(-(p.x-previous.x),-(p.z-previous.z));
    const end=point(0);snake.tail.forEach((bead,j)=>bead.position.set(end.x,.02+j*.012,end.z+.08+j*.1));
   }
-  for(const snake of snakes)snake.group.updateMatrixWorld(true);
-  for(const {mesh,parts} of snakeBatches.values()){parts.forEach((part,i)=>mesh.setMatrixAt(i,part.matrixWorld));mesh.instanceMatrix.needsUpdate=true;}
+  for(const snake of snakes)if(snake.visible)snake.group.updateMatrixWorld(true);
+  for(const {mesh,parts} of snakeBatches.values()){let count=0;for(const {part,snake} of parts)if(snake.visible)mesh.setMatrixAt(count++,part.matrixWorld);mesh.count=count;if(count)mesh.instanceMatrix.needsUpdate=true;}
  }};
 }

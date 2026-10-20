@@ -2,6 +2,7 @@ import {tuning as cfg} from './tuning.js';
 import {extraTrackDefinitions} from './track-pack.js';
 import * as THREE from 'three';
 import {angleDelta,clamp} from './race.js';
+import {indexedNearest} from './track-index.js';
 
 export const TRACK_SCALE = 1.35;
 export const LENGTH_MULTIPLIER = 4;
@@ -128,9 +129,7 @@ export function terrainHeight(progress,index=0,lateral=0,variant=0){
 }
 
 export function nearestPoint(samples,x,z){
- let best=Infinity,index=0;
- for(let i=0;i<samples.length;i++){const p=samples[i],d=(p.x-x)**2+(p.z-z)**2;if(d<best){best=d;index=i;}}
- return {index,distance:Math.sqrt(best),point:samples[index]};
+ return indexedNearest(samples,x,z);
 }
 
 export function opponentInput(car,near,curve,samples){

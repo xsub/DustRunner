@@ -157,6 +157,11 @@ export function createPhysics(terrain,bounds){
  }
  return {world,add,reset,input,sync,refreshMass,addBoundary(x,z,hx,hz,height){world.createCollider(RAPIER.ColliderDesc.cuboid(hx,height,hz).setTranslation(x,height,z).setFriction(.8));},setMarkerVisibility,getStats(){return {awake:vehicles.size+activeMarkers.size,bodies:vehicles.size+barriers.length,visibleMarkers:hasMarkerView?visibleMarkers:barriers.length,movingMarkers:activeMarkers.size,markerBudget:hasMarkerView?markerBudget:barriers.length};},step(){world.step();updateMarkers();},dispose(){for(const car of vehicles)delete car.physics;world.free();},
   resetBarriers(){for(const prop of barriers)anchorMarker(prop,true);},
+  addRocks(vertices){
+   // One fixed BVH triangle collider for all instanced rocks; no awake bodies.
+   const indices=Uint32Array.from({length:vertices.length/3},(_,i)=>i);
+   return world.createCollider(RAPIER.ColliderDesc.trimesh(vertices,indices).setFriction(.9).setRestitution(.02));
+  },
   addBarrier(x,y,z,{kind='tires',layers=2}={}){
    const makeBody=(height)=>world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(x,height,z).setLinearDamping(cfg.propLinearDamping).setAngularDamping(cfg.propAngularDamping).setCcdEnabled(true));
    const register=(body,height)=>{

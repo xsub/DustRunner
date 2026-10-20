@@ -1,8 +1,9 @@
 import * as THREE from 'three';
+import {snakeRetreat} from './wildlife.js';
 export const MARKER_SPACING=8;
 
 // Shared geometries and instanced plants keep the desert inexpensive to draw.
-export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()=>-.25,addBarrier=()=>{},nearest,bounds,random}){
+export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()=>-.25,addBarrier=()=>{},addRocks=()=>{},protectedAreas=[],nearest,bounds,random}){
  const material=color=>new THREE.MeshStandardMaterial({color,roughness:1});
  const rubber=material('#30322b'),worn=material('#45463a'),orange=material('#ee792e'),white=material('#f4ebd8');
  const barrierBatches=new Map(),barrierMatrix=new THREE.Object3D(),barrierBindings=[];let currentBarrier;
@@ -54,14 +55,25 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
  const batch=(geometry,color,capacity)=>{const m=new THREE.InstancedMesh(geometry,material(color),capacity);m.castShadow=true;m.receiveShadow=true;m.count=0;world.add(m);plantBatches.push(m);return m;};
  const trunks=batch(new THREE.CylinderGeometry(1,1,1,7),'#65703b',1600);
  const leaves=batch(new THREE.ConeGeometry(1,1,5),'#79834c',2600);
- const bushes=batch(new THREE.IcosahedronGeometry(1,0),'#778058',2200);
+ const rockGeometry=new THREE.IcosahedronGeometry(1,0),rockVertices=[],rockCells=new Map();
+ const bushes=batch(rockGeometry,'#82745b',2200);
+ const rockPosition=rockGeometry.attributes.position;
+ const rock=(x,y,z,sx,sy,sz)=>{
+  put(bushes,x,y,z,sx,sy,sz);
+  for(let j=0;j<rockPosition.count;j++)rockVertices.push(x+rockPosition.getX(j)*sx,y+rockPosition.getY(j)*sy,z+rockPosition.getZ(j)*sz);
+  const key=`${Math.floor(x/8)},${Math.floor(z/8)}`;if(!rockCells.has(key))rockCells.set(key,[]);rockCells.get(key).push({x,z,radius:Math.max(sx,sz)});
+ };
+ const isRecoveryBlocked=(x,z)=>{
+  for(let gx=Math.floor((x-6)/8);gx<=Math.floor((x+6)/8);gx++)for(let gz=Math.floor((z-6)/8);gz<=Math.floor((z+6)/8);gz++)for(const r of rockCells.get(`${gx},${gz}`)??[])if(Math.hypot(r.x-x,r.z-z)<4+r.radius)return true;
+  return false;
+ };
  const dry=batch(new THREE.ConeGeometry(1,1,4),'#aa985a',1800);
  function put(batch,x,y,z,sx,sy,sz,rx=0,ry=0,rz=0){
   matrix.position.set(x,y,z);matrix.scale.set(sx,sy,sz);matrix.rotation.set(rx,ry,rz);matrix.updateMatrix();batch.setMatrixAt(batch.count++,matrix.matrix);
  }
  for(let i=0;i<1200;i++){
   const x=bounds.min.x-20+random()*(bounds.max.x-bounds.min.x+40),z=bounds.min.z-20+random()*(bounds.max.z-bounds.min.z+40);
-  if(nearest(x,z).distance<roadWidth+2.6||z>bounds.max.z+roadWidth+3||z<bounds.min.z-roadWidth-3)continue;
+  if(protectedAreas.some(p=>Math.hypot(p.x-x,p.z-z)<8)||nearest(x,z).distance<roadWidth+2.6||z>bounds.max.z+roadWidth+3||z<bounds.min.z-roadWidth-3)continue;
   const type=random(),size=.7+random()*.8,y=heightAt(x,z);
   if(type<.27){ // branching saguaro
    const h=(1.5+random()*2.2)*size;
@@ -77,11 +89,12 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
     put(leaves,x+Math.sin(a)*.38*size,y+.36*size,z+Math.cos(a)*.38*size,.15*size,1.2*size,.22*size,Math.cos(a)*.85,0,-Math.sin(a)*.85);
    }
   }else if(type<.78){
-   for(let k=0;k<3;k++)put(bushes,x+(random()-.5)*size,y+.3*size,z+(random()-.5)*size,.6*size,.45*size,.55*size);
+   for(let k=0;k<3;k++)rock(x+(random()-.5)*size,y+.3*size,z+(random()-.5)*size,.6*size,.45*size,.55*size);
   }else{
    for(let k=0;k<5;k++)put(dry,x+(random()-.5)*.8,y+.28*size,z+(random()-.5)*.8,.07,.7*size,.07,(random()-.5)*.7,random()*6,(random()-.5)*.7);
   }
  }
+ if(rockVertices.length)addRocks(new Float32Array(rockVertices));
  for(const batch of plantBatches){batch.instanceMatrix.needsUpdate=true;batch.computeBoundingSphere();}
 
  const snakes=[],skin=material('#987444'),diamond=material('#463b29'),rattle=material('#d2bb80'),black=material('#151b14');
@@ -96,7 +109,7 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
   const head=mesh(headGeometry,skin,group);head.scale.set(.2,.12,.28);
   for(const side of [-1,1]){const eye=mesh(bodyGeometry,black,head);eye.position.set(side*.75,.5,-.4);eye.scale.set(.15,.2,.14);}
   const tail=[];for(let j=0;j<4;j++){const bead=mesh(bodyGeometry,rattle,group);bead.scale.set(.075-j*.01,.065,.085);tail.push(bead);}
-  snakes.push({group,segments,head,tail,x,z,groundY:heightAt(x,z),phase:random()*Math.PI*2,visible:false});
+  snakes.push({group,segments,head,tail,x,z,groundY:heightAt(x,z),phase:random()*Math.PI*2,visible:false,retreat:0,hideUntil:0});
  }
  // Animated snakes share five draw calls instead of hundreds of meshes.
  const snakeBatches=new Map();
@@ -112,8 +125,11 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
  for(const data of snakeBatches.values()){
   data.mesh=new THREE.InstancedMesh(data.geometry,data.material,data.parts.length);data.mesh.count=0;data.mesh.castShadow=true;data.mesh.receiveShadow=true;data.mesh.frustumCulled=false;data.mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);world.add(data.mesh);
  }
+ const packSnakes=()=>{
+  for(const {mesh,parts} of snakeBatches.values()){let count=0;for(const {part,snake} of parts)if(snake.visible)mesh.setMatrixAt(count++,part.matrixWorld);mesh.count=count;if(count)mesh.instanceMatrix.needsUpdate=true;}
+ };
  let time=0,lastDecorTime=-Infinity,activeSnakes=0,decorUpdates=0;
- return {getStats:()=>({activeSnakes,decorUpdates}),resetBarriers(){for(const binding of barrierBindings)binding.version=-1;},update(dt,isVisible=()=>true,allowDecor=true){
+ return {isRecoveryBlocked,getStats:()=>({activeSnakes,decorUpdates}),resetBarriers(){for(const binding of barrierBindings)binding.version=-1;},update(dt,isVisible=()=>true,allowDecor=true,vehicles=[]){
   const dirty=new Set();
   for(const binding of barrierBindings){
    const state=binding.body.markerState;if(!state||binding.version===state.version)continue;binding.version=state.version;
@@ -123,15 +139,22 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
   }
   for(const batch of dirty)batch.instanceMatrix.needsUpdate=true;
   time+=dt;
+  let hidden=false;
+  if(dt>0)for(const snake of snakes){
+   // Safety remains active even when decorative animation yields to physics.
+   if(snakeRetreat(snake,vehicles,time,dt)&&snake.visible){snake.visible=false;hidden=true;}
+  }
+  if(hidden)packSnakes();
   // Contacts are synchronized above every frame. Decorative animation may
   // wait for headroom, runs at 30 Hz, and never evaluates offscreen terrain.
   if(!allowDecor||time-lastDecorTime<1/30-1e-9)return;
   lastDecorTime=time;decorUpdates++;activeSnakes=0;
   for(const snake of snakes){
-   snake.visible=Boolean(isVisible(snake.x,snake.groundY+.2,snake.z));
+   snake.visible=snake.retreat<1&&Boolean(isVisible(snake.x,snake.groundY+.2,snake.z));
    if(!snake.visible)continue;activeSnakes++;
    const a=snake.phase+time*.12;
    snake.group.position.set(snake.x+Math.cos(a)*1.25,heightAt(snake.x+Math.cos(a)*1.25,snake.z+Math.sin(a)*1.25)+.14,snake.z+Math.sin(a)*1.25);
+   snake.group.scale.setScalar(1-snake.retreat);snake.group.position.y-=snake.retreat*.2;
    snake.group.rotation.y=Math.PI-a;
    const point=u=>({x:Math.sin(u*8+time*4+snake.phase)*.19,z:1.1-u*2.2});
    snake.segments.forEach((part,j)=>{
@@ -142,6 +165,6 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
    const end=point(0);snake.tail.forEach((bead,j)=>bead.position.set(end.x,.02+j*.012,end.z+.08+j*.1));
   }
   for(const snake of snakes)if(snake.visible)snake.group.updateMatrixWorld(true);
-  for(const {mesh,parts} of snakeBatches.values()){let count=0;for(const {part,snake} of parts)if(snake.visible)mesh.setMatrixAt(count++,part.matrixWorld);mesh.count=count;if(count)mesh.instanceMatrix.needsUpdate=true;}
+  packSnakes();
  }};
 }

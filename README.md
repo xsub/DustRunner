@@ -484,3 +484,9 @@ A single optional wind event starts after 18–40 seconds, then leaves a 30–75
 ### Safe recovery on deformed terrain
 
 **F** and the touch recovery control search for a flat placement using 35 height samples across a 6 × 4 m footprint. Free Ride searches outward to 120 m, stays clear of the desert boundary, and uses the known flat starting area if no safe patch is found. Circuit recovery searches nearby positions along the course instead of resetting onto a ramp. The truck is placed above the highest sampled ground point, with drivetrain and motion reset, and the camera follows the new location and elevation. Recovery during pause also updates the camera. Terrain search runs only on recovery.
+
+### Rocks and wildlife
+
+Desert rock clusters now use the same instanced low-poly triangles for rendering and collision. A single fixed BVH collider covers all rocks in a world; there are no extra dynamic rock bodies or per-frame rock transforms. Wheel rays and chassis contacts can hit them. The Free Ride spawn stays clear, and recovery excludes rock-occupied patches.
+
+Snakes are wildlife rather than targets: a swept approach check makes them retreat into the sand before a truck arrives, with immediate hiding at close range and a four-second quiet period before returning. No animal injury, impact sound, collision, or vehicle speed penalty is applied. Safety checks continue when decorative animation yields to the physics budget, without terrain queries.

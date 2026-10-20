@@ -78,7 +78,7 @@ function makeDesertWorld(){
  world.add(chunkTerrain(geometry,sand,64,false));
  const anchors=[];for(let z=ground.bounds.min.z+30;z<ground.bounds.max.z-30;z+=24)for(let x=ground.bounds.min.x+30;x<ground.bounds.max.x-30;x+=24){const y=heightAt(x,z);if(y>5&&y>heightAt(x+6,z)&&y>heightAt(x-6,z))anchors.push({x,y,z});}
  desertWind=createDesertWind({world,heightAt,anchors,random:rand});
- scenery=createScenery({world,samples:[],curve,roadWidth:0,heightAt,nearest:()=>({distance:Infinity}),bounds:ground.bounds,random:rand});
+ scenery=createScenery({world,samples:[],curve,roadWidth:0,heightAt,addRocks:vertices=>physics.addRocks(vertices),protectedAreas:[DESERT_SPAWN],nearest:()=>({distance:Infinity}),bounds:ground.bounds,random:rand});
  // A raised sandy rim and solid outer edge keep the finite playground contained.
  for(const side of [-1,1])for(const axis of ['x','z']){const halfX=DESERT_BOUNDS.max.x,halfZ=DESERT_BOUNDS.max.z,x=axis==='x'?side*(halfX+1):0,z=axis==='z'?side*(halfZ+1):0;physics.addBoundary(x,z,axis==='x'?1:halfX+2,axis==='z'?1:halfZ+2,45);}
  minimap.setDesert(ground);
@@ -116,7 +116,7 @@ function makeWorld(){
    const t=f.start-12/curve.getLength(),p=curve.getPointAt(t),a=curve.getTangentAt(t);sign('JUMP · PICK A SIDE',p.x-a.z*(roadWidth+8),p.z+a.x*(roadWidth+8),Math.atan2(-a.x,-a.z));
   }else for(let k=0;k<(f.count??2);k++)stripe(f.start+(k+.5)/(f.count??2)*f.length);
  }
- scenery=createScenery({world,samples,curve,roadWidth,terrain:(i,side)=>terrainHeight(i/N,trackIndex,side,trackVariant),heightAt,addBarrier:(...args)=>physics.addBarrier(...args),nearest,bounds,random:rand});
+ scenery=createScenery({world,samples,curve,roadWidth,terrain:(i,side)=>terrainHeight(i/N,trackIndex,side,trackVariant),heightAt,addRocks:vertices=>physics.addRocks(vertices),addBarrier:(...args)=>physics.addBarrier(...args),nearest,bounds,random:rand});
  // Grandstands, pit garages and warm desert details.
  const stands=new THREE.Group();world.add(stands);const spectatorMaterials=['#d6b663','#8b5540','#ece2ba','#394e48'].map(color=>mat(color)),benchMaterials=['#827d61','#69715b'].map(color=>mat(color));
  for(let row=0;row<4;row++){box(26,.6,1.6,benchMaterials[row%2],-3,1+row*.65,standZ-row*1.3,stands);for(let j=0;j<34;j++){const x=-15+j*.75;box(.33,.65,.35,spectatorMaterials[Math.floor(rand()*4)],x,1.7+row*.65,standZ-row*1.3,stands);}}
@@ -307,7 +307,7 @@ function poseTruck(c,dt,snap=false){
 function recover(c,advance=0){
  let spot;
  if(freeRide){
-  spot=findRecoverySpot({x:c.x,z:c.z,heading:c.heading,heightAt,bounds:{min:{x:DESERT_BOUNDS.min.x+20,z:DESERT_BOUNDS.min.z+20},max:{x:DESERT_BOUNDS.max.x-20,z:DESERT_BOUNDS.max.z-20}},fallback:DESERT_SPAWN});
+  spot=findRecoverySpot({x:c.x,z:c.z,heading:c.heading,heightAt,blocked:scenery.isRecoveryBlocked,bounds:{min:{x:DESERT_BOUNDS.min.x+20,z:DESERT_BOUNDS.min.z+20},max:{x:DESERT_BOUNDS.max.x-20,z:DESERT_BOUNDS.max.z-20}},fallback:DESERT_SPAWN});
  }else{
   const near=nearest(c.x,c.z),origin=(near.index+Math.round(advance*N/curve.getLength()))%N,candidates=[];
   // Search along the course, avoiding ramps and heavily banked corners.
@@ -315,7 +315,7 @@ function recover(c,advance=0){
    const index=(origin+Math.round(direction*distance*N/curve.getLength())+N)%N,t=curve.getTangentAt(index/N),p=samples[index];
    for(const lane of [c.lane??-3.5,0,3.5,-3.5])candidates.push({x:p.x-t.z*lane,z:p.z+t.x*lane,heading:Math.atan2(-t.x,-t.z),index});
   }
-  spot=findRecoverySpot({x:c.x,z:c.z,heading:c.heading,heightAt,candidates});
+  spot=findRecoverySpot({x:c.x,z:c.z,heading:c.heading,heightAt,blocked:scenery.isRecoveryBlocked,candidates});
  }
  Object.assign(c,{x:spot.x,z:spot.z,heading:spot.heading,speed:0,vx:0,vz:0,vertical:0,stuckTime:0,boosting:false});
  if(spot.index!==undefined)c.index=spot.index;
@@ -393,7 +393,7 @@ function frame(now){
  activeTrucks().forEach(c=>c.presentation?.render(phase==='racing'?work.alpha:1));
  updateEngineSound(dt);updateCamera(dt);
  dustPool.update(phase==='paused'?0:dt);
- scenery.update(phase==='paused'?0:dt,sceneryIsVisible,work.dropped===0&&work.cpuMs<simulationClock.budgetMs);
+ scenery.update(phase==='paused'?0:dt,sceneryIsVisible,work.dropped===0&&work.cpuMs<simulationClock.budgetMs,activeTrucks());
  desertWind?.update(phase==='racing'?dt:0,sceneryIsVisible,work.dropped===0&&work.cpuMs<simulationClock.budgetMs);
  tuningPanel.update(now);
  if(now-lastHudPaint>=100){drivePanel.update();handlingPanel.update();updateGameHud();minimap.render(activeTrucks(),selectedColor,viewCorners);lastHudPaint=now;}

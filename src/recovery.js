@@ -13,9 +13,10 @@ export function recoveryFootprint(heightAt,x,z,heading){
  const range=max-min;
  return {safe:range<=.2&&maxSlope<=.06,score:range+maxSlope*4,height:max};
 }
-export function findRecoverySpot({x,z,heading,heightAt,bounds,candidates,fallback}){
+export function findRecoverySpot({x,z,heading,heightAt,bounds,candidates,fallback,blocked}){
  let best=null;
  const evaluate=p=>{
+  if(blocked?.(p.x,p.z))return null;
   if(bounds&&(p.x<bounds.min.x+5||p.x>bounds.max.x-5||p.z<bounds.min.z+5||p.z>bounds.max.z-5))return null;
   const ground=recoveryFootprint(heightAt,p.x,p.z,p.heading??heading);
   const candidate={...p,heading:p.heading??heading,...ground};

@@ -446,3 +446,10 @@ scrolls if needed. The zoom preference persists locally. Canvas 2D still refresh
 at 10 Hz, skips work when hidden/collapsed, and adds no WebGL render pass. Arrow
 reference is 5 kN with a labeled cap above approximately 14 kN. Dimensions and
 artwork reflect the game chassis rather than factory engineering measurements.
+
+Drive HUD key badges: **1/A, 2/HI, 3/LO, 4/crawler** (also numpad 1–4),
+**Z/front axle lock**, **X/rear axle lock**. Buttons and keys share one action;
+locks are available only with crawler selected and retain the existing safe
+shift queue. Key repeat and Ctrl/Alt/Meta combinations do not toggle options;
+menus keep their existing keyboard isolation. `aria-keyshortcuts` and tooltips
+expose the bindings in both HUD and menu.

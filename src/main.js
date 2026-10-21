@@ -510,7 +510,7 @@ function updateGameHud(){
 
  if(phase==='racing')$('#race-status').textContent=completion.result?'META · '+(completion.result.medal??'FINISH')+' · JEDŹ DALEJ':trucks[0].rollover?'ROLLOVER · F TO RECOVER':trucks[0].airborne?'AIRBORNE':freeRide?'FREE RIDE · PUSTYNIA':'RACE IN PROGRESS';
  const c=trucks[0];if(import.meta.env.DEV)canvas.dataset.physics=JSON.stringify({x:c.x,z:c.z,index:c.index,heading:c.heading,airborne:c.airborne,height:c.height,rollover:c.rollover,suspension:c.suspensionLengths,ignition:ignitionPhase(c),rpm:c.powertrain?.rpm,gear:c.powertrain?.gear,load:c.powertrain?.load,grade:c.powertrain?.grade,mass:c.physics.body.mass(),centerOfMass:c.physics.body.localCom(),noseUpDegrees:Math.asin(clamp(2*(c.mesh.quaternion.w*c.mesh.quaternion.x-c.mesh.quaternion.y*c.mesh.quaternion.z),-1,1))*180/Math.PI,brakePressure:c.physics.controls.brakePressure,steering:c.physics.steer});
- $('.mobile-telemetry').dataset.manual=String(transmissionMode(c)==='manual');
+ game.dataset.manual=String(transmissionMode(c)==='manual');
  $('#mobile-speed').textContent=Math.round(Math.abs(c.speed??0)*3.6);$('#mobile-gear').textContent=gearLabel(c);
  const mobileLoad=clamp(c.powertrain?.load??0,0,1);$('#mobile-gear').style.color=(c.powertrain?.gear??1)<0?'#c5c8bf':`hsl(${120*(1-mobileLoad)} 78% 65%)`;
  $('#mobile-rpm').textContent=`${Math.round(c.powertrain?.rpm??0)} RPM`;$('#mobile-nav').textContent=`${nav.direction} · ${nav.slope.toFixed(0)}°`;

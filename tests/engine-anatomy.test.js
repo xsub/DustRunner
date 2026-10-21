@@ -1,11 +1,18 @@
 import {test,before} from 'node:test';
 import assert from 'node:assert/strict';
-import {sliderCrank,valveLift} from '../src/engine-anatomy.js';
+import {sliderCrank,crankAssembly,valveLift} from '../src/engine-anatomy.js';
 import {engineById,engineTorque,defaultEngine} from '../src/engines.js';
 import {vehicleMass,vehicleMassProperties} from '../src/vehicle-mass.js';
 import {isBiminiBody,isCompactBody} from '../src/body-types.js';
 import {initPhysics,createPhysics} from '../src/physics.js';
 before(initPhysics);
+test('drawn crank and wrist joints share one scale and preserve the connecting rod length',()=>{
+ for(const scale of [148,169])for(const bank of [-Math.PI/4,0,Math.PI/4])for(let degree=0;degree<720;degree++){
+  const {journal,crankPin,wristPin}=crankAssembly(degree*Math.PI/180,bank,{x:200,y:269},scale);
+  assert.ok(Math.abs(Math.hypot(crankPin.x-journal.x,crankPin.y-journal.y)-.13*scale)<1e-10);
+  assert.ok(Math.abs(Math.hypot(wristPin.x-crankPin.x,wristPin.y-crankPin.y)-.42*scale)<1e-10);
+ }
+});
 test('slider crank preserves conrod length on both 45-degree V banks and a straight bank',()=>{
  for(const bank of [-Math.PI/4,0,Math.PI/4])for(let i=0;i<720;i++){
   const a=i*Math.PI/180,s=sliderCrank(a,bank);

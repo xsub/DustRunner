@@ -6,6 +6,12 @@ export function sliderCrank(angle,bank=0,radius=.13,rod=.42){
  const travel=along+Math.sqrt(Math.max(0,rod*rod-across*across));
  return {pin,piston:{x:axis.x*travel,y:axis.y*travel},travel,cam:angle/2};
 }
+// The slider is the wrist pin, not the piston crown. Project every joint
+// with one scale so the visible conrod keeps its length throughout a turn.
+export function crankAssembly(angle,bank=0,origin={x:0,y:0},scale=1){
+ const k=sliderCrank(angle,bank),project=p=>({x:origin.x+p.x*scale,y:origin.y-p.y*scale});
+ return {journal:{...origin},crankPin:project(k.pin),wristPin:project(k.piston)};
+}
 export function valveLift(angle){
  const cycle=((angle%(Math.PI*4))+Math.PI*4)%(Math.PI*4);
  return {intake:cycle<Math.PI?Math.sin(cycle):0,exhaust:cycle>Math.PI*3?Math.sin(cycle-Math.PI*3):0};
@@ -61,11 +67,11 @@ export function drawEngineAnatomy(ctx,data,phase=0){
   const k=sliderCrank(phase,bank),axis={x:Math.sin(bank),y:Math.cos(bank)},normal={x:Math.cos(bank),y:-Math.sin(bank)};
   const point=(t,n)=>P({x:axis.x*t+normal.x*n,y:axis.y*t+normal.y*n});
   poly([point(.14,-.12),point(.14,.12),point(.68,.12),point(.68,-.12)],'#172c35',steel);
-  const top=k.travel;
+  const top=k.travel+.055;
   poly([point(top-.08,-.105),point(top-.08,.105),point(top,.105),point(top,-.105)],'#bac9c7',ink);
   for(const t of [-.025,-.05])line(point(top+t,-.105),point(top+t,.105),dark,1);
   line(P(k.pin),point(top-.055,0),copper,6);line(P(k.pin),point(top-.055,0),'#eed4a2',1);
-  circle(...P(k.pin),7,'#6b7d80',ink);circle(...point(top-.055,0),3,dark,ink);
+  line([cx,cy],P(k.pin),steel,8);circle(...P(k.pin),7,'#6b7d80',ink);circle(...point(top-.055,0),3,dark,ink);
   // Separate head casting, valve deck and rocker cover with fasteners/ribs.
   poly([point(.65,-.17),point(.65,.17),point(.78,.17),point(.78,-.17)],'#687d84',ink);
   poly([point(.79,-.19),point(.79,.19),point(.88,.16),point(.88,-.16)],blue,steel);
@@ -93,9 +99,11 @@ export function drawEngineAnatomy(ctx,data,phase=0){
  const throws=six?[0,Math.PI*2/3,Math.PI*4/3,Math.PI*4/3,Math.PI*2/3,0]:[0,Math.PI/2,Math.PI*3/2,Math.PI];
  rect(434,173,268,104,'#34464e');rect(434,143,268,30,'#687d84');rect(438,125,260,17,blue);rect(441,279,252,20,'#354c58');
  for(let i=0;i<count;i++){
-  const x=start+i*gap+15,a=phase+throws[i],s=sliderCrank(a),py=269-s.travel*148;
+  const x=start+i*gap+15,a=phase+throws[i],assembly=crankAssembly(a,0,{x,y:269},148),py=assembly.wristPin.y-8;
   rect(x-13,173,26,91,dark);rect(x-11,py,22,12,'#bdcfcb',ink);line([x-11,py+4],[x+11,py+4],dark,1);
-  const pin=[x+Math.sin(a)*13,269-Math.cos(a)*13];line(pin,[x,py+8],copper,4);circle(...pin,5,dark,copper);
+  const pin=[assembly.crankPin.x,assembly.crankPin.y],wrist=[assembly.wristPin.x,assembly.wristPin.y];
+  line([x,269],pin,steel,7);circle(x,269,4,dark,steel);
+  line(pin,wrist,copper,4);circle(...pin,5,dark,copper);circle(...wrist,2.5,dark,ink);
   const lift=valveLift(a);
   for(const [dx,v] of [[-6,lift.intake],[6,lift.exhaust]]){
    const y=159+v*6;line([x+dx,136],[x+dx,y],copper,1.5);line([x+dx-4,y],[x+dx+4,y],ink,2);

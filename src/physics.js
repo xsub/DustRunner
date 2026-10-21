@@ -92,7 +92,7 @@ export function createPhysics(terrain,bounds){
  function reset(car,{groundHeight=terrain.heightAt(car.x,car.z)}={}){
   const v=car.physics??add(car),rotation=new Quaternion().setFromAxisAngle(new Vector3(0,1,0),car.heading);
   v.body.setTranslation({x:car.x,y:groundHeight+CHASSIS_HEIGHT+.15+v.profile.lift*VEHICLE_SCALE+(v.profile.wheelScale-1)*TIRE_RADIUS*VEHICLE_SCALE,z:car.z},true);v.body.setRotation(rotation,true);
-  v.body.setLinvel({x:0,y:0,z:0},true);v.body.setAngvel({x:0,y:0,z:0},true);v.steer=0;v.arcade={};v.descentActive=false;v.controls={brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false};car.rolloverTime=0;car.rollover=false;
+  v.body.setLinvel({x:0,y:0,z:0},true);v.body.setAngvel({x:0,y:0,z:0},true);v.steer=0;v.arcade={};v.parkingAnchor=null;v.descentActive=false;v.controls={brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false};car.rolloverTime=0;car.rollover=false;
   for(let i=0;i<4;i++){v.controller.setWheelEngineForce(i,0);v.controller.setWheelBrake(i,0);v.controller.setWheelSteering(i,0);}
  }
  function refreshMass(car){
@@ -152,12 +152,31 @@ export function createPhysics(terrain,bounds){
   for(let i=0;i<4;i++){
    const layout=WHEEL_LAYOUT[i];
    let angle=0;if(layout.z<0&&Math.abs(v.steer)>.0001){const wheelbase=2.506*v.profile.wheelbase,radius=wheelbase/Math.tan(v.steer);angle=Math.atan(wheelbase/(radius+layout.x*v.profile.track*VEHICLE_SCALE));}
-   const rearBrake=layout.z>0?cfg.handbrakeDeceleration*(Number(input.handbrake)||0)*v.mass*dt/2:0;
+   // A parking brake must resist gravity at rest, rather than only provide
+   // the modest deceleration used for a moving handbrake turn.
+   const parkingHold=cfg.gravity*1.5*Math.max(0,1-Math.abs(car.speed)/2);
+   const rearBrake=layout.z>0?Math.max(cfg.handbrakeDeceleration,parkingHold)*(Number(input.handbrake)||0)*v.mass*dt/2:0;
    c.setWheelSteering(i,angle);c.setWheelEngineForce(i,car.rollover||rearBrake>0?0:-wheelForces[i]);c.setWheelBrake(i,Math.max(braking,rearBrake));
    c.setWheelFrictionSlip(i,(input.onDirt?cfg.roadGrip:cfg.offroadGrip)+(input.tires??0)*.08);
   }
   // Only actual wheel contacts can transfer engine/brake/steering forces.
   c.updateVehicle(dt,undefined,undefined,collider=>collider.parent()?.handle!==v.body.handle&&!barrierBodies.has(collider.parent()?.handle));
+  let parkingStatic=false;
+  if(Number(input.handbrake)>.95&&!car.rollover&&(input.throttle??0)<.01){
+   const rear=[1,3].filter(i=>c.wheelIsInContact(i));
+   if(rear.length===2){
+    const a=c.wheelContactNormal(rear[0]),b=c.wheelContactNormal(rear[1]),normal=new Vector3(a.x+b.x,a.y+b.y,a.z+b.z).normalize(),velocity=v.body.linvel();
+    // Static tire friction near rest. It releases with the brake, gas, a
+    // collision that moves the car, or loss of rear-wheel ground contact.
+    if(normal.y>Math.cos(35*Math.PI/180)&&Math.hypot(velocity.x,velocity.y,velocity.z)<.35){
+     parkingStatic=true;const position=v.body.translation();v.parkingAnchor??=new Vector3(position.x,position.y,position.z);
+     const drift=new Vector3(position.x,position.y,position.z).sub(v.parkingAnchor);drift.addScaledVector(normal,-drift.dot(normal));
+     const tangent=new Vector3(velocity.x,velocity.y-cfg.gravity*dt,velocity.z);tangent.addScaledVector(normal,-tangent.dot(normal));tangent.addScaledVector(drift,4);
+     tangent.multiplyScalar(-v.mass);tangent.clampLength(0,v.mass*cfg.gravity*dt*.9);v.body.applyImpulse(tangent,true);
+    }
+   }
+  }
+  if(!parkingStatic)v.parkingAnchor=null;
  }
  function sync(car,dt){
   const v=car.physics,b=v.body,c=v.controller,p=b.translation(),velocity=b.linvel();q.copy(b.rotation());

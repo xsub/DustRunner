@@ -26,6 +26,7 @@ import {vehicleMass} from './vehicle-mass.js';
 import {createScenery} from './scenery.js';
 import {createBronco} from './vehicle.js';
 import {followCameraStep} from './view.js';
+import {CameraOrbit,CAMERA_KEYS} from './camera-orbit.js';
 import {createMinimap} from './minimap.js';
 import {TRACKS,TRACK_VARIANTS,ROAD_WIDTH,refreshTracks,setGeneratedTrack,createCircuit,terrainHeight,nearestPoint,opponentInput} from './tracks.js';
 import {ENGINES,engineById,defaultEngine} from './engines.js';
@@ -56,6 +57,7 @@ await initPhysics();
 const $=s=>document.querySelector(s),canvas=$('#scene'),game=$('#game'),menuDialog=$('#game-menu');
 canvas.tabIndex=0;
 const minimap=createMinimap($('#minimap'));
+const cameraOrbit=new CameraOrbit();
 let cameraState={x:0,z:0,span:20};
 const viewCorners=[[-1,-1],[1,-1],[1,1],[-1,1]].map(([x,y])=>new THREE.Vector3(x,y,-1)),viewDirection=new THREE.Vector3();
 const scene=new THREE.Scene();scene.background=new THREE.Color('#a99a70');scene.fog=new THREE.Fog('#a99a70',105,210);
@@ -330,7 +332,7 @@ const statsOverlay=createStatsOverlay({game,toggle:$('#show-stats'),onInteract:(
 }});
 const vehicleDiagram=createVehicleDiagnosticsOverlay({game,toggle:$('#show-vehicle-diagram'),getEnginePreview:()=>({engine:engineById(trucks[0].engineId),rpm:0,running:false}),onInteract:()=>canvas.focus({preventScroll:true}),getDiagnostics:()=>['ready','countdown'].includes(phase)?null:{...readVehicleDiagnostics(trucks[0],{dt:simulationClock.dt,gravity:cfg.gravity}),running:phase==='racing'}});
 // During a race, Space belongs to nitro even when a HUD button has focus.
-window.addEventListener('keydown',e=>{if(menuDialog.open||document.querySelector('#tuning-menu')?.open)return;if(e.target instanceof HTMLButtonElement&&e.code==='Space'&&!['racing','countdown','paused'].includes(phase))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.repeat)return;if(!hasStarted){if(e.code==='Enter'){e.preventDefault();start();}return;}if(transmissionPanel.shortcut(e)||drivePanel.shortcut(e)){e.preventDefault();return;}keys.add(e.code);if(e.code==='Comma'){e.preventDefault();toggleParking();}if(e.code==='Period'){e.preventDefault();toggleIgnition();}if(['ShiftLeft','ShiftRight'].includes(e.code)){handbrake.press();updateGameHud();}if(e.code==='Enter'&&['ready','finished'].includes(phase))start();if(e.code==='KeyH')handlingPanel.toggleDescent();if(e.code==='KeyP'||e.code==='Escape')pause();if(e.code==='KeyR')reset();if(e.code==='KeyF')recover(trucks[0]);});window.addEventListener('keyup',e=>{keys.delete(e.code);if(['ShiftLeft','ShiftRight'].includes(e.code)&&!keys.has('ShiftLeft')&&!keys.has('ShiftRight')){handbrake.release();updateGameHud();}});window.addEventListener('blur',()=>{handbrake.cancelHold();audioPreviewTime=0;engineAudio.silence();attractMusic.silence();keys.clear();if(phase==='racing'||phase==='countdown')pause();});
+window.addEventListener('keydown',e=>{if(menuDialog.open||document.querySelector('#tuning-menu')?.open)return;if(CAMERA_KEYS.has(e.code)){if(e.target?.matches?.('input,select,textarea')||e.target?.isContentEditable)return;e.preventDefault();if(e.code==='KeyO'){if(!e.repeat){cameraOrbit.reset();updateCamera(0,true);}}else keys.add(e.code);return;}if(e.target instanceof HTMLButtonElement&&e.code==='Space'&&!['racing','countdown','paused'].includes(phase))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.repeat)return;if(!hasStarted){if(e.code==='Enter'){e.preventDefault();start();}return;}if(transmissionPanel.shortcut(e)||drivePanel.shortcut(e)){e.preventDefault();return;}keys.add(e.code);if(e.code==='Comma'){e.preventDefault();toggleParking();}if(e.code==='Period'){e.preventDefault();toggleIgnition();}if(['ShiftLeft','ShiftRight'].includes(e.code)){handbrake.press();updateGameHud();}if(e.code==='Enter'&&['ready','finished'].includes(phase))start();if(e.code==='KeyH')handlingPanel.toggleDescent();if(e.code==='KeyP'||e.code==='Escape')pause();if(e.code==='KeyR')reset();if(e.code==='KeyF')recover(trucks[0]);});window.addEventListener('keyup',e=>{keys.delete(e.code);if(['ShiftLeft','ShiftRight'].includes(e.code)&&!keys.has('ShiftLeft')&&!keys.has('ShiftRight')){handbrake.release();updateGameHud();}});window.addEventListener('blur',()=>{handbrake.cancelHold();audioPreviewTime=0;engineAudio.silence();attractMusic.silence();keys.clear();if(phase==='racing'||phase==='countdown')pause();});
 document.addEventListener('visibilitychange',()=>{simulationClock.reset();lastTime=performance.now();if(document.hidden){handbrake.cancelHold();keys.clear();audioPreviewTime=0;engineAudio.silence();attractMusic.silence();}});
 document.querySelectorAll('[data-key]').forEach(b=>{b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);if(b.dataset.key==='ShiftLeft'){handbrake.press();updateGameHud();}};b.onpointerup=b.onpointercancel=()=>{keys.delete(b.dataset.key);if(b.dataset.key==='ShiftLeft'&&!keys.has('ShiftRight')){handbrake.release();updateGameHud();}};});
 function finish(){
@@ -483,18 +485,22 @@ function updateGameHud(){
  $('#time').textContent=formatTime(completion.result?.time??elapsed);$('#lap').innerHTML=`${String(Math.min(c.lap+1,3)).padStart(2,'0')}<small> / 03</small>`;$('#position').innerHTML=`${String(completion.result?.rank??ranking().indexOf(c)+1).padStart(2,'0')}<small> / 04</small>`;$('#nitro-text').textContent=Math.round(c.nitro)+'%';$('#nitro-fill').style.width=c.nitro+'%';const drivetrain=c.powertrain;$('#drive-range').textContent=driveModeById(drivetrain?.mode).label+' ·';$('#gear').textContent=gearLabel(c);instrumentPanel.update();
 }
 function updateCamera(dt,snap=false){
- const player=trucks[0];if(!player||(!snap&&phase==='paused'))return;
+ const player=trucks[0];if(!player)return;
+ if(!snap&&!document.hidden&&!menuDialog.open&&!document.querySelector('#tuning-menu')?.open)cameraOrbit.step(keys,dt);
  const w=game.clientWidth,h=game.clientHeight;if(!w||!h)return;
  const look=Math.round(12/(curve.getLength()/N));
  const now=curve.getTangentAt(player.index/N),ahead=curve.getTangentAt(((player.index+look)%N)/N);
  const bend=freeRide?0:Math.abs(angleDelta(Math.atan2(ahead.x,ahead.z),Math.atan2(now.x,now.z)));
  const previousY=cameraState.y;cameraState=followCameraStep(cameraState,{...player,...(!hasStarted&&!freeRide?packView(trucks):{}),bend},{width:w,height:h},dt,snap);
  if(!hasStarted&&!freeRide){const center=packView(trucks),reach=Math.max(...trucks.map(c=>Math.hypot((c.x-center.x)/(w/h),(c.z-center.z)*.75)))+14;cameraState.span=Math.max(cameraState.span,Math.min(60,reach));}
- cameraState.y=previousY;const {x,z,span}=cameraState,aspect=w/h;
+ cameraState.y=previousY;const playerFocus=hasStarted||cameraOrbit.manual;
+ const x=playerFocus?player.mesh.position.x:cameraState.x,z=playerFocus?player.mesh.position.z:cameraState.z,span=cameraState.span*cameraOrbit.distance,aspect=w/h;
  camera.left=-span*aspect;camera.right=span*aspect;camera.top=span;camera.bottom=-span;
  const targetY=heightAt(player.x,player.z)+Math.max(0,player.height-heightAt(player.x,player.z))*.35;
  cameraState.y=(cameraState.y??targetY)+(targetY-(cameraState.y??targetY))*(snap?1:1-Math.exp(-dt*3));
- camera.position.set(x,78+cameraState.y,z+70);camera.lookAt(x,cameraState.y,z);camera.updateProjectionMatrix();camera.updateMatrixWorld();
+ const focusY=playerFocus?player.mesh.position.y:cameraState.y,offset=cameraOrbit.offset();
+ camera.position.set(x+offset.x,focusY+offset.y,z+offset.z);camera.lookAt(x,focusY,z);camera.updateProjectionMatrix();camera.updateMatrixWorld();
+ if(import.meta.env.DEV)canvas.dataset.camera=JSON.stringify({yaw:cameraOrbit.yaw,pitch:cameraOrbit.pitch,distance:cameraOrbit.distance,target:{x,y:focusY,z},position:camera.position,manual:cameraOrbit.manual});
  markerViewMatrix.multiplyMatrices(camera.projectionMatrix,camera.matrixWorldInverse);markerFrustum.setFromProjectionMatrix(markerViewMatrix);physics?.setMarkerVisibility(markerIsVisible);
  camera.getWorldDirection(viewDirection);
  const ndc=[[-1,-1],[1,-1],[1,1],[-1,1]];

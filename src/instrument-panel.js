@@ -15,7 +15,7 @@ function makeGauge(label,unit,min,max,small=false,redline=Infinity){
  return {element,update(n){const angle=-135+clamp((n-min)/(max-min),0,1)*270;needle.style.transform=`rotate(${angle}deg)`;value.textContent=small?`${Math.round(n)}${unit}`:Math.round(n);svg.setAttribute('aria-label',`${label}: ${Math.round(n)} ${unit}`);}};
 }
 export function createInstrumentPanel({getPlayer,onInteract}){
- const root=document.querySelector('.speed'),select=document.querySelector('#instrument-style'),caption=document.querySelector('#instrument-style-status'),gauges=document.querySelector('#instrument-gauges'),title=document.querySelector('#instrument-title'),loadLabel=document.querySelector('#instrument-load');
+ const root=document.querySelector('.speed'),select=document.querySelector('#instrument-style'),caption=document.querySelector('#instrument-style-status'),gauges=document.querySelector('#instrument-gauges'),title=document.querySelector('#instrument-title');
  let preference='six',signature='',items;
  try{const saved=localStorage.getItem(STORAGE_KEY);if(INSTRUMENT_STYLES.includes(saved))preference=saved;}catch{}
  select.value=preference;
@@ -32,7 +32,6 @@ export function createInstrumentPanel({getPlayer,onInteract}){
   }
   for(const [key,gauge] of Object.entries(items))gauge.update(data[key]);
   const gear=document.querySelector('#gear');gear.style.color=loadGearColor(data.gear,data.load);gear.classList.toggle('gear-reverse',data.gear<0);
-  loadLabel.textContent=Math.round(data.load)+'% OBCIĄŻENIA';
   caption.textContent=(preference==='auto'?'AUTO · według nadwozia: ':'Wybrany zestaw: ')+INSTRUMENT_NAMES[style]+'. Zmiana działa podczas jazdy, bez restartu.';
   root.dataset.load=String(Math.round(data.load));root.dataset.pitch=data.pitch.toFixed(1);root.dataset.roll=data.roll.toFixed(1);
  }

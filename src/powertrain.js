@@ -1,3 +1,4 @@
+import {ignitionStep,ignitionPhase} from './ignition.js';
 import {tuning as cfg} from './tuning.js';
 import {engineById,engineTorque} from './engines.js';
 import {vehicleMass} from './vehicle-mass.js';
@@ -29,7 +30,7 @@ export function selectDriveMode(car,id){
 export function resetPowertrain(car){
  const engine=engineById(car.engineId),requested=driveModeById(car.driveMode),old=car.powertrain;
  const mode=requested.id==='4x4'&&(car.airborne||Math.abs(car.speed??0)>RANGE_SHIFT_SPEED)?driveModeById(old?.mode):requested;
- car.powertrain={engineId:engine.id,transmissionMode:transmissionMode(car),transmissionId:gearboxFor(car).id,mode:mode.id,locks:{front:false,rear:false},rpm:engine.idle,gear:1,shiftTime:0,cooldown:0,load:0,throttle:0,torque:0,limiter:false,grade:0,roadLoad:0};
+ car.powertrain={engineId:engine.id,transmissionMode:transmissionMode(car),transmissionId:gearboxFor(car).id,mode:mode.id,locks:{front:false,rear:false},rpm:ignitionPhase(car)==='off'?0:engine.idle,gear:1,shiftTime:0,cooldown:0,load:0,throttle:0,torque:0,limiter:false,grade:0,roadLoad:0};
  if(mode.id==='4x4'&&old?.mode==='4x4')car.powertrain.locks={...old.locks};
  updateRange(car,car.powertrain);return car.powertrain;
 }
@@ -47,6 +48,11 @@ export function powertrainStep(car,input,dt){
  const box=gearboxFor(car),RATIOS=box.ratios,ROLLING_RADIUS=cfg.driveRadius,manual=transmissionMode(car)==='manual';
  const e=engineById(car.engineId),state=car.powertrain?.engineId===e.id&&car.powertrain.transmissionMode===transmissionMode(car)?car.powertrain:resetPowertrain(car);
  const mode=updateRange(car,state),FINAL_DRIVE=cfg.finalDrive*mode.range,driveScale=cfg.driveScale*1.35;
+ const ignition=ignitionStep(car,dt,e.idle);
+ if(ignition.phase!=='running'){
+  Object.assign(state,{rpm:ignition.rpm,load:0,throttle:0,torque:0,limiter:false,shiftTime:0,cooldown:Math.max(0,state.cooldown-dt)});
+  return {acceleration:0,engineBraking:0,topSpeed:0,rpm:state.rpm,gear:state.gear,torque:0,load:0};
+ }
  const reverse=manual?state.gear<0:input.reverse??(input.brake&&car.speed<=.05),gas=input.brake?(reverse&&!manual?clamp(input.reverseThrottle??1,0,1):0):clamp(input.throttle??0,0,1);
  const pedal=gas*mode.pedal;
  const directedSpeed=reverse?-car.speed:car.speed,coupledSpeed=Math.max(0,directedSpeed);

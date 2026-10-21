@@ -3,7 +3,7 @@ import {RECORDING_LAYERS,steadyEngineLoop} from './engine-loops.js';
 import workletUrl from './engine-worklet.js?worker&url';
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 export class EngineAudio{
- constructor(){this.context=null;this.ready=null;this.layers=[];this.latest=null;}
+ constructor(){this.context=null;this.ready=null;this.layers=[];this.latest=null;this.transients=[];}
  async init(){
   if(this.context){await this.context.resume();return this.ready;}
   const context=new AudioContext();this.context=context;
@@ -33,7 +33,18 @@ export class EngineAudio{
   })();
   try{await this.ready;}catch(error){await context.close();this.context=null;this.ready=null;this.layers=[];throw error;}
  }
- silence(){if(this.context)this.master.gain.setTargetAtTime(0,this.context.currentTime,.035);}
+ silence(){if(!this.context)return;const now=this.context.currentTime;this.master.gain.setTargetAtTime(0,now,.035);for(const voice of this.transients){voice.gain.gain.cancelScheduledValues(now);voice.gain.gain.setTargetAtTime(0,now,.02);voice.source.stop(now+.1);}this.transients=[];}
+ ignition(start,{enabled=true,volume=.5}={}){
+  if(!enabled||!this.context)return;
+  const ctx=this.context,now=ctx.currentTime,duration=start?1.04:.42,source=ctx.createOscillator(),gain=ctx.createGain(),filter=ctx.createBiquadFilter();
+  source.type=start?'sawtooth':'triangle';source.frequency.setValueAtTime(85,now);source.frequency.exponentialRampToValueAtTime(start?155:24,now+duration);
+  filter.type='lowpass';filter.frequency.value=start?950:420;source.connect(filter);filter.connect(gain);gain.connect(ctx.destination);
+  const level=clamp(volume,0,1)*(start?.14:.18);gain.gain.setValueAtTime(0,now);
+  for(let t=0;t<duration-.05;t+=start?.085:.1){gain.gain.linearRampToValueAtTime(level*(1-t/duration*.6),now+t+.012);gain.gain.linearRampToValueAtTime(level*.18,now+t+.065);}
+  gain.gain.linearRampToValueAtTime(0,now+duration);source.start(now);source.stop(now+duration+.02);
+  const voice={source,gain};this.transients.push(voice);source.onended=()=>{source.disconnect();filter.disconnect();gain.disconnect();const i=this.transients.indexOf(voice);if(i>=0)this.transients.splice(i,1);};
+ }
+
  update(engine,state,{enabled=false,volume=.5}={}){
   if(!this.context)return;
   const now=this.context.currentTime;

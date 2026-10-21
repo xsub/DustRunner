@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {exhaustLayout} from './exhaust-layout.js';
 import {createOffroadWheel} from './wheel.js';
 import {isOpenBody,isBiminiBody,rollCageSegments} from './body-types.js';
 import {VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
@@ -187,10 +188,16 @@ export function createBronco(style='classic',number='07'){
  const numberMaterial=material('#ffffff',{map:texture});
  const roof=part(new THREE.PlaneGeometry(.6,.55),numberMaterial,0,open?1.657:roofY+.067,open?-.92:.64);roof.rotation.x=-Math.PI/2;
  for(const side of [-1,1]){const decal=part(new THREE.PlaneGeometry(.34,.24),numberMaterial,side*(w+.066),1.13,.02);decal.rotation.y=side*Math.PI/2;}
+ const exhausts=exhaustLayout(style,w).map(({from,tip,direction})=>{
+  rod(from,tip,.063,metal);
+  const outlet=new THREE.Object3D();outlet.name='exhaust-outlet';outlet.position.fromArray(tip);outlet.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(...direction));chassis.add(outlet);
+  const hole=part(new THREE.CircleGeometry(.047,12),trim,...tip);hole.quaternion.copy(outlet.quaternion);hole.position.addScaledVector(new THREE.Vector3(...direction),.006);
+  return outlet;
+ });
  batchRigidMeshes(chassis);
  for(const axle of axles)batchRigidMeshes(axle.group);
  mesh.scale.setScalar(VEHICLE_SCALE);mesh.userData.style=style;
- return {mesh,chassis,body,wheels,axles,dispose(){
+ return {mesh,chassis,body,wheels,axles,exhausts,dispose(){
   const geometries=new Set(),materials=new Set();mesh.traverse(o=>{if(o.userData.sharedWheel)return;if(o.geometry)geometries.add(o.geometry);if(o.material)materials.add(o.material);});
   geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());texture.dispose();
  }};

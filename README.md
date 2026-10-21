@@ -72,7 +72,9 @@ This is an arcade simulation: engine curves, loaded masses and performance are g
 | A / D or ← / → | Steer |
 | C | Center steering |
 | Space | Rechargeable nitro |
-| Shift / HB | Hold the rear handbrake; after 2 seconds it latches. Press again to release. |
+| Shift / HB | Momentary rear handbrake while held. |
+| , (comma) / handbrake HUD | Toggle the parking brake immediately. |
+| . (period) / engine HUD | Start or stop the engine; stopping requires a stationary, grounded truck. |
 | 1 / 2 / 3 / 4 | AUTO / HI / LO / 4×4 crawler |
 | Z / X | Front / rear differential lock in crawler mode |
 | H | Hill-descent control |
@@ -83,7 +85,7 @@ This is an arcade simulation: engine curves, loaded masses and performance are g
 | R | Reset session |
 | Enter | Start / race again |
 
-Touch controls are available on touch devices. The handbrake HUD shows hold progress and its latched state; pausing preserves a latched brake, while recovery or reset releases it. A rolling truck without accelerator input is quiet; engine RPM remains physically modeled, while deliberate throttle and automatic reverse restore engine sound. Enable sound with **♪ ON** or in the menu. The menu also contains truck selection, engine hot-swaps, the five-generation history guide, tuning and display options.
+Touch controls are available on touch devices. The compact handbrake HUD shows its latched state; pausing preserves a latched brake, while recovery or reset releases it. Engines start running by default. Ignition adds a timed starter, shutdown, zero torque/RPM when off, and matching sound transitions. Coasting keeps the engine audible with reduced load. Soft pooled exhaust particles originate at the rendered tailpipes, follow vehicle attitude, and respond to throttle, gear changes and startup. Enable sound with **♪ ON** or in the menu. The menu also contains truck selection, engine hot-swaps, the five-generation history guide, tuning and display options.
 
 ## Tuning and telemetry
 

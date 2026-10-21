@@ -6,9 +6,10 @@ const DEFAULT_PITCH=Math.atan2(78,70),RADIUS=Math.hypot(78,70);
 export class CameraOrbit {
  constructor(){this.reset();}
  reset(preset='race'){
-  // Desert board view: equal foreshortening of the three world axes.
+  // Elevated desert board view keeps 30–35 degree dunes readable instead
+  // of viewing their uphill faces nearly edge-on. Orthographic projection stays.
   this.yaw=preset==='desert'?Math.PI/4:0;
-  this.pitch=preset==='desert'?Math.atan(1/Math.sqrt(2)):DEFAULT_PITCH;
+  this.pitch=preset==='desert'?55*Math.PI/180:DEFAULT_PITCH;
   this.distance=1;this.manual=false;
  }
  step(keys,dt){

@@ -79,10 +79,11 @@ This is an arcade simulation: engine curves, loaded masses and performance are g
 | Z / X | Front / rear differential lock in crawler mode |
 | H | Hill-descent control |
 | Q / E | Downshift / upshift in full manual mode |
-| N | Neutral in full manual mode; shift below neutral for reverse |
+| B | Neutral in full manual mode; shift below neutral for reverse |
 | F | Recover to safe terrain |
 | P / Escape | Pause |
-| R | Reset session |
+| N | Restart level |
+| R (hold) | Two-tone horn (Sound ON) |
 | Enter | Start / race again |
 
 Touch controls are available on touch devices. The compact handbrake HUD shows its latched state; pausing preserves a latched brake, while recovery or reset releases it. Engines start running by default. Ignition adds a timed starter, shutdown, zero torque/RPM when off, and matching sound transitions. Coasting keeps the engine audible with reduced load. Soft pooled exhaust particles originate at the rendered tailpipes, follow vehicle attitude, and respond to throttle, gear changes and startup. Enable sound with **♪ ON** or in the menu. The menu also contains truck selection, engine hot-swaps, the five-generation history guide, tuning and display options.

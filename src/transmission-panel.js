@@ -20,7 +20,7 @@ export function createTransmissionPanel({getPlayer,onChange,onInteract}){
  }
  function shortcut(event){
   if(event.repeat||event.ctrlKey||event.altKey||event.metaKey||transmissionMode(getPlayer())!=='manual')return false;
-  if(!['KeyQ','KeyE','KeyN'].includes(event.code))return false;shift(event.code==='KeyQ'?-1:event.code==='KeyE'?1:'neutral');return true;
+  if(!['KeyQ','KeyE','KeyB'].includes(event.code))return false;shift(event.code==='KeyQ'?-1:event.code==='KeyE'?1:'neutral');return true;
  }
  update();return {update,shortcut};
 }

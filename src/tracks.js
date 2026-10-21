@@ -1,3 +1,4 @@
+import {aiLevel} from './ai-drivers.js';
 import {localRoadRelief} from './road-relief.js';
 import {tuning as cfg} from './tuning.js';
 import {extraTrackDefinitions} from './track-pack.js';
@@ -110,6 +111,7 @@ function populateRamps(track,index){
 let generatedSeed=null;
 function allTracks(){const tracks=[...BASE_TRACKS.map(buildTrack),...extraTrackDefinitions().map(buildExtraTrack)];if(generatedSeed!==null)tracks.push(buildExtraTrack(randomTrackDefinition(generatedSeed),16));return tracks.map(populateRamps);}
 export function setGeneratedTrack(seed){generatedSeed=normalizeTrackSeed(seed);refreshTracks();return 16;}
+export function clearGeneratedTrack(){generatedSeed=null;refreshTracks();}
 export const TRACKS=allTracks();
 export function refreshTracks(){ROAD_WIDTH=cfg.roadWidth;SHOULDER_WIDTH=cfg.shoulderWidth;TRACKS.splice(0,TRACKS.length,...allTracks());}
 class ShiftedCircuit extends THREE.Curve{
@@ -197,17 +199,18 @@ export function nearestPoint(samples,x,z){
  return indexedNearest(samples,x,z);
 }
 
-export function opponentInput(car,near,curve,samples,{pace=1,aggressive=false}={}){
- const n=samples.length;
+export function opponentInput(car,near,curve,samples,{pace=1,aggressive=false,skill='seasoned'}={}){
+ const driver=aiLevel(skill),n=samples.length;
  const spacing=curve.getLength()/n;
- const look=Math.max(3,Math.round((8+Math.abs(car.speed)*.45)/spacing));
+ const look=Math.max(3,Math.round((8+Math.abs(car.speed)*.45)*driver.look/spacing));
  const target=samples[(near.index+look)%n].clone();
  const tangent=curve.getTangentAt(((near.index+look)%n)/n);
- target.x-=tangent.z*(car.lane??-3.5);target.z+=tangent.x*(car.lane??-3.5);
+ const lane=(car.lane??-3.5)+Math.sin(near.index/n*Math.PI*10+(car.number??0)*.1)*driver.error*(curve.lateralSign??1);
+ target.x-=tangent.z*lane;target.z+=tangent.x*lane;
  const desired=Math.atan2(-(target.x-car.x),-(target.z-car.z));
  const diff=angleDelta(desired,car.heading);
  const now=curve.getTangentAt(near.index/n),ahead=curve.getTangentAt(((near.index+look*2)%n)/n);
  const bend=Math.abs(angleDelta(Math.atan2(ahead.x,ahead.z),Math.atan2(now.x,now.z)));
- const targetSpeed=(bend>.7?14:bend>.35?18:22)*pace;
- return {steer:clamp(diff*1.6,-1,1),throttle:Math.abs(diff)>1?.45:1,brake:car.speed>targetSpeed+1,boost:car.nitro>(aggressive?4:20)&&bend<(aggressive?.38:.18)&&Math.abs(diff)<(aggressive?.4:.2)&&near.distance<(aggressive?6:3)};
+ const targetSpeed=(bend>.7?14:bend>.35?18:22)*pace*driver.pace;
+ return {steer:clamp(diff*driver.steering,-1,1),throttle:Math.abs(diff)>1?.45:driver.throttle,brake:car.speed>targetSpeed+driver.brakeMargin,boost:car.nitro>(aggressive?4:20)&&bend<(aggressive?.38:driver.boostBend)&&Math.abs(diff)<(aggressive?.4:driver.boostAngle)&&near.distance<(aggressive?6:3)};
 }

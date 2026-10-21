@@ -12,7 +12,7 @@
 
 ## Pick your playground
 
-- **Race:** 16 dirt circuits, each with four mirror layouts — 64 configurations. Every circuit has **4–10 ramps in three height classes** (default 0.65 / 2.075 / 3.5 m above the local road), with room for takeoff and landing. Race three AI opponents through ramps, split landings, whoops, banks and winding terrain.
+- **Race:** 16 dirt circuits, each with four mirror layouts — 64 configurations. Every circuit has **4–10 ramps in three height classes** (default 0.65 / 2.075 / 3.5 m above the local road), with room for takeoff and landing. Choose 0–11 AI opponents (five by default, six cars total), each with an individual Amateur, Advanced, Seasoned, Pro or Master skill. Race through ramps, split landings, whoops, banks and winding terrain.
 - **Free Ride:** a 1,200 × 600 m desert with three dune styles: storm ridges, giant star dunes and a seeded random expedition. Climb, jump and find your own route. Four-wheel trails follow the terrain in Free Ride and races, including all AI cars, with tread impressions and stronger marks under braking or sideways slip.
 - **Choose your truck:** seven selectable procedural SUV bodies inspired by classic Bronco® shapes, from emerald/ivory Heritage and open-top crawlers to brown Classic ’78 and the Godzilla ’78 restomod.
 - **Build your drivetrain:** 12 inline-six and V8 profiles, including the 7.3 L Godzilla swap. Each engine has a fixed gearbox profile; choose arcade shifting, full automatic or sequential manual control.
@@ -121,3 +121,7 @@ Pushes to `main` run [.github/workflows/pages.yml](.github/workflows/pages.yml),
 **Ford® and Bronco® are registered trademarks of Ford Motor Company.** Ford names, emblems and vehicle marks belong to Ford Motor Company. Copyright in Ford reference materials remains with Ford Motor Company or its licensors; this project claims no rights to those materials. Dust Runner is an independent project and is not affiliated with, sponsored by, or endorsed by Ford Motor Company.
 
 See [rights and third-party notices](NOTICE.md) and [engine recording credits](public/audio/CREDITS.md). Screenshots above show actual gameplay from this project.
+
+### Six-car performance test
+
+Menu → **BENCHMARK · 6 AUT · WSZYSTKIE TRASY** prepares a fixed-resolution, two-pass run on all 16 circuits and one seeded random circuit. It starts only when explicitly requested. See [the benchmark protocol](docs/performance-benchmark.md) for timings, validity rules and reported metrics. This feature is measurement infrastructure, not evidence that every track sustains 60 FPS.

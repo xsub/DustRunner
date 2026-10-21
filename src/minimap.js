@@ -15,7 +15,8 @@ export function createMinimap(canvas){
    bg.setTransform(density,0,0,density,0,0);bg.clearRect(0,0,width,height);
    if(desert){
     const step=10;for(let z=desert.bounds.min.z;z<desert.bounds.max.z;z+=step)for(let x=desert.bounds.min.x;x<desert.bounds.max.x;x+=step){const q=project({x,z}),h=desert.heightAt(x,z);bg.fillStyle=`hsl(39 45% ${44+Math.min(30,h*1.2)}%)`;bg.fillRect(q.x,q.y,step*transform.scale+1,step*transform.scale+1);}
-    bg.strokeStyle='#e1cd93';bg.lineWidth=1;const a=project({x:desert.bounds.min.x,z:desert.bounds.min.z}),b=project({x:desert.bounds.max.x,z:desert.bounds.max.z});bg.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y);bg.font='bold 7px Arial';bg.textAlign='center';for(const region of desert.regions??[]){const q=project(region);bg.fillStyle='#273321bb';bg.fillRect(q.x-19,q.y-5,38,10);bg.fillStyle='#fff2cf';bg.fillText(region.label,q.x,q.y+2);}return;
+    bg.strokeStyle='#e1cd93';bg.lineWidth=1;const a=project({x:desert.bounds.min.x,z:desert.bounds.min.z}),b=project({x:desert.bounds.max.x,z:desert.bounds.max.z});bg.strokeRect(a.x,a.y,b.x-a.x,b.y-a.y);bg.font='bold 7px Arial';bg.textAlign='center';for(const region of desert.regions??[]){const q=project(region);bg.fillStyle='#273321bb';bg.fillRect(q.x-19,q.y-5,38,10);bg.fillStyle='#fff2cf';bg.fillText(region.label,q.x,q.y+2);}
+    for(const jump of desert.jumps??[]){const q=project(jump);bg.save();bg.translate(q.x,q.y);bg.rotate(-jump.heading);bg.fillStyle=jump.paired?'#9ce0a2':'#ffda63';bg.beginPath();bg.moveTo(0,-3);bg.lineTo(3,3);bg.lineTo(-3,3);bg.closePath();bg.fill();bg.restore();}return;
    }
    const path=new Path2D();points.forEach((p,i)=>{const q=project(p);if(!i)path.moveTo(q.x,q.y);else path.lineTo(q.x,q.y);});path.closePath();
    bg.lineJoin='round';bg.lineCap='round';bg.strokeStyle='#a59b78';bg.lineWidth=halfWidth*2*transform.scale+2;bg.stroke(path);

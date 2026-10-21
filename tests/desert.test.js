@@ -35,17 +35,17 @@ test('dune districts have distinct, non-repeating heights and traversable slopes
  for(const center of [-400,0,400]){
   const heights=[];let maxSlope=0;
   for(let z=-180;z<=180;z+=12)for(let x=center-90;x<=center+90;x+=12){const h=ground.heightAt(x,z);heights.push(h);maxSlope=Math.max(maxSlope,Math.abs(ground.heightAt(x+2.5,z)-h)/2.5);}
-  const low=Math.min(...heights),high=Math.max(...heights);assert.ok(high-low>10,'both basins and tall dunes per district');assert.ok(maxSlope<2,'no vertical mesh cliffs');signatures.push(heights.map(h=>Math.round(h)).join(','));
+  const low=Math.min(...heights),high=Math.max(...heights);assert.ok(high-low>3,'varied medium dunes instead of giant walls in every district');assert.ok(maxSlope<2,'no vertical mesh cliffs');signatures.push(heights.map(h=>Math.round(h)).join(','));
  }
  assert.equal(new Set(signatures).size,3);
 });
 
-test('three rough desert variants are distinct, reproducible and much taller than the original',()=>{
+test('desert variants remain distinct and reproducible with moderate central terrain',()=>{
  const signatures=[];
  for(const variant of DESERT_VARIANTS){
   const sample=createDesertHeight({variant:variant.id}),repeat=createDesertHeight({variant:variant.id});let peak=0,low=Infinity;const signature=[];
   for(let z=-200;z<=200;z+=20)for(let x=-520;x<=520;x+=20){const h=sample(x,z);assert.equal(h,repeat(x,z));peak=Math.max(peak,h);low=Math.min(low,h);signature.push(h.toFixed(2));}
-  assert.ok(peak-low>35,`${variant.id}: ${peak-low} meters of elevation`);assert.equal(sample(DESERT_SPAWN.x,DESERT_SPAWN.z),1);signatures.push(signature.join(','));
+  assert.ok(peak-low>5&&peak-low<30,`${variant.id}: ${peak-low} meters of elevation`);assert.equal(sample(DESERT_SPAWN.x,DESERT_SPAWN.z),1);signatures.push(signature.join(','));
  }
  assert.equal(new Set(signatures).size,3);
  const a=createDesertHeight({variant:'random',seed:123}),b=createDesertHeight({variant:'random',seed:456});assert.notEqual(a(100,50),b(100,50));assert.equal(a(100,50),createDesertHeight({variant:'random',seed:123})(100,50));
@@ -68,7 +68,7 @@ for(const variant of ['stars','random'])test(`${variant}: generated mesh support
 test('expanded outer quadrants contain varied dunes and the exact rendered contact surface',()=>{
  for(const sx of [-1,1])for(const sz of [-1,1]){
   const heights=[];for(let x=750;x<=1100;x+=25)for(let z=350;z<=500;z+=25){const h=ground.heightAt(sx*x,sz*z);assert.ok(Number.isFinite(h)&&h>=1);heights.push(h);}
-  assert.ok(Math.max(...heights)-Math.min(...heights)>10,'new area must contain dunes rather than empty padding');
+  assert.ok(Math.max(...heights)-Math.min(...heights)>2,'new area must contain dunes rather than empty padding');
  }
  assert.equal(DESERT_BOUNDS.max.x-DESERT_BOUNDS.min.x,2400);assert.equal(DESERT_BOUNDS.max.z-DESERT_BOUNDS.min.z,1200);
  assert.equal(ground.indices.length/3,921600,'preserve 2.5 m collision detail over four times the area');

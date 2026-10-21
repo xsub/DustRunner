@@ -1,10 +1,10 @@
 # Desert expansion: 2400 × 1200 m
 
-The desert now covers 2.88 km²: twice the width and depth, four times the original 0.72 km² area. This is an expanded rectangular world, not a fourfold increase in each dimension. Terrain spacing stays 2.5 m, with 921,600 exact render/contact triangles. New surrounding land contains seeded dunes at the same approximate landmark density. The original central dune landmarks retain their seed sequence; additional surrounding dunes can influence the old outer margin. Sharing still reproduces the same level within this version.
+The desert now covers 2.88 km²: twice the width and depth, four times the original 0.72 km² area. This is an expanded rectangular world, not a fourfold increase in each dimension. Terrain spacing stays 2.5 m, with 921,600 exact render/contact triangles. The terrain was subsequently rebalanced into flat ruts, moderate dunes, two broad giants and engineered jumps; see `desert-playground.md`. Seeds remain reproducible within this version, but older shared seeds now use the updated terrain generator.
 
 The 64 m render chunks allow camera culling. Nearby dune indexing avoids scanning every landmark at each height sample. Height-based shading reuses the sampled vertex grid. The desert height lookup interpolates the actual two triangles in each grid cell directly, without allocating a generic per-triangle spatial index. Regression tests compare it against the general triangle sampler, including both diagonals and borders. Physics retains the same detailed mesh; no coarse collision approximation was introduced. Scenery and animated wildlife counts remain bounded rather than multiplying with map area.
 
-Local Node probe, single runs on the development machine (indicative, not a browser memory budget):
+Measurements below were recorded for the initial expansion (commit af792eb), before the later terrain-playability rebalance. Local Node probe, single runs on the development machine (indicative, not a browser memory budget):
 
 | Configuration | Terrain build | Rapier terrain creation | Build + physics + render chunks | Process RSS at completion |
 | --- | ---: | ---: | ---: | ---: |

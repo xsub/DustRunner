@@ -116,9 +116,7 @@ menu and use the central start button). `?mode=desert` opens the desert setup
 directly. **WYŚCIG** in the same menu returns to the selected racing circuit.
 Switching mode resets the session.
 
-The desert is a 2400 × 1200 m playground (four times the original area) with 320–448 varied dune landmarks: crescents,
-asymmetric ridges, solitary domes and star dunes. The west has rolling swells,
-the center winding crests and rippled sand, and the east higher dunes and bowls.
+The desert is a 2400 × 1200 m playground (four times the original area) with 240–336 moderate dune landmarks, a flat rut district, two rare broad giant dunes and six engineered sand jumps. Three jumps have paired landing slopes. Yellow flags mark takeoffs, green flags mark landing approaches; minimap triangles show launch direction. Protected runways keep rocks and plants out of the jump lanes.
 A flat starting basin, plants and a shaded elevation minimap with region labels
 help navigation. It uses one player vehicle,
 with the same drivetrain, wheel contacts, suspension, rollovers, sound, nitro,

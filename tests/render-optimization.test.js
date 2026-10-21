@@ -62,9 +62,10 @@ test('all eight vehicle styles retain detailed geometry, independent wheels and 
 });
 
 test('dust uses one bounded draw batch and reuses slots after expiry and reset',()=>{
- const scene=new THREE.Scene(),dust=createDustPool(scene,12),car={x:0,z:0,heading:0,boosting:false};
- for(let i=0;i<1000;i++)dust.spawn(car,0);dust.update(0);const mesh=scene.children[0];assert.equal(scene.children.length,1);assert.equal(mesh.count,12);
- const geometry=mesh.geometry,material=mesh.material;dust.update(2);assert.equal(mesh.count,0);
- for(let i=0;i<1000;i++)dust.spawn(car,0);dust.update(0);assert.equal(mesh.count,12);assert.equal(mesh.geometry,geometry);assert.equal(mesh.material,material);
+ const scene=new THREE.Scene(),dust=createDustPool(scene,12),camera=new THREE.PerspectiveCamera(),car={vx:0,vz:-20,heading:0,physics:{controller:{wheelIsInContact:()=>true,wheelContactPoint:()=>({x:0,y:0,z:0})}}};
+ const fill=()=>{for(let i=0;i<120;i++)dust.sample(car,1/120,()=>0);dust.update(.001,camera);};
+ fill();const mesh=scene.children[0];assert.equal(scene.children.length,1);assert.equal(mesh.count,12);
+ const geometry=mesh.geometry,material=mesh.material;dust.update(4,camera);assert.equal(mesh.count,0);
+ fill();assert.equal(mesh.count,12);assert.equal(mesh.geometry,geometry);assert.equal(mesh.material,material);
  dust.reset();assert.equal(mesh.count,0);
 });

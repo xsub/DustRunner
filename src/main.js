@@ -333,7 +333,6 @@ const vehicleDiagram=createVehicleDiagnosticsOverlay({game,toggle:$('#show-vehic
 window.addEventListener('keydown',e=>{if(menuDialog.open||document.querySelector('#tuning-menu')?.open)return;if(e.target instanceof HTMLButtonElement&&e.code==='Space'&&!['racing','countdown','paused'].includes(phase))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.repeat)return;if(!hasStarted){if(e.code==='Enter'){e.preventDefault();start();}return;}if(transmissionPanel.shortcut(e)||drivePanel.shortcut(e)){e.preventDefault();return;}keys.add(e.code);if(e.code==='Comma'){e.preventDefault();toggleParking();}if(e.code==='Period'){e.preventDefault();toggleIgnition();}if(['ShiftLeft','ShiftRight'].includes(e.code)){handbrake.press();updateGameHud();}if(e.code==='Enter'&&['ready','finished'].includes(phase))start();if(e.code==='KeyH')handlingPanel.toggleDescent();if(e.code==='KeyP'||e.code==='Escape')pause();if(e.code==='KeyR')reset();if(e.code==='KeyF')recover(trucks[0]);});window.addEventListener('keyup',e=>{keys.delete(e.code);if(['ShiftLeft','ShiftRight'].includes(e.code)&&!keys.has('ShiftLeft')&&!keys.has('ShiftRight')){handbrake.release();updateGameHud();}});window.addEventListener('blur',()=>{handbrake.cancelHold();audioPreviewTime=0;engineAudio.silence();attractMusic.silence();keys.clear();if(phase==='racing'||phase==='countdown')pause();});
 document.addEventListener('visibilitychange',()=>{simulationClock.reset();lastTime=performance.now();if(document.hidden){handbrake.cancelHold();keys.clear();audioPreviewTime=0;engineAudio.silence();attractMusic.silence();}});
 document.querySelectorAll('[data-key]').forEach(b=>{b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(b.dataset.key);if(b.dataset.key==='ShiftLeft'){handbrake.press();updateGameHud();}};b.onpointerup=b.onpointercancel=()=>{keys.delete(b.dataset.key);if(b.dataset.key==='ShiftLeft'&&!keys.has('ShiftRight')){handbrake.release();updateGameHud();}};});
-function dust(c,dt){if(Math.random()<=Math.min(1,dt*60))dustPool.spawn(c,heightAt(c.x,c.z));}
 function finish(){
  const result=completion.record(ranking().indexOf(trucks[0])+1,elapsed);if(!result)return;
  trucks[0].finish=true;cash+=result.reward;save();
@@ -389,7 +388,7 @@ function poseTruck(c,dt,snap=false){
 }
 function recover(c,advance=0){
  if(c===trucks[0])handbrake.reset();
- sandTrails.breakTrail(c);
+ sandTrails.breakTrail(c);dustPool.breakTrail(c);
  let spot;
  if(freeRide){
   spot=findRecoverySpot({x:c.x,z:c.z,heading:c.heading,heightAt,blocked:scenery.isRecoveryBlocked,bounds:{min:{x:DESERT_BOUNDS.min.x+20,z:DESERT_BOUNDS.min.z+20},max:{x:DESERT_BOUNDS.max.x-20,z:DESERT_BOUNDS.max.z-20}},fallback:DESERT_SPAWN});
@@ -421,7 +420,7 @@ function regroupDemo(car){
    if(trucks.some(c=>c!==car&&Math.hypot(c.x-x,c.z-z)<6)||scenery.isRecoveryBlocked(x,z))continue;
    const height=heightAt(x,z),grade=Math.max(Math.abs(heightAt(x+2,z)-heightAt(x-2,z)),Math.abs(heightAt(x,z+2)-heightAt(x,z-2)))/4;
    if(grade>.35)continue;
-   sandTrails.breakTrail(car);
+   sandTrails.breakTrail(car);dustPool.breakTrail(car);
    Object.assign(car,{x,z,index,heading:Math.atan2(-t.x,-t.z),demoDistance:leader.demoDistance-distance,stuckTime:0,vertical:0,boosting:false});
    resetPowertrain(car);physics.reset(car,{groundHeight:height});
    const speed=Math.min(22,leader.speed);car.physics.body.setLinvel({x:t.x*speed,y:0,z:t.z*speed},true);
@@ -451,11 +450,13 @@ function step(dt){const demo=isAttract();if(phase==='countdown'){count-=dt;$('#c
   framePhysicsMs+=performance.now()-physicsStarted;framePhysicsSteps++;
  activeTrucks().forEach((c,i)=>{
   sandTrails.sample(c,heightAt);
-  if(freeRide){if(!c.airborne&&Math.abs(c.speed)>5)dust(c,dt);poseTruck(c,dt);return;}
-  const next=nearest(c.x,c.z).index;
+  const surface=freeRide?null:nearest(c.x,c.z);
+  dustPool.sample(c,dt,heightAt,{sand:freeRide||surface.distance>roadWidth,handbrake:!demo&&i===0&&handbrake.active});
+  if(freeRide){poseTruck(c,dt);return;}
+  const next=surface.index;
   if(c.checkpoint===-1){if(c.index>N*.75&&next<N*.25)c.checkpoint=0;}else{const p=advanceProgress(c.index,next,c.checkpoint,c.lap,N);c.checkpoint=p.checkpoint;c.lap=p.lap;}
   if(demo){let delta=next-c.index;if(delta>N/2)delta-=N;if(delta< -N/2)delta+=N;c.demoDistance+=delta*curve.getLength()/N;}
-  c.index=next;if(!c.airborne&&Math.abs(c.speed)>5)dust(c,dt);
+  c.index=next;
   c.stuckTime=Math.abs(c.speed)<1?(c.stuckTime??0)+dt:0;
   const separated=demo&&Math.max(...trucks.map(c=>c.demoDistance))-c.demoDistance>48;
   if(demo&&(separated||c.rolloverTime>1||c.stuckTime>2||nearest(c.x,c.z).distance>roadWidth+8))regroupDemo(c);
@@ -520,7 +521,8 @@ function frame(now){
  updateEngineSound(dt);updateCamera(dt);
  exhaustPool.update(!document.hidden&&(phase==='racing'||phase==='countdown'||isAttract())?dt:0,activeTrucks(),camera);
  if(import.meta.env.DEV)canvas.dataset.exhaust=JSON.stringify(exhaustPool.getStats());
- dustPool.update(phase==='paused'?0:dt);
+ dustPool.update(!document.hidden&&(phase==='racing'||phase==='countdown'||isAttract())?dt:0,camera);
+ if(import.meta.env.DEV)canvas.dataset.dust=JSON.stringify(dustPool.getStats());
  scenery.update(phase==='paused'?0:dt,sceneryIsVisible,work.dropped===0&&work.cpuMs<simulationClock.budgetMs,activeTrucks());
  desertWind?.update(phase==='racing'?dt:0,sceneryIsVisible,work.dropped===0&&work.cpuMs<simulationClock.budgetMs);
  tuningPanel.update(now);

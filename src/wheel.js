@@ -30,10 +30,12 @@ const metalMaterial=new THREE.MeshStandardMaterial({color:'#c9c6af',metalness:.6
 const innerMaterial=new THREE.MeshStandardMaterial({color:'#34352c',roughness:.85});
 const hubMaterial=new THREE.MeshStandardMaterial({color:'#66685d',metalness:.6,roughness:.55});
 const bronzeMaterial=new THREE.MeshStandardMaterial({color:'#90704a',metalness:.65,roughness:.42});
+const blackMaterial=new THREE.MeshStandardMaterial({color:'#222829',metalness:.6,roughness:.4}),chromeMaterial=new THREE.MeshStandardMaterial({color:'#d9dfe0',metalness:.95,roughness:.16});
 const wheelTemplates=new Map();
-export function createOffroadWheel(finish='silver'){
- if(wheelTemplates.has(finish))return wheelTemplates.get(finish).clone(true);
- const rimMaterial=finish==='bronze'?bronzeMaterial:metalMaterial;
+export function createOffroadWheel(finish='silver',rimRatio=1){
+ const key=finish+':'+rimRatio;
+ if(wheelTemplates.has(key))return wheelTemplates.get(key).clone(true);
+ const rimMaterial=finish==='bronze'?bronzeMaterial:finish==='black'?blackMaterial:finish==='chrome'?chromeMaterial:metalMaterial;
  const group=new THREE.Group();
  const add=(geometry,material,x=0,y=0,z=0)=>{const m=new THREE.Mesh(geometry,material);m.position.set(x,y,z);m.castShadow=true;m.receiveShadow=true;group.add(m);return m;};
  add(tireGeometry,tireMaterial);add(treadGeometry,treadMaterial);add(innerGeometry,innerMaterial);
@@ -46,6 +48,7 @@ export function createOffroadWheel(finish='silver'){
    const a=i*Math.PI*2/5;add(boltGeometry,metalMaterial,side*.235,Math.cos(a)*.13,Math.sin(a)*.13);
   }
  }
+ if(rimRatio!==1)for(const m of group.children)if(![tireGeometry,treadGeometry,sideRingGeometry].includes(m.geometry)){m.scale.y*=rimRatio;m.scale.z*=rimRatio;m.position.y*=rimRatio;m.position.z*=rimRatio;}
  batchRigidMeshes(group,{shared:true});group.traverse(o=>{if(o.isMesh)o.userData.sharedWheel=true;});
- wheelTemplates.set(finish,group);return group.clone(true);
+ wheelTemplates.set(key,group);return group.clone(true);
 }

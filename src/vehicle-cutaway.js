@@ -1,3 +1,4 @@
+import {vehicleProfile} from './vehicle-models.js';
 import {isOpenBody,isBiminiBody} from './body-types.js';
 import {drawInstalledEngine} from './engine-anatomy.js';
 
@@ -19,7 +20,7 @@ export function drawVehicleCutaway(ctx,d,{expanded=false}={}){
  text('01 / PRZEKRÓJ WZDŁUŻNY',18,24,C.ink,12);text('02 / WIDOK OD PRZODU',477,24,C.ink,12);
  text('BRONCO® · RAMA / NAPĘD / ZAWIESZENIE',18,43,C.muted,9);
  if(!d){text('ODCZYT PO ROZPOCZĘCIU JAZDY',196,191,C.ink,13);ctx.restore();return;}
- const open=isOpenBody(d.style),bimini=isBiminiBody(d.style),square=['ranger','sunset','copper78','godzilla78'].includes(d.style);
+ const open=isOpenBody(d.style),bimini=isBiminiBody(d.style),square=['ranger','sunset','copper78','godzilla78'].includes(d.style)||vehicleProfile(d.style).lights==='square';
  for(const side of [true,false]){
   const scale=side?72*(1-.22*Math.min(1,Math.abs(Math.sin(d.pitch))*1.4)):60*(1-.1*Math.abs(Math.sin(d.roll))),cx=side?229:586,cy=side?195:191;
   const p=v=>[cx+(side?-v.forward:-v.x)*scale,cy-v.y*scale];

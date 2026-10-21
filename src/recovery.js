@@ -1,24 +1,24 @@
 // Recovery is an occasional terrain query, never part of the simulation loop.
 // Check the whole Bronco footprint, not just its center or four wheel points.
-export function recoveryFootprint(heightAt,x,z,heading){
+export function recoveryFootprint(heightAt,x,z,heading,{widthScale=1,lengthScale=1}={}){
  const cos=Math.cos(heading),sin=Math.sin(heading),values=[];
  let min=Infinity,max=-Infinity,maxSlope=0;
  for(let f=-3;f<=3;f++)for(let side=-2;side<=2;side++){
-  const h=heightAt(x+side*cos+f*sin,z-side*sin+f*cos);
+  const h=heightAt(x+side*widthScale*cos+f*lengthScale*sin,z-side*widthScale*sin+f*lengthScale*cos);
   if(!Number.isFinite(h))return {safe:false,score:Infinity,height:0};
   const i=values.length;values.push(h);min=Math.min(min,h);max=Math.max(max,h);
-  if(side>-2)maxSlope=Math.max(maxSlope,Math.abs(h-values[i-1]));
-  if(f>-3)maxSlope=Math.max(maxSlope,Math.abs(h-values[i-5]));
+  if(side>-2)maxSlope=Math.max(maxSlope,Math.abs(h-values[i-1])/widthScale);
+  if(f>-3)maxSlope=Math.max(maxSlope,Math.abs(h-values[i-5])/lengthScale);
  }
  const range=max-min;
  return {safe:range<=.2&&maxSlope<=.06,score:range+maxSlope*4,height:max};
 }
-export function findRecoverySpot({x,z,heading,heightAt,bounds,candidates,fallback,blocked}){
+export function findRecoverySpot({x,z,heading,heightAt,bounds,candidates,fallback,blocked,footprint}){
  let best=null;
  const evaluate=p=>{
   if(blocked?.(p.x,p.z))return null;
   if(bounds&&(p.x<bounds.min.x+5||p.x>bounds.max.x-5||p.z<bounds.min.z+5||p.z>bounds.max.z-5))return null;
-  const ground=recoveryFootprint(heightAt,p.x,p.z,p.heading??heading);
+  const ground=recoveryFootprint(heightAt,p.x,p.z,p.heading??heading,footprint);
   const candidate={...p,heading:p.heading??heading,...ground};
   if(!best||candidate.score<best.score)best=candidate;
   return candidate.safe?candidate:null;

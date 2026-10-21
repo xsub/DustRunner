@@ -1,3 +1,4 @@
+import {vehicleProfile} from './vehicle-models.js';
 import {tuning as cfg,tuningRevision} from './tuning.js';
 import {isCompactBody} from './body-types.js';
 // Representative game mass calibrations, not factory shipping weights.
@@ -6,12 +7,13 @@ import {isCompactBody} from './body-types.js';
 const ENGINE_MASS={170:185,200:195,289:210,302:225,'302efi':230,'351m':285,400:300,300:270,'300efi':275,'351w':250,'351wefi':255,godzilla73:315};
 const cache=new Map();let cachedRevision=-1;
 export function vehicleMass(style='classic',engineId='302'){
- return (isCompactBody(style)?cfg.compactDryMass:cfg.fullDryMass)+(ENGINE_MASS[engineId]??225)*cfg.engineMassScale;
+ return (isCompactBody(style)?cfg.compactDryMass:cfg.fullDryMass)+(vehicleProfile(style).massExtra??0)+(ENGINE_MASS[engineId]??225)*cfg.engineMassScale;
 }
 export function vehicleMassProperties(style='classic',engineId='302'){
  if(cachedRevision!==tuningRevision()){cache.clear();cachedRevision=tuningRevision();}
  const key=`${style}:${engineId}`;if(cache.has(key))return cache.get(key);
  const engineMass=(ENGINE_MASS[engineId]??225)*cfg.engineMassScale,mass=vehicleMass(style,engineId),dry=mass-engineMass;
+ const profile=vehicleProfile(style);
  const parts=[
   // Mass, local center (body origin is 1.5 above the road), box dimensions.
   [dry*.43,[0,cfg.frameY,-.16],[2.35,.30,4.3]], // low frame / drivetrain
@@ -20,7 +22,8 @@ export function vehicleMassProperties(style='classic',engineId='302'){
   [dry*.04,[0,1.12,.55],[2.3,.14,2.6]], // light roof
   [engineMass,[0,-.45,cfg.engineZ],[.85,.80,1.05]], // iron block under the hood
  ];
- for(const x of [-1.4,1.4])for(const z of [-1.232,1.274])parts.push([dry*.17/4,[x,-.66,z],[.6,1.4,1.4]]);
+ for(const x of [-1.4*profile.track,1.4*profile.track])for(const z of [-1.232,1.274])parts.push([dry*.17/4,[x,-.66-profile.lift*1.4,z],[.6,1.4,1.4]]);
+ for(const part of parts){part[1][2]*=profile.wheelbase;part[2][2]*=profile.wheelbase;}
  const centerOfMass={x:0,y:0,z:0};
  for(const [m,p] of parts)for(const [i,axis] of ['x','y','z'].entries())centerOfMass[axis]+=m*p[i]/mass;
  let xx=0,yy=0,zz=0,yz=0;

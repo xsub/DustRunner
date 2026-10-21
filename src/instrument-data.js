@@ -1,10 +1,12 @@
+import {vehicleProfile} from './vehicle-models.js';
 import {engineById} from './engines.js';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const INSTRUMENT_STYLES=['auto','six','rect','round'];
 export const INSTRUMENT_NAMES={six:'Rally Six',rect:'Ranger ’78',round:'Heritage ’66'};
 export function instrumentStyle(preference,body){
  if(INSTRUMENT_STYLES.includes(preference)&&preference!=='auto')return preference;
- if(body==='godzilla78')return 'six';
+ if(body==='godzilla78'||body==='monster80')return 'six';
+ if(vehicleProfile(body).era>=1978)return 'rect';
  return ['ranger','sunset','expedition','copper78'].includes(body)?'rect':'round';
 }
 export function instrumentReading(car){

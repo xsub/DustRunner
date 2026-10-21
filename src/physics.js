@@ -1,3 +1,4 @@
+import {vehicleProfile,wheelConnectionY} from './vehicle-models.js';
 import {tuning as cfg,tuningRevision,DEFAULT_TUNING} from './tuning.js';
 import RAPIER from '@dimforge/rapier3d-compat';
 import {Quaternion,Vector3} from 'three';
@@ -64,33 +65,33 @@ export function createPhysics(terrain,bounds){
   }
  }
  function add(car){
-  const properties=vehicleMassProperties(car.style,car.engineId),{mass}=properties;
+  const properties=vehicleMassProperties(car.style,car.engineId),{mass}=properties,profile=vehicleProfile(car.style),connectionY=wheelConnectionY(car.style);
   const body=world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setCanSleep(false).setCcdEnabled(true).setLinearDamping(cfg.linearDamping).setAngularDamping(cfg.angularDamping));
-  world.createCollider(RAPIER.ColliderDesc.cuboid(1.23,.48,2.28).setTranslation(0,.05,0).setMass(0).setFriction(.65).setRestitution(cfg.bodyBounce),body);
+  world.createCollider(RAPIER.ColliderDesc.cuboid((profile.width??.89)*VEHICLE_SCALE-.016,.48,2.28*profile.wheelbase).setTranslation(0,.05,0).setMass(0).setFriction(.65).setRestitution(cfg.bodyBounce),body);
   if(isOpenBody(car.style)){
    for(const [a,b] of rollCageSegments(car.style)){
     const from=new Vector3(...a).multiplyScalar(VEHICLE_SCALE),to=new Vector3(...b).multiplyScalar(VEHICLE_SCALE);from.y-=CHASSIS_HEIGHT;to.y-=CHASSIS_HEIGHT;
     const delta=to.clone().sub(from),center=from.clone().add(to).multiplyScalar(.5),rotation=new Quaternion().setFromUnitVectors(new Vector3(0,1,0),delta.clone().normalize());
     world.createCollider(RAPIER.ColliderDesc.cuboid(.075,delta.length()/2,.075).setTranslation(center.x,center.y,center.z).setRotation(rotation).setMass(0).setFriction(.6).setRestitution(cfg.bodyBounce/2),body);
    }
-  }else world.createCollider(RAPIER.ColliderDesc.cuboid(1.16,.53,1.22).setTranslation(0,1.19,.65).setMass(0).setFriction(.6).setRestitution(cfg.bodyBounce/2),body);
+  }else world.createCollider(RAPIER.ColliderDesc.cuboid((profile.width??.89)*VEHICLE_SCALE-.086,.53,profile.bodyType==='halfCab'?.65:1.22*profile.wheelbase).setTranslation(0,1.19,profile.bodyType==='halfCab'?0:.65*profile.wheelbase).setMass(0).setFriction(.6).setRestitution(cfg.bodyBounce/2),body);
   body.setAdditionalMassProperties(mass,properties.centerOfMass,properties.principalAngularInertia,properties.angularInertiaLocalFrame,true);
   body.recomputeMassPropertiesFromColliders();
   const controller=world.createVehicleController(body);controller.indexUpAxis=1;controller.setIndexForwardAxis=2;
   const tireColliders=[];
   WHEEL_LAYOUT.forEach((w,i)=>{
-   controller.addWheel({x:w.x*VEHICLE_SCALE,y:-.15,z:w.z*VEHICLE_SCALE},{x:0,y:-1,z:0},{x:-1,y:0,z:0},cfg.restLength,TIRE_RADIUS*VEHICLE_SCALE);
+   controller.addWheel({x:w.x*profile.track*VEHICLE_SCALE,y:connectionY,z:w.z*profile.wheelbase*VEHICLE_SCALE},{x:0,y:-1,z:0},{x:-1,y:0,z:0},cfg.restLength,TIRE_RADIUS*VEHICLE_SCALE*profile.wheelScale);
    controller.setWheelSuspensionStiffness(i,cfg.spring);controller.setWheelSuspensionCompression(i,cfg.compression);controller.setWheelSuspensionRelaxation(i,cfg.rebound);
    controller.setWheelMaxSuspensionTravel(i,cfg.suspensionTravel);controller.setWheelMaxSuspensionForce(i,mass*cfg.suspensionForce);
    controller.setWheelFrictionSlip(i,cfg.roadGrip);controller.setWheelSideFrictionStiffness(i,cfg.sideGrip);
    // A smaller collision envelope catches the tires when the truck is on its side.
-   tireColliders.push(world.createCollider(RAPIER.ColliderDesc.ball(.58).setTranslation(w.x*VEHICLE_SCALE,-.15-cfg.restLength,w.z*VEHICLE_SCALE).setMass(0).setFriction(.8),body));
+   tireColliders.push(world.createCollider(RAPIER.ColliderDesc.ball(.58*profile.wheelScale).setTranslation(w.x*profile.track*VEHICLE_SCALE,connectionY-cfg.restLength,w.z*profile.wheelbase*VEHICLE_SCALE).setMass(0).setFriction(.8),body));
   });
-  const vehicle={body,controller,mass,tireColliders,steer:0,controls:{brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false},arcade:{},massKey:`${car.style}:${car.engineId}:${tuningRevision()}`};car.physics=vehicle;vehicles.add(car);return vehicle;
+  const vehicle={body,controller,mass,tireColliders,profile,connectionY,steer:0,controls:{brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false},arcade:{},massKey:`${car.style}:${car.engineId}:${tuningRevision()}`};car.physics=vehicle;vehicles.add(car);return vehicle;
  }
  function reset(car,{groundHeight=terrain.heightAt(car.x,car.z)}={}){
   const v=car.physics??add(car),rotation=new Quaternion().setFromAxisAngle(new Vector3(0,1,0),car.heading);
-  v.body.setTranslation({x:car.x,y:groundHeight+CHASSIS_HEIGHT+.15,z:car.z},true);v.body.setRotation(rotation,true);
+  v.body.setTranslation({x:car.x,y:groundHeight+CHASSIS_HEIGHT+.15+v.profile.lift*VEHICLE_SCALE+(v.profile.wheelScale-1)*TIRE_RADIUS*VEHICLE_SCALE,z:car.z},true);v.body.setRotation(rotation,true);
   v.body.setLinvel({x:0,y:0,z:0},true);v.body.setAngvel({x:0,y:0,z:0},true);v.steer=0;v.arcade={};v.descentActive=false;v.controls={brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false};car.rolloverTime=0;car.rollover=false;
   for(let i=0;i<4;i++){v.controller.setWheelEngineForce(i,0);v.controller.setWheelBrake(i,0);v.controller.setWheelSteering(i,0);}
  }
@@ -138,7 +139,7 @@ export function createPhysics(terrain,bounds){
   v.wheelForces=wheelForces;
   for(let i=0;i<4;i++){
    const layout=WHEEL_LAYOUT[i];
-   let angle=0;if(layout.z<0&&Math.abs(v.steer)>.0001){const radius=2.506/Math.tan(v.steer);angle=Math.atan(2.506/(radius+layout.x*1.4));}
+   let angle=0;if(layout.z<0&&Math.abs(v.steer)>.0001){const wheelbase=2.506*v.profile.wheelbase,radius=wheelbase/Math.tan(v.steer);angle=Math.atan(wheelbase/(radius+layout.x*v.profile.track*VEHICLE_SCALE));}
    const rearBrake=layout.z>0?cfg.handbrakeDeceleration*(Number(input.handbrake)||0)*v.mass*dt/2:0;
    c.setWheelSteering(i,angle);c.setWheelEngineForce(i,car.rollover||rearBrake>0?0:-wheelForces[i]);c.setWheelBrake(i,Math.max(braking,rearBrake));
    c.setWheelFrictionSlip(i,(input.onDirt?cfg.roadGrip:cfg.offroadGrip)+(input.tires??0)*.08);
@@ -154,7 +155,7 @@ export function createPhysics(terrain,bounds){
   car.airborne=!WHEEL_LAYOUT.some((_,i)=>c.wheelIsInContact(i));car.height=p.y-CHASSIS_HEIGHT;
   car.rollover=up.y<.35;car.rolloverTime=car.rollover?(car.rolloverTime??0)+dt:0;
   car.suspensionLengths=WHEEL_LAYOUT.map((_,i)=>c.wheelSuspensionLength(i)??cfg.restLength);
-  v.tireColliders.forEach((collider,i)=>{const w=WHEEL_LAYOUT[i];collider.setTranslationWrtParent({x:w.x*1.4,y:-.15-car.suspensionLengths[i],z:w.z*1.4});});
+  v.tireColliders.forEach((collider,i)=>{const w=WHEEL_LAYOUT[i];collider.setTranslationWrtParent({x:w.x*v.profile.track*VEHICLE_SCALE,y:v.connectionY-car.suspensionLengths[i],z:w.z*v.profile.wheelbase*VEHICLE_SCALE});});
  }
  return {world,add,reset,input,sync,refreshMass,addBoundary(x,z,hx,hz,height){world.createCollider(RAPIER.ColliderDesc.cuboid(hx,height,hz).setTranslation(x,height,z).setFriction(.8));},setMarkerVisibility,getStats(){return {awake:vehicles.size+activeMarkers.size,bodies:vehicles.size+barriers.length,visibleMarkers:hasMarkerView?visibleMarkers:barriers.length,movingMarkers:activeMarkers.size,markerBudget:hasMarkerView?markerBudget:barriers.length};},step(){world.step();updateMarkers();},dispose(){for(const car of vehicles)delete car.physics;world.free();},
   resetBarriers(){for(const prop of barriers)anchorMarker(prop,true);},

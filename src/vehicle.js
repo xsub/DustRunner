@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {REFERENCE_MODELS,vehicleProfile} from './vehicle-models.js';
 import {exhaustLayout} from './exhaust-layout.js';
 import {createOffroadWheel} from './wheel.js';
 import {isOpenBody,isBiminiBody,rollCageSegments} from './body-types.js';
@@ -14,14 +15,15 @@ export const BRONCO_STYLES={
  crawler:{name:'CRAWLER · OLIVE',color:'#525d32',roof:'#242a21',width:.89,rounded:.055,lights:'round',flares:'#525d32'},
  expedition:{name:'TRAIL · OLIVE',color:'#686c55',roof:'#393e33',width:.89,rounded:.055,lights:'round',flares:'#686c55'},
  copper78:{name:'CLASSIC ’78 · COPPER',color:'#693a24',roof:'#573c2b',width:.99,rounded:.06,lights:'square',flares:'#693a24'},
- godzilla78:{name:'GODZILLA ’78 · 7.3',color:'#182a31',roof:'#182025',width:.99,rounded:.06,lights:'square',flares:'#182a31'}
+ godzilla78:{name:'GODZILLA ’78 · 7.3',color:'#182a31',roof:'#182025',width:.99,rounded:.06,lights:'square',flares:'#182a31'},
+ ...REFERENCE_MODELS
 };
 
 // Original procedural bodies inspired by the supplied classic / two-tone / sunset references.
-// Shared racing wheelbase; open variants use matching tube contacts above the cabin.
+// Wheelbase, track, lift and tire sizes are shared with the physical vehicle profiles.
 export function createBronco(style='classic',number='07'){
- const spec=BRONCO_STYLES[style]??BRONCO_STYLES.classic,later=spec.lights==='square',w=spec.width,open=isOpenBody(style),bimini=isBiminiBody(style),utility=style==='expedition'||style==='crawler'||style==='godzilla78';
- const mesh=new THREE.Group(),chassis=new THREE.Group(),wheels=[],axles=[];mesh.add(chassis);
+ const spec=BRONCO_STYLES[style]??BRONCO_STYLES.classic,later=spec.lights==='square',w=spec.width,open=isOpenBody(style),bimini=isBiminiBody(style),utility=style==='expedition'||style==='crawler'||style==='godzilla78'||spec.bullbar,halfCab=spec.bodyType==='halfCab',softtop=spec.bodyType==='softtop',bullnose=spec.era>=1980,profile=vehicleProfile(style);
+ const mesh=new THREE.Group(),chassis=new THREE.Group(),wheels=[],axles=[];mesh.add(chassis);chassis.scale.z=profile.wheelbase;
  const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.55,...extra});
  const body=new THREE.MeshPhysicalMaterial({color:spec.color,metalness:.22,roughness:utility?.72:.38,clearcoat:utility?.12:.45,clearcoatRoughness:.18});
  const rubber=material('#20231e'),trim=material('#292d28'),ivory=material(spec.roof,{roughness:.4});
@@ -42,8 +44,8 @@ export function createBronco(style='classic',number='07'){
  // Separate chassis rails, live axles, differential housings and red dampers.
  for(const side of [-1,1])box(.12,.14,2.85,trim,side*.48,.52,.04);
  for(const z of [-.88,.91]){
-  const group=new THREE.Group();group.position.set(0,TIRE_RADIUS,z);mesh.add(group);
-  const tube=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,2.0,12),trim);tube.rotation.z=Math.PI/2;tube.castShadow=true;group.add(tube);
+  const group=new THREE.Group();group.position.set(0,TIRE_RADIUS-profile.lift,z*profile.wheelbase);mesh.add(group);
+  const tube=new THREE.Mesh(new THREE.CylinderGeometry(.075,.075,2.0,12),trim);tube.rotation.z=Math.PI/2;tube.scale.y=profile.track;tube.castShadow=true;group.add(tube);
   const diff=new THREE.Mesh(new THREE.SphereGeometry(.19,12,8),trim);diff.scale.set(1,.8,1.1);diff.castShadow=true;group.add(diff);
   axles.push({group,indices:z<0?[0,2]:[1,3]});
   for(const side of [-1,1]){rod([side*.69,.6,z],[side*.73,1.02,z+.12],.035,red);rod([side*.61,.55,z],[side*.62,.87,z-.38],.027,metal);}
@@ -66,19 +68,20 @@ export function createBronco(style='classic',number='07'){
  box(w*2,.09,.09,body,0,1.59,-.24);
  box(w*2,.24,.10,body,0,1.4,1.5);
  // Hollow cabin: visible seats, rear bench, dashboard and steering wheel.
- const seat=material(style==='sky'?'#d8ceab':'#3a4036',{roughness:.94});
+ const seat=material(spec.seat??(style==='sky'?'#d8ceab':'#3a4036'),{roughness:.94});
  for(const side of [-1,1]){
   round(.52,.15,.48,.06,seat,side*.39,1.43,.04);
   const back=round(.52,.5,.12,.06,seat,side*.39,1.72,.28);back.rotation.x=-.12;
   round(.33,.16,.1,.04,seat,side*.39,2.03,.31);
  }
- round(1.4,.37,.23,.05,seat,0,1.67,1.21);
+ if(!halfCab)round(1.4,.37,.23,.05,seat,0,1.67,1.21);
  box(w*1.8,.19,.23,trim,0,1.66,-.32);
  const steering=part(new THREE.TorusGeometry(.14,.015,6,20),trim,-.39,1.82,-.12);steering.rotation.x=-.4;
  rod([-.39,1.65,-.29],[-.39,1.82,-.12],.025,trim);
  // Roof and posts frame real glass openings; the rear cap is narrower at the top.
  const roofY=style==='sunset'?2.29:later?2.33:2.36,front=style==='sunset'?-.29:-.35,back=1.49,rearTop=style==='sunset'?1.31:1.45;
- if(!open&&!bimini)round(w*2+.07,.13,1.91,spec.rounded,ivory,0,roofY,.59);
+ if(!open&&!bimini)round(w*2+.07,.13,halfCab?.92:1.91,spec.rounded,ivory,0,roofY,halfCab?.06:.59);
+ if(halfCab){box(w*2,.16,1.02,trim,0,1.36,.96);box(w*2,.20,.07,body,0,1.61,.49);pane([[-w+.12,1.73,.535],[-w+.12,roofY-.12,.535],[w-.12,roofY-.12,.535],[w-.12,1.73,.535]]);for(const side of [-1,1]){rod([side*(w-.1),1.53,.60],[side*(w-.1),2.18,.60],.045,trim);rod([side*(w-.1),2.18,.60],[side*(w-.1),1.53,1.35],.045,trim);}rod([-(w-.1),2.18,.60],[w-.1,2.18,.60],.045,trim);}
  if(bimini){
   round(w*2+.06,.12,.88,.045,body,0,roofY,-.04);
   const canvasTop=material(style==='copper78'?'#6c5037':'#262b28',{roughness:.98});
@@ -90,13 +93,13 @@ export function createBronco(style='classic',number='07'){
   const x=side*w,topX=side*(w-.065);
   if(!open){rod([x,1.59,-.54],[topX,roofY-.055,front],.044,body);
   rod([x,1.55,.39],[topX,roofY-.06,.39],.045,ivory);
-  rod([x,1.54,back],[topX,roofY-.06,rearTop],.058,ivory);
+  if(!halfCab)rod([x,1.54,back],[topX,roofY-.06,rearTop],.058,ivory);
   }
   box(.07,.09,1.92,body,x,1.56,.54);
   if(!open){pane([[x,1.63,-.49],[x,1.63,.32],[topX,roofY-.09,.32],[topX,roofY-.09,front+.06]]);
-  if(!bimini)pane([[x+.006*side,1.63,.47],[x+.006*side,1.63,1.4],[topX,roofY-.10,rearTop-.05],[topX,roofY-.10,.47]]);
-  rod([x,1.63,.46],[x,1.63,1.41],.022,trim);
-  rod([topX,roofY-.09,.45],[topX,roofY-.09,rearTop-.04],.02,trim);
+  if(!bimini&&!halfCab)pane([[x+.006*side,1.63,.47],[x+.006*side,1.63,1.4],[topX,roofY-.10,rearTop-.05],[topX,roofY-.10,.47]]);
+  if(!halfCab){rod([x,1.63,.46],[x,1.63,1.41],.022,trim);
+  rod([topX,roofY-.09,.45],[topX,roofY-.09,rearTop-.04],.02,trim);}
   }
   // Chrome belt line, door seams, hinges, handles and side markers.
   box(.023,.027,2.97,metal,side*(w+.039),1.44,0);
@@ -126,22 +129,23 @@ export function createBronco(style='classic',number='07'){
   }
  }
  pane([[-w+.05,1.65,-.51],[w-.05,1.65,-.51],[w-.105,roofY-.10,front-.015],[-w+.105,roofY-.10,front-.015]]);
- if(!open&&!bimini)pane([[-w+.07,1.64,1.505],[-w+.12,roofY-.1,rearTop+.01],[w-.12,roofY-.1,rearTop+.01],[w-.07,1.64,1.505]]);
+ if(!open&&!bimini&&!halfCab)pane([[-w+.07,1.64,1.505],[-w+.12,roofY-.1,rearTop+.01],[w-.12,roofY-.1,rearTop+.01],[w-.07,1.64,1.505]]);
  for(const x of [-.45,.36])rod([x,1.66,-.535],[x+.26,1.69,-.54],.012,trim);
  // Distinct front fascias: early circular lamps versus broad rectangular lamps.
  round(w*2,.55,.12,.06,body,0,1.21,-1.55);
  round(w*2-.09,.43,.07,.035,metal,0,1.22,-1.62);
  box(w*2-.15,.35,.025,rubber,0,1.22,-1.67);
  const grilleWidth=later?1.18:1.04;
- for(let row=0;row<(later?3:4);row++)box(grilleWidth,.025,.025,metal,0,1.08+row*.085,-1.69);
- for(const x of [-.36,0,.36])box(.018,.34,.024,metal,x,1.21,-1.70);
+ if(bullnose){box(w*2-.12,.47,.04,trim,0,1.23,-1.68);for(const side of [-1,1])box(.32,.37,.035,metal,side*.77,1.24,-1.71);}
+ for(let row=0;row<(bullnose?4:later?3:4);row++)box(grilleWidth,.025,.025,metal,0,1.08+row*.085,-1.69);
+ for(const x of (bullnose?[-.48,-.24,0,.24,.48]:[-.36,0,.36]))box(.018,.34,.024,metal,x,1.21,-1.70);
  for(const side of [-1,1]){
   const x=side*(later?.75:.66);
   if(later){round(.30,.37,.06,.035,metal,x,1.23,-1.69);round(.225,.27,.035,.02,light,x,1.25,-1.73);box(.24,.075,.035,amber,x,1.035,-1.72);}
   else{disc(.195,.07,metal,x,1.22,-1.69);disc(.153,.035,light,x,1.22,-1.735);box(.17,.08,.035,amber,side*.4,1.23,-1.73);}
  }
  round(w*2+.15,.14,.19,.03,utility?trim:metal,0,.81,-1.59);
- round(w*2+.12,.14,.18,.03,metal,0,.81,1.56);
+ round(w*2+.12,.14,.18,.03,halfCab?trim:metal,0,.81,1.56);
  for(const side of [-1,1]){box(.10,.26,.05,red,side*(w-.09),1.21,1.57);box(.09,.12,.06,ivory,side*(w-.09),1.01,1.58);}
  if(utility){
   box(.42,.21,.15,trim,0,1.01,-1.64);rod([-.66,.88,-1.69],[-.66,1.17,-1.69],.03,trim);rod([.66,.88,-1.69],[.66,1.17,-1.69],.03,trim);rod([-.66,1.17,-1.69],[.66,1.17,-1.69],.03,trim);
@@ -177,16 +181,44 @@ export function createBronco(style='classic',number='07'){
    rod([.4,1.8,1.35],[.7,1.8,1.35],.075,red);box(.06,.14,.07,metal,.75,1.8,1.35);
   }
  }
- for(const x of [-1,1])for(const z of [-.88,.91]){
-  const pivot=new THREE.Group(),wheel=createOffroadWheel(style==='crawler'||style==='godzilla78'?'bronze':'silver');pivot.position.set(x,TIRE_RADIUS,z);pivot.add(wheel);mesh.add(pivot);wheels.push({pivot,spin:wheel,x,z});
+ if(bullnose){const oval=part(new THREE.SphereGeometry(.075,12,8),material('#2f5375',{metalness:.3}),0,1.23,-1.738);oval.scale.set(1.7,.6,.23);}
+ if(spec.twoTone)for(const side of [-1,1]){
+  const accent=material(spec.twoTone);box(.035,.29,3.01,accent,side*(w+.045),1.32,0);
+  for(const y of [1.16,1.48])box(.038,.021,3.02,metal,side*(w+.05),y,0);
  }
- const spare=createOffroadWheel(style==='crawler'?'bronze':'silver');spare.rotation.y=Math.PI/2;spare.scale.setScalar(.86);spare.position.set(.15,1.42,1.59);chassis.add(spare);
+ if(softtop){
+  round(w*2+.06,.08,.86,.035,body,0,roofY+.03,.06);
+  for(const z of [.48,.85,1.25]){rod([-w,roofY+.07,z],[w,roofY+.07,z],.018,trim);}
+  for(const side of [-1,1])box(.025,.035,1.0,ivory,side*(w-.035),1.63,.95);
+ }
+ if(spec.sunVisor){const visor=box(w*2+.18,.055,.29,body,0,roofY+.03,-.47);visor.rotation.x=-.14;}
+ if(spec.rack){
+  for(const x of [-w+.06,w-.06]){rod([x,roofY+.07,-.23],[x,roofY+.35,-.23],.026,trim);rod([x,roofY+.07,1.38],[x,roofY+.35,1.38],.026,trim);rod([x,roofY+.35,-.23],[x,roofY+.35,1.38],.027,trim);}
+  for(const z of [-.23,.10,.42,.74,1.06,1.38])rod([-w+.06,roofY+.21,z],[w-.06,roofY+.21,z],.023,trim);
+  for(const z of [-.23,1.38])rod([-w+.06,roofY+.35,z],[w-.06,roofY+.35,z],.027,trim);
+ }
+ if(spec.roofLights){for(let i=0;i<spec.roofLights;i++){const x=(i-(spec.roofLights-1)/2)*.4;disc(.11,.09,trim,x,roofY+.18,-.25);disc(.086,.025,light,x,roofY+.18,-.305);}}
+ if(spec.bullbar){
+  for(const x of [-.72,.72])rod([x,.77,-1.88],[x,1.44,-1.88],.045,metal);
+  rod([-.72,1.44,-1.88],[.72,1.44,-1.88],.045,metal);
+  for(let i=0;i<(spec.fogLights??2);i++){const x=(i-((spec.fogLights??2)-1)/2)*.3;disc(.10,.1,trim,x,1.25,-1.91);disc(.077,.025,light,x,1.25,-1.98);}
+ }
+ if(spec.rivets)for(const side of [-1,1])for(const z of [-.88,.91])for(let i=0;i<9;i++){const a=i*Math.PI/8;part(new THREE.SphereGeometry(.015,6,4),metal,side*(w+.075),.58+Math.sin(a)*.745,z+Math.cos(a)*.745);}
+ if(profile.lift)for(const side of [-1,1])for(const z of [-.88,.91]){
+  rod([side*.69,.6-profile.lift,z],[side*.73,1.02,z+.12],.039,red);
+  rod([side*.61,.55-profile.lift,z],[side*.62,.87,z-.38],.028,metal);
+  if(spec.coils){const points=Array.from({length:65},(_,i)=>new THREE.Vector3(side*.65+.075*Math.cos(i/64*Math.PI*12),.6-profile.lift+i/64*(.38+profile.lift),z+.075*Math.sin(i/64*Math.PI*12)));part(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),64,.018,5,false),red);}
+ }
+ for(const x of [-1,1])for(const z of [-.88,.91]){
+  const pivot=new THREE.Group(),wheel=createOffroadWheel(spec.finish??(style==='crawler'||style==='godzilla78'?'bronze':'silver'),profile.wheelScale>1.3?1.15/profile.wheelScale:1);wheel.scale.set(profile.wheelWidth,profile.wheelScale,profile.wheelScale);pivot.position.set(x*profile.track,TIRE_RADIUS-profile.lift,z*profile.wheelbase);pivot.add(wheel);mesh.add(pivot);wheels.push({pivot,spin:wheel,x:x*profile.track,z:z*profile.wheelbase});
+ }
+ const spare=createOffroadWheel(spec.finish??(style==='crawler'?'bronze':'silver'),profile.wheelScale>1.3?1.15/profile.wheelScale:1);spare.rotation.y=Math.PI/2;spare.scale.setScalar(.86*Math.min(1.25,profile.wheelScale));spare.position.set(.15,1.42,1.59);if(!halfCab)chassis.add(spare);
  // Small rally numbers leave the reference paint and roof silhouette visible.
  const canvas=document.createElement('canvas');canvas.width=128;canvas.height=128;
  const ctx=canvas.getContext('2d');ctx.fillStyle='#ebe7d8';ctx.fillRect(0,0,128,128);ctx.fillStyle='#263024';ctx.font='900 80px sans-serif';ctx.textAlign='center';ctx.fillText(number,64,94);
  const texture=new THREE.CanvasTexture(canvas);texture.colorSpace=THREE.SRGBColorSpace;
  const numberMaterial=material('#ffffff',{map:texture});
- const roof=part(new THREE.PlaneGeometry(.6,.55),numberMaterial,0,open?1.657:roofY+.067,open?-.92:.64);roof.rotation.x=-Math.PI/2;
+ const roof=part(new THREE.PlaneGeometry(.6,.55),numberMaterial,0,open?1.657:roofY+.067,open?-.92:halfCab?.06:.64);roof.rotation.x=-Math.PI/2;
  for(const side of [-1,1]){const decal=part(new THREE.PlaneGeometry(.34,.24),numberMaterial,side*(w+.066),1.13,.02);decal.rotation.y=side*Math.PI/2;}
  const exhausts=exhaustLayout(style,w).map(({from,tip,direction})=>{
   rod(from,tip,.063,metal);
@@ -198,7 +230,7 @@ export function createBronco(style='classic',number='07'){
  for(const axle of axles)batchRigidMeshes(axle.group);
  mesh.scale.setScalar(VEHICLE_SCALE);mesh.userData.style=style;
  return {mesh,chassis,body,wheels,axles,exhausts,dispose(){
-  const geometries=new Set(),materials=new Set();mesh.traverse(o=>{if(o.userData.sharedWheel)return;if(o.geometry)geometries.add(o.geometry);if(o.material)materials.add(o.material);});
-  geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());texture.dispose();
+  const geometries=new Set(),materials=new Set(),textures=new Set([texture]);mesh.traverse(o=>{if(o.userData.sharedWheel)return;if(o.geometry)geometries.add(o.geometry);if(o.material){materials.add(o.material);if(o.material.map)textures.add(o.material.map);}});
+  geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());
  }};
 }

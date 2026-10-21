@@ -1,3 +1,4 @@
+import {vehicleProfile} from './vehicle-models.js';
 import {ignitionStep,ignitionPhase} from './ignition.js';
 import {tuning as cfg} from './tuning.js';
 import {engineById,engineTorque} from './engines.js';
@@ -9,7 +10,7 @@ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 
 const gearLimit=(car,mode)=>transmissionMode(car)==='arcade'?mode.maxGear:gearboxFor(car).ratios.length;
 function matchGear(state,engine,speed,mode,car){
- const box=gearboxFor(car),limit=gearLimit(car,mode),ratios=box.ratios,wheelRpm=Math.abs(speed)/cfg.driveRadius*60/(2*Math.PI)*cfg.finalDrive*mode.range;
+ const box=gearboxFor(car),limit=gearLimit(car,mode),ratios=box.ratios,wheelRpm=Math.abs(speed)/(cfg.driveRadius*vehicleProfile(car.style).wheelScale)*60/(2*Math.PI)*cfg.finalDrive*mode.range;
  if(state.gear>0){state.gear=limit;for(let i=0;i<limit;i++)if(wheelRpm*ratios[i]<=engine.redline*cfg.shiftRpm){state.gear=i+1;break;}}
  state.rpm=clamp(wheelRpm*(state.gear<0?box.reverse:state.gear===0?0:ratios[state.gear-1]),engine.idle,engine.redline);
 }
@@ -45,7 +46,7 @@ export function swapEngine(car,engineId){
  state.cooldown=.35;state.grade=old?.grade??0;state.roadLoad=old?.roadLoad??0;return state;
 }
 export function powertrainStep(car,input,dt){
- const box=gearboxFor(car),RATIOS=box.ratios,ROLLING_RADIUS=cfg.driveRadius,manual=transmissionMode(car)==='manual';
+ const box=gearboxFor(car),RATIOS=box.ratios,ROLLING_RADIUS=cfg.driveRadius*vehicleProfile(car.style).wheelScale,manual=transmissionMode(car)==='manual';
  const e=engineById(car.engineId),state=car.powertrain?.engineId===e.id&&car.powertrain.transmissionMode===transmissionMode(car)?car.powertrain:resetPowertrain(car);
  const mode=updateRange(car,state),FINAL_DRIVE=cfg.finalDrive*mode.range,driveScale=cfg.driveScale*1.35;
  const ignition=ignitionStep(car,dt,e.idle);
@@ -129,7 +130,7 @@ export function shiftGear(car,gear){
  if(!Number.isInteger(gear)||gear< -1||gear>box.ratios.length)return false;
  if(state.shiftTime>.01){state.shiftNotice='Trwa zmiana biegu';return false;}
  if(gear!==0&&((gear<0&&car.speed>.6)||(gear>0&&car.speed<-.6))){state.shiftNotice='Zatrzymaj auto przed zmianą kierunku';return false;}
- const ratio=gear<0?box.reverse:gear===0?0:box.ratios[gear-1],rpm=Math.abs(car.speed??0)/cfg.driveRadius*60/(2*Math.PI)*cfg.finalDrive*driveModeById(state.mode).range*ratio;
+ const ratio=gear<0?box.reverse:gear===0?0:box.ratios[gear-1],rpm=Math.abs(car.speed??0)/(cfg.driveRadius*vehicleProfile(car.style).wheelScale)*60/(2*Math.PI)*cfg.finalDrive*driveModeById(state.mode).range*ratio;
  if(!car.airborne&&rpm>engine.redline*.97&&(state.gear<=0||gear<state.gear)){state.shiftNotice='Za wysokie obroty · najpierw zwolnij';return false;}
  state.gear=gear;state.shiftTime=box.shiftTime;state.cooldown=.5;state.shiftNotice='';return true;
 }

@@ -24,8 +24,9 @@ import './style.css';
 import {VEHICLE_SCALE} from './contact.js';
 import {vehicleMass} from './vehicle-mass.js';
 import {createScenery} from './scenery.js';
-import {createBronco} from './vehicle.js';
+import {createBronco,BRONCO_STYLES} from './vehicle.js';
 import {followCameraStep} from './view.js';
+import {vehicleProfile} from './vehicle-models.js';
 import {CameraOrbit,CAMERA_KEYS} from './camera-orbit.js';
 import {Horn} from './horn.js';
 import {normalizeRaceSetup,readRaceSetup,saveRaceSetup} from './ai-drivers.js';
@@ -60,6 +61,7 @@ async function boot(){
 await initPhysics();
 const $=s=>document.querySelector(s),canvas=$('#scene'),game=$('#game'),menuDialog=$('#game-menu');
 canvas.tabIndex=0;
+ document.querySelector('.trucks').innerHTML=Object.entries(BRONCO_STYLES).map(([id,spec])=>`<button class="truck-option ${id==='classic'?'selected':''}" data-model="${id}" data-color="${spec.color}" style="--truck:${spec.color};--truck-roof:${spec.roof}"><span class="truck-drawing">▰<i></i></span><span>${spec.name}<small>${spec.note??(spec.lights==='round'?'KLASYCZNE OKRĄGŁE REFLEKTORY':'KLASYCZNY PRZÓD PROSTOKĄTNY')} <b>${id==='classic'?'SELECTED ↗':'SELECT ↗'}</b></small></span></button>`).join('');
 const minimap=createMinimap($('#minimap'));
 const cameraOrbit=new CameraOrbit();
 let cameraState={x:0,z:0,span:20};
@@ -94,7 +96,7 @@ function ribbon(offset,width,material,y=0){const positions=[],normals=[],uv=[],i
 function sign(text,x,z,rotation=0){const c=document.createElement('canvas');c.width=512;c.height=100;const ctx=c.getContext('2d');ctx.fillStyle='#273321';ctx.fillRect(0,0,512,100);ctx.fillStyle='#f5d363';ctx.font='bold 48px sans-serif';ctx.textAlign='center';ctx.fillText(text,256,68);const m=box(12,2.3,.22,new THREE.MeshStandardMaterial({map:new THREE.CanvasTexture(c)}),x,heightAt(x,z)+2.7,z);m.rotation.y=rotation;for(const dx of [-5,5])box(.2,2,.2,dark,x+Math.cos(rotation)*dx,heightAt(x,z)+1,z-Math.sin(rotation)*dx);}
 let raceSetup=readRaceSetup(localStorage),benchmark=null,benchmarkPanel=null,benchmarkRestore=null;
 function syncFleet(){
- const styles=['classic','ranger','sunset','expedition','copper78','sky','crawler','godzilla78'];
+ const styles=['classic','ranger','sunset','roadsterBlack','forest80','highroller78','halfCabRed','expeditionOrange','bullnose80','softtop78','azure80','monster80'];
  while(trucks.length>raceSetup.count+1){const car=trucks.pop();scene.remove(car.mesh);car.dispose();}
  while(trucks.length<raceSetup.count+1){const i=trucks.length;trucks.push(makeTruck(styles[i%styles.length],String(i===0?7:10+i).padStart(2,'0')));}
  trucks.forEach((car,i)=>car.aiSkill=i?raceSetup.skills[i-1]:'master');
@@ -259,7 +261,7 @@ document.addEventListener('fullscreenchange',()=>{$('#fullscreen').textContent=d
 document.querySelectorAll('[data-model]').forEach(b=>b.onclick=()=>{
  const player=trucks[0];scene.remove(player.mesh);player.dispose();
  const model=createBronco(b.dataset.model,player.number);Object.assign(player,model,{style:b.dataset.model});scene.add(player.mesh);
- if(['copper78','godzilla78'].includes(b.dataset.model))player.engineId=defaultEngine(b.dataset.model);
+ if(['copper78','godzilla78'].includes(b.dataset.model)||BRONCO_STYLES[b.dataset.model]?.era)player.engineId=defaultEngine(b.dataset.model);
  selectedColor=b.dataset.color;poseTruck(player,0);updateEngineMenu();
  document.querySelectorAll('[data-model]').forEach(el=>{el.classList.toggle('selected',el===b);el.querySelector('b').textContent=el===b?'SELECTED ↗':'SELECT ↗';});
  rebuildTrack();
@@ -374,7 +376,7 @@ function poseTruck(c,dt,snap=false){
  c.chassis.rotation.set(0,0,0);c.chassis.position.y=0;
  c.wheels.forEach((w,i)=>{
   const length=controller.wheelSuspensionLength(i)??.55;
-  w.pivot.position.y=(CHASSIS_HEIGHT-.15-length)/VEHICLE_SCALE;
+  w.pivot.position.y=(CHASSIS_HEIGHT+(c.physics.connectionY??-.15)-length)/VEHICLE_SCALE;
   w.pivot.rotation.y=controller.wheelSteering(i)??0;
   const raw=controller.wheelRotation(i)??0;
   if(dt>0){
@@ -405,9 +407,9 @@ function recover(c,advance=0){
  c.recoveries=(c.recoveries??0)+1;
  if(c===trucks[0])handbrake.reset();
  sandTrails.breakTrail(c);dustPool.breakTrail(c);
- let spot;
+ let spot;const profile=vehicleProfile(c.style),footprint={widthScale:profile.track,lengthScale:profile.wheelbase};
  if(freeRide){
-  spot=findRecoverySpot({x:c.x,z:c.z,heading:c.heading,heightAt,blocked:scenery.isRecoveryBlocked,bounds:{min:{x:DESERT_BOUNDS.min.x+20,z:DESERT_BOUNDS.min.z+20},max:{x:DESERT_BOUNDS.max.x-20,z:DESERT_BOUNDS.max.z-20}},fallback:DESERT_SPAWN});
+  spot=findRecoverySpot({x:c.x,z:c.z,heading:c.heading,heightAt,footprint,blocked:scenery.isRecoveryBlocked,bounds:{min:{x:DESERT_BOUNDS.min.x+20,z:DESERT_BOUNDS.min.z+20},max:{x:DESERT_BOUNDS.max.x-20,z:DESERT_BOUNDS.max.z-20}},fallback:DESERT_SPAWN});
  }else{
   const near=nearest(c.x,c.z),origin=(near.index+Math.round(advance*N/curve.getLength()))%N,candidates=[];
   // Search along the course, avoiding ramps and heavily banked corners.
@@ -415,7 +417,7 @@ function recover(c,advance=0){
    const index=(origin+Math.round(direction*distance*N/curve.getLength())+N)%N,t=curve.getTangentAt(index/N),p=samples[index];
    for(const lane of [c.lane??-3.5,0,3.5,-3.5])candidates.push({x:p.x-t.z*lane,z:p.z+t.x*lane,heading:Math.atan2(-t.x,-t.z),index});
   }
-  spot=findRecoverySpot({x:c.x,z:c.z,heading:c.heading,heightAt,blocked:scenery.isRecoveryBlocked,candidates});
+  spot=findRecoverySpot({x:c.x,z:c.z,heading:c.heading,heightAt,footprint,blocked:scenery.isRecoveryBlocked,candidates});
  }
  Object.assign(c,{x:spot.x,z:spot.z,heading:spot.heading,speed:0,vx:0,vz:0,vertical:0,stuckTime:0,boosting:false});
  if(spot.index!==undefined)c.index=spot.index;

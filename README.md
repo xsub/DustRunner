@@ -125,3 +125,9 @@ See [rights and third-party notices](NOTICE.md) and [engine recording credits](p
 ### Six-car performance test
 
 Menu → **BENCHMARK · 6 AUT · WSZYSTKIE TRASY** prepares a fixed-resolution, two-pass run on all 16 circuits and one seeded random circuit. It starts only when explicitly requested. See [the benchmark protocol](docs/performance-benchmark.md) for timings, validity rules and reported metrics. This feature is measurement infrastructure, not evidence that every track sustains 60 FPS.
+
+### Reference build collection
+
+The garage now contains **20 selectable procedural vehicles**, including **12 new builds inspired by the supplied photographs**: Black Cage roadster, Ruby half-cab, Ember overlander, Mocha High Roller, Turf Giant, orange/cream Ranger, Indigo Soft Trail, two Bullnose variants, Forest Safari, Desert Beast and Cobalt High Rider. Open [the 3D garage](https://xsub.github.io/DustRunner/garage.html) for front/rear views. Lifted builds share tire radius, wheelbase, track and suspension attachment data with Rapier; their larger tires also affect gearing. These are stylized game models, not exact factory replicas. [Model notes and references](docs/reference-models.md).
+
+![Twelve new photograph-inspired procedural Bronco builds](docs/screenshots/reference-models.jpg)

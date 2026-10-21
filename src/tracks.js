@@ -1,3 +1,4 @@
+import {localRoadRelief} from './road-relief.js';
 import {tuning as cfg} from './tuning.js';
 import {extraTrackDefinitions} from './track-pack.js';
 import {randomTrackDefinition,normalizeTrackSeed} from './random-track.js';
@@ -187,6 +188,8 @@ export function terrainHeight(progress,index=0,lateral=0,variant=0){
    height+=lift;
   }else height+=roughWeight*f.height*(f.kind==='whoops'?Math.sin(u*Math.PI*f.count)**2:Math.sin(u*Math.PI)**2);
  }
+ const runway=smooth(Math.max(0,Math.min(1,(t-.055)/.025)))*smooth(Math.max(0,Math.min(1,(1-t)/.025)));
+ height+=localRoadRelief(t*track.length,lateral,index)*roughWeight*runway*cfg.rutScale;
  return height;
 }
 
@@ -194,7 +197,7 @@ export function nearestPoint(samples,x,z){
  return indexedNearest(samples,x,z);
 }
 
-export function opponentInput(car,near,curve,samples){
+export function opponentInput(car,near,curve,samples,{pace=1,aggressive=false}={}){
  const n=samples.length;
  const spacing=curve.getLength()/n;
  const look=Math.max(3,Math.round((8+Math.abs(car.speed)*.45)/spacing));
@@ -205,6 +208,6 @@ export function opponentInput(car,near,curve,samples){
  const diff=angleDelta(desired,car.heading);
  const now=curve.getTangentAt(near.index/n),ahead=curve.getTangentAt(((near.index+look*2)%n)/n);
  const bend=Math.abs(angleDelta(Math.atan2(ahead.x,ahead.z),Math.atan2(now.x,now.z)));
- const targetSpeed=bend>.7?14:bend>.35?18:22;
- return {steer:clamp(diff*1.6,-1,1),throttle:Math.abs(diff)>1?.45:1,brake:car.speed>targetSpeed+1,boost:car.nitro>20&&bend<.18&&Math.abs(diff)<.2&&near.distance<3};
+ const targetSpeed=(bend>.7?14:bend>.35?18:22)*pace;
+ return {steer:clamp(diff*1.6,-1,1),throttle:Math.abs(diff)>1?.45:1,brake:car.speed>targetSpeed+1,boost:car.nitro>(aggressive?4:20)&&bend<(aggressive?.38:.18)&&Math.abs(diff)<(aggressive?.4:.2)&&near.distance<(aggressive?6:3)};
 }

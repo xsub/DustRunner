@@ -9,7 +9,7 @@ export function createDustPool(scene,capacity=384){
  }
  const texture=new THREE.DataTexture(data,size,size);texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearFilter;texture.needsUpdate=true;
  const geometry=new THREE.PlaneGeometry(1,1),alpha=new THREE.InstancedBufferAttribute(new Float32Array(capacity),1).setUsage(THREE.DynamicDrawUsage);geometry.setAttribute('dustOpacity',alpha);
- const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,side:THREE.DoubleSide});
+ const material=new THREE.MeshBasicMaterial({map:texture,transparent:true,depthWrite:false,forceSinglePass:true,side:THREE.DoubleSide});
  material.onBeforeCompile=shader=>{
   shader.vertexShader='attribute float dustOpacity; varying float vDustOpacity;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvDustOpacity=dustOpacity;');
   shader.fragmentShader='varying float vDustOpacity;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.a *= vDustOpacity;');

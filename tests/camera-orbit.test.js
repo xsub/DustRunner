@@ -23,3 +23,11 @@ test('held camera controls are independent of render frame rate',()=>{
  for(let i=0;i<60;i++)a.step(keys,1/60);for(let i=0;i<120;i++)b.step(keys,1/120);
  close(a.yaw,b.yaw);close(a.pitch,b.pitch);close(a.distance,b.distance);
 });
+
+test('desert resets to a diagonal isometric board view, independent of previous manual orbit',()=>{
+ const orbit=new CameraOrbit();orbit.step(new Set(['KeyK','KeyL']),4);orbit.reset('desert');
+ close(orbit.yaw,Math.PI/4);close(orbit.pitch,Math.atan(1/Math.sqrt(2)));assert.equal(orbit.manual,false);
+ const o=orbit.offset();close(o.x,o.y);close(o.y,o.z);assert.equal(orbit.distance,1);
+ orbit.step(new Set(['KeyI','Equal']),1);orbit.reset('desert');close(orbit.offset().x,o.x);close(orbit.offset().y,o.y);close(orbit.offset().z,o.z);
+ orbit.reset('race');close(orbit.offset().x,0);close(orbit.offset().y,78);close(orbit.offset().z,70);
+});

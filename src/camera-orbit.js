@@ -5,7 +5,12 @@ const DEFAULT_PITCH=Math.atan2(78,70),RADIUS=Math.hypot(78,70);
 // Orbit only: the target stays on the truck, with no independent camera pan.
 export class CameraOrbit {
  constructor(){this.reset();}
- reset(){this.yaw=0;this.pitch=DEFAULT_PITCH;this.distance=1;this.manual=false;}
+ reset(preset='race'){
+  // Desert board view: equal foreshortening of the three world axes.
+  this.yaw=preset==='desert'?Math.PI/4:0;
+  this.pitch=preset==='desert'?Math.atan(1/Math.sqrt(2)):DEFAULT_PITCH;
+  this.distance=1;this.manual=false;
+ }
  step(keys,dt){
   const horizontal=Number(keys.has('KeyL'))-Number(keys.has('KeyJ'));
   const vertical=Number(keys.has('KeyI'))-Number(keys.has('KeyK'));

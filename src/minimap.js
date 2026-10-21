@@ -3,14 +3,15 @@ import {minimapTransform} from './view.js';
 export function createMinimap(canvas){
  const ctx=canvas.getContext('2d');
  const background=document.createElement('canvas'),bg=background.getContext('2d');
- let points=[],halfWidth=0,transform,width=0,height=0,density=1,features=[],length=1,desert=null;
+ let points=[],halfWidth=0,transform,width=0,height=0,density=1,features=[],length=1,desert=null,dirty=true;
  function project(p){return {x:p.x*transform.scale+transform.offsetX,y:p.z*transform.scale+transform.offsetZ};}
  function rebuild(){
+   dirty=true;
    if(!points.length)return;
    width=canvas.clientWidth;height=canvas.clientHeight;if(!width||!height)return;
-   density=Math.min(devicePixelRatio||1,2);
+   density=Math.min(globalThis.devicePixelRatio||1,2);
    canvas.width=background.width=Math.round(width*density);canvas.height=background.height=Math.round(height*density);
-   transform=minimapTransform(points,halfWidth,width,height);
+   transform=minimapTransform(points,halfWidth,width,height);dirty=false;
    bg.setTransform(density,0,0,density,0,0);bg.clearRect(0,0,width,height);
    if(desert){
     const step=10;for(let z=desert.bounds.min.z;z<desert.bounds.max.z;z+=step)for(let x=desert.bounds.min.x;x<desert.bounds.max.x;x+=step){const q=project({x,z}),h=desert.heightAt(x,z);bg.fillStyle=`hsl(39 45% ${44+Math.min(30,h*1.2)}%)`;bg.fillRect(q.x,q.y,step*transform.scale+1,step*transform.scale+1);}
@@ -34,7 +35,10 @@ export function createMinimap(canvas){
    setTrack(samples,width,trackFeatures=[],trackLength=1){desert=null;points=samples;halfWidth=width;features=trackFeatures;length=trackLength;rebuild();},
    resize:rebuild,
    render(cars,color,viewCorners=[]){
-     if(!transform)return;
+     // The HUD starts hidden: its first measurable size may arrive without
+     // resizing the game. Rebuild on reveal, layout changes or display density.
+     if(dirty||canvas.clientWidth!==width||canvas.clientHeight!==height||density!==Math.min(globalThis.devicePixelRatio||1,2))rebuild();
+     if(dirty||!transform)return;
      ctx.setTransform(density,0,0,density,0,0);ctx.clearRect(0,0,width,height);ctx.drawImage(background,0,0,width,height);
      ctx.save();ctx.beginPath();ctx.rect(0,0,width,height);ctx.clip();
      if(viewCorners.length){ctx.beginPath();viewCorners.forEach((p,i)=>{const q=project(p);if(!i)ctx.moveTo(q.x,q.y);else ctx.lineTo(q.x,q.y);});ctx.closePath();ctx.fillStyle='#e7efcb10';ctx.fill();ctx.strokeStyle='#edf3d16b';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);}

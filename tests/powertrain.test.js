@@ -82,7 +82,8 @@ test('sustained climbing load kicks down and holds the lower gear without huntin
   if(hill.powertrain.gear!==last){changes++;last=hill.powertrain.gear;}
  }
  assert.equal(flat.powertrain.gear,3);assert.equal(hill.powertrain.gear,2);assert.equal(changes,1);
- assert.ok(hill.powertrain.rpm>flat.powertrain.rpm+1200);
+ assert.ok(hill.powertrain.rpm>flat.powertrain.rpm+500);
+ assert.ok(Math.abs(hill.powertrain.rpm/flat.powertrain.rpm-1.46)<.02,'C4 second/third ratios set the RPM increase at fixed road speed');
  assert.ok(hill.powertrain.load>flat.powertrain.load);assert.ok(hill.powertrain.roadLoad>flat.powertrain.roadLoad+2);
 });
 test('constant road speed stays at a steady RPM rather than sweeping between idle and redline',()=>{

@@ -1,8 +1,8 @@
 // Game presets combine automatic gearbox behavior and transfer-case ranges.
 // 4WD alone does not reduce speed; the 4x4 preset uses a crawler reduction.
 export const DRIVE_MODES=Object.freeze([
- {id:'auto',label:'A',name:'AUTO · szybka jazda',range:.9,pace:1,pedal:1,maxGear:3,boost:true,low:false,description:'Automatyczne biegi i wspomagany rozdział momentu. Uniwersalny tryb do wyścigów.'},
- {id:'hi',label:'HI',name:'HI · 4H / długi zakres',range:.78,pace:1.12,pedal:1,maxGear:3,boost:true,low:false,description:'Dłuższe przełożenie do szybkich prostych. Automatyczna skrzynia, napęd obu osi.'},
+ {id:'auto',label:'A',name:'A/M · tryb skrzyni',range:.9,pace:1,pedal:1,maxGear:3,boost:true,low:false,description:'Drogowy zakres napędu i wspomagany rozdział momentu. A: automatyczna zmiana wszystkich biegów skrzyni silnika; M: ręcznie Q/E lub −/+.'},
+ {id:'hi',label:'HI',name:'HI · 4H / długi zakres',range:.78,pace:1.12,pedal:1,maxGear:3,boost:true,low:false,description:'Dłuższe przełożenie do szybkich prostych. Napęd obu osi. Sterowanie skrzynią A/M pozostaje niezależne.'},
  {id:'lo',label:'LO',name:'LO · 4L / reduktor',range:2.2,pace:.43,pedal:.72,maxGear:3,boost:false,low:true,description:'Reduktor do podjazdów i wydm: więcej momentu na kołach, mniejsza prędkość. Bez nitro.'},
  {id:'4x4',label:'4×4',name:'4×4 · pełzanie + blokady',range:3,pace:0,pedal:.45,maxGear:1,boost:false,low:true,description:'Bardzo wolne pełzanie na pierwszym biegu. Osobne blokady przedniego i tylnego mechanizmu różnicowego. Bez nitro.'}
 ].map(Object.freeze));

@@ -15,7 +15,7 @@ test('triangle sampler agrees with every sampled desert mesh vertex',()=>{
 });
 for(const gravity of [9.81,20])test(`single truck settles and drives over desert at gravity ${gravity} using the rendered contact surface`,async()=>{
  setTuning({...DEFAULT_TUNING,gravity});
- await initPhysics();const physics=createPhysics(ground,ground.bounds),car={...DESERT_SPAWN,style:'classic',engineId:'302',speed:0};physics.reset(car);
+ await initPhysics();const physics=createPhysics(ground,ground.bounds),car={...DESERT_SPAWN,style:'classic',engineId:'302',driveMode:gravity===20?'lo':'auto',speed:0};physics.reset(car);
  try{
   let contacts=0,airtime=0;for(let i=0;i<1800;i++){
    physics.input(car,{throttle:i>240?1:0,steer:0,onDirt:true},1/120);physics.step();physics.sync(car,1/120);
@@ -23,7 +23,7 @@ for(const gravity of [9.81,20])test(`single truck settles and drives over desert
    if(i>240&&car.airborne)airtime++;assert.ok(Number.isFinite(car.x)&&Number.isFinite(car.height));
   }
   assert.equal(contacts,4);
-  // A stock 302 in AUTO cannot crest the same steep dune under twice the load.
+  // With the real C4 ratios, doubled gravity needs LO on the steep spawn dune.
   assert.ok(car.z<DESERT_SPAWN.z-(gravity===20?10:50));
   if(gravity===9.81)assert.ok(airtime>0,'dune crests produce real airtime');
   assert.equal(car.rollover,false);assert.equal(physics.getStats().bodies,1);

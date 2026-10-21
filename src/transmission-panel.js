@@ -5,13 +5,13 @@ export function createTransmissionPanel({getPlayer,onChange,onInteract}){
  let signature='';
  const changed=()=>{signature='';update();onChange();onInteract();};
  select.onchange=()=>{selectTransmissionMode(getPlayer(),select.value);changed();};
- toggle.onclick=()=>{const modes=['arcade','automatic','manual'];selectTransmissionMode(getPlayer(),modes[(modes.indexOf(transmissionMode(getPlayer()))+1)%3]);changed();};
+ toggle.onclick=()=>{const modes=['automatic','manual'];selectTransmissionMode(getPlayer(),modes[(modes.indexOf(transmissionMode(getPlayer()))+1)%3]);changed();};
  const shift=direction=>{const car=getPlayer();shiftGear(car,direction==='neutral'?0:(car.powertrain?.gear??1)+direction);changed();};
  document.querySelectorAll('[data-shift]').forEach(button=>button.onclick=()=>shift(button.dataset.shift==='neutral'?'neutral':Number(button.dataset.shift)));
  function update(){
   const car=getPlayer(),mode=transmissionMode(car),assigned=transmissionForEngine(car.engineId),box=gearboxFor(car),state=car.powertrain,gear=state?.engineId===car.engineId&&state.transmissionMode===mode?(state.gear??1):1;
   const key=JSON.stringify([car.engineId,mode,gear,state?.shiftNotice]);if(key===signature)return;signature=key;
-  select.value=mode;toggle.textContent=mode==='arcade'?'ARCADE':mode==='manual'?'MAN · '+box.ratios.length:'AUTO · '+box.ratios.length;
+  select.value=mode;toggle.textContent=mode==='arcade'?'ARCADE':mode==='manual'?'M · '+box.ratios.length:'A · '+box.ratios.length;
   info.textContent=assigned.name+' · przypisana na stałe do silnika. '+(mode==='arcade'?'Arcade używa dotychczasowych trzech przełożeń DEV.':'Wszystkie przełożenia tej skrzyni są aktywne; HI/LO nadal wybiera zakres reduktora.');
   ratios.textContent='R '+assigned.reverse.toFixed(3)+' · N · '+assigned.ratios.map((ratio,i)=>(i+1)+': '+ratio.toFixed(3)).join(' · ');
   readout.textContent=mode==='arcade'?'':gearLabel(car)+'/'+box.ratios.length+' · '+(gear===0?'luz':(gear<0?box.reverse:box.ratios[gear-1]).toFixed(2));

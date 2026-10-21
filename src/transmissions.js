@@ -14,6 +14,7 @@ export const TRANSMISSIONS=Object.freeze({
 export const ENGINE_TRANSMISSIONS=Object.freeze({'170':'i6','200':'i6','289':'rat','302':'c4','351m':'c6','400':'c6','300':'np435','300efi':'np435','302efi':'aod','351w':'c6','351wefi':'e4od','godzilla73':'torqshift'});
 export const transmissionForEngine=id=>TRANSMISSIONS[ENGINE_TRANSMISSIONS[id]??'c4'];
 export const TRANSMISSION_MODES=Object.freeze(['arcade','automatic','manual']);
-export const transmissionMode=car=>TRANSMISSION_MODES.includes(car.transmissionMode)?car.transmissionMode:'arcade';
+export const transmissionMode=car=>TRANSMISSION_MODES.includes(car.transmissionMode)?car.transmissionMode:'automatic';
+export const savedTransmissionMode=value=>value==='manual'?'manual':'automatic';
 export const gearboxFor=car=>transmissionMode(car)==='arcade'?{id:'arcade',name:'Arcade · 3 biegi',ratios:[cfg.gear1,cfg.gear2,cfg.gear3],reverse:3.1,shiftTime:.14,kind:'automatic'}:transmissionForEngine(car.engineId);
-export const gearLabel=car=>{const gear=car.powertrain?.gear??1;return gear<0?'R':gear===0?'N':(transmissionMode(car)==='manual'?'M':'D')+gear;};
+export const gearLabel=car=>{const gear=car.powertrain?.gear??1;return gear<0?'R':gear===0?'N':(transmissionMode(car)==='manual'?'M':'A')+gear;};

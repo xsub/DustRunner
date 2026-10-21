@@ -1,7 +1,7 @@
 import {test,before} from 'node:test';
 import assert from 'node:assert/strict';
 import {ENGINES,engineById} from '../src/engines.js';
-import {ENGINE_TRANSMISSIONS,transmissionForEngine,gearboxFor,gearLabel} from '../src/transmissions.js';
+import {ENGINE_TRANSMISSIONS,transmissionForEngine,gearboxFor,gearLabel,transmissionMode,savedTransmissionMode} from '../src/transmissions.js';
 import {powertrainStep,resetPowertrain,selectTransmissionMode,shiftGear,swapEngine,selectDriveMode} from '../src/powertrain.js';
 import {drivingControls} from '../src/driving-controls.js';
 import {initPhysics,createPhysics} from '../src/physics.js';
@@ -61,4 +61,12 @@ test('manual rev ceiling limits first-gear propulsion and an upshift can always 
  assert.equal(shiftGear(c,2),true,'upshift must remain available even if the next gear is still over redline');settleShift(c);c.speed=0;shiftGear(c,1);settleShift(c);
  for(let i=0;i<120*30;i++){const drive=powertrainStep(c,input,dt);c.speed=Math.max(0,c.speed+(drive.acceleration-c.speed*.06)*dt);}
  assert.equal(c.powertrain.gear,1);assert.ok(c.speed*3.6<50,`first gear speed ${c.speed*3.6}`);assert.ok(c.speed*3.6>25);
+});
+
+test('full automatic is the default, old arcade saves migrate, and A/M labels match control mode',()=>{
+ assert.equal(transmissionMode({}),'automatic');
+ for(const saved of [undefined,'arcade','automatic','invalid'])assert.equal(savedTransmissionMode(saved),'automatic');
+ assert.equal(savedTransmissionMode('manual'),'manual');
+ const c=car('godzilla73');assert.equal(gearboxFor(c).ratios.length,10);resetPowertrain(c);assert.equal(gearLabel(c),'A1');
+ selectTransmissionMode(c,'manual');assert.equal(gearLabel(c),'M1');
 });

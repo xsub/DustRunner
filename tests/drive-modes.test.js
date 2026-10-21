@@ -30,7 +30,7 @@ test('reduction raises engine RPM and load at the same road speed and crawl stay
  const auto=car('auto'),lo=car('lo'),crawl=car('4x4');[auto,lo,crawl].forEach(resetPowertrain);
  auto.speed=lo.speed=6;crawl.speed=2;
  for(let i=0;i<600;i++)for(const c of [auto,lo,crawl])powertrainStep(c,input,dt);
- assert.ok(lo.powertrain.rpm>auto.powertrain.rpm+900);assert.equal(crawl.powertrain.gear,1);
+ assert.ok(lo.powertrain.rpm>auto.powertrain.rpm+600);assert.equal(crawl.powertrain.gear,1);
  assert.ok(crawl.powertrain.rpm>1800);assert.ok(crawl.powertrain.load>0);
 });
 

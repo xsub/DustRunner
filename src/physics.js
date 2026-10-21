@@ -104,6 +104,18 @@ export function createPhysics(terrain,bounds){
    v.mass=mass;v.massKey=massKey;for(let i=0;i<4;i++)c.setWheelMaxSuspensionForce(i,mass*cfg.suspensionForce);
   }
  }
+ function replaceVehicle(car){
+  const old=car.physics;if(!old)return add(car);
+  const position={...old.body.translation()},rotation={...old.body.rotation()},velocity={...old.body.linvel()},angular={...old.body.angvel()};
+  const previousClearance=old.profile.lift*VEHICLE_SCALE+old.profile.wheelScale*TIRE_RADIUS*VEHICLE_SCALE;
+  const controls={...old.controls},steer=old.steer;
+  world.removeVehicleController(old.controller);world.removeRigidBody(old.body);vehicles.delete(car);delete car.physics;
+  const next=add(car),clearance=next.profile.lift*VEHICLE_SCALE+next.profile.wheelScale*TIRE_RADIUS*VEHICLE_SCALE;
+  // Keep tire clearance on the ground, but preserve the flight trajectory.
+  if(!car.airborne)position.y+=clearance-previousClearance;
+  next.body.setTranslation(position,true);next.body.setRotation(rotation,true);next.body.setLinvel(velocity,true);next.body.setAngvel(angular,true);
+  next.controls=controls;next.steer=steer;return next;
+ }
  function input(car,input,dt){
   activateBarriers(car);refreshMass(car);
   const v=car.physics,c=v.controller;
@@ -157,7 +169,7 @@ export function createPhysics(terrain,bounds){
   car.suspensionLengths=WHEEL_LAYOUT.map((_,i)=>c.wheelSuspensionLength(i)??cfg.restLength);
   v.tireColliders.forEach((collider,i)=>{const w=WHEEL_LAYOUT[i];collider.setTranslationWrtParent({x:w.x*v.profile.track*VEHICLE_SCALE,y:v.connectionY-car.suspensionLengths[i],z:w.z*v.profile.wheelbase*VEHICLE_SCALE});});
  }
- return {world,add,reset,input,sync,refreshMass,addBoundary(x,z,hx,hz,height){world.createCollider(RAPIER.ColliderDesc.cuboid(hx,height,hz).setTranslation(x,height,z).setFriction(.8));},setMarkerVisibility,getStats(){return {awake:vehicles.size+activeMarkers.size,bodies:vehicles.size+barriers.length,visibleMarkers:hasMarkerView?visibleMarkers:barriers.length,movingMarkers:activeMarkers.size,markerBudget:hasMarkerView?markerBudget:barriers.length};},step(){world.step();updateMarkers();},dispose(){for(const car of vehicles)delete car.physics;world.free();},
+ return {world,add,reset,input,sync,refreshMass,replaceVehicle,addBoundary(x,z,hx,hz,height){world.createCollider(RAPIER.ColliderDesc.cuboid(hx,height,hz).setTranslation(x,height,z).setFriction(.8));},setMarkerVisibility,getStats(){return {awake:vehicles.size+activeMarkers.size,bodies:vehicles.size+barriers.length,visibleMarkers:hasMarkerView?visibleMarkers:barriers.length,movingMarkers:activeMarkers.size,markerBudget:hasMarkerView?markerBudget:barriers.length};},step(){world.step();updateMarkers();},dispose(){for(const car of vehicles)delete car.physics;world.free();},
   resetBarriers(){for(const prop of barriers)anchorMarker(prop,true);},
   addRocks(vertices){
    // One fixed BVH triangle collider for all instanced rocks; no awake bodies.

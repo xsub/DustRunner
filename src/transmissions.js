@@ -17,13 +17,3 @@ export const TRANSMISSION_MODES=Object.freeze(['arcade','automatic','manual']);
 export const transmissionMode=car=>TRANSMISSION_MODES.includes(car.transmissionMode)?car.transmissionMode:'arcade';
 export const gearboxFor=car=>transmissionMode(car)==='arcade'?{id:'arcade',name:'Arcade · 3 biegi',ratios:[cfg.gear1,cfg.gear2,cfg.gear3],reverse:3.1,shiftTime:.14,kind:'automatic'}:transmissionForEngine(car.engineId);
 export const gearLabel=car=>{const gear=car.powertrain?.gear??1;return gear<0?'R':gear===0?'N':(transmissionMode(car)==='manual'?'M':'D')+gear;};
-
-// Use the assigned gearbox length so 3-, 4- and 10-speed boxes share endpoints.
-export function gearColor(car){
- const gear=car.powertrain?.gear??1;
- if(gear<0)return '#000000';
- if(gear===0)return '#a0a5a0';
- const count=gearboxFor(car).ratios.length;
- const fraction=Math.max(0,Math.min(1,(gear-1)/Math.max(1,count-1)));
- return `hsl(${Math.round(fraction*120)} 80% 62%)`;
-}

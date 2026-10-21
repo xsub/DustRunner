@@ -4,11 +4,11 @@ import assert from 'node:assert/strict';
 import {buildDesert,desertHeight,DESERT_SPAWN,DESERT_BOUNDS,DESERT_VARIANTS,createDesertHeight,normalizeDesertOptions} from '../src/desert.js';
 import {initPhysics,createPhysics} from '../src/physics.js';
 const ground=buildDesert();
-test('desert has a full 1200 × 600 m rectangular contact mesh and varied dunes with a calm spawn',()=>{
- assert.equal(ground.positions.length,481*241*3);assert.equal(ground.indices.length,480*240*6);
+test('desert has a full 2400 × 1200 m rectangular contact mesh and varied dunes with a calm spawn',()=>{
+ assert.equal(ground.positions.length,961*481*3);assert.equal(ground.indices.length,960*480*6);
  assert.equal(desertHeight(DESERT_SPAWN.x,DESERT_SPAWN.z),1);
  let min=Infinity,max=-Infinity;for(let z=-250;z<=250;z+=10)for(let x=-550;x<=550;x+=10){const h=ground.heightAt(x,z);assert.ok(Number.isFinite(h)&&h>=1);min=Math.min(min,h);max=Math.max(max,h);}
- assert.ok(max-min>20);assert.deepEqual(ground.bounds,DESERT_BOUNDS);assert.ok(ground.heightAt(599,0)>ground.heightAt(560,0)+10);assert.ok(ground.heightAt(0,299)>18);
+ assert.ok(max-min>20);assert.deepEqual(ground.bounds,DESERT_BOUNDS);assert.ok(ground.heightAt(1199,0)>18);assert.ok(ground.heightAt(0,599)>18);
 });
 test('triangle sampler agrees with every sampled desert mesh vertex',()=>{
  for(let i=0;i<ground.positions.length;i+=997*3){const [x,y,z]=ground.positions.slice(i,i+3);assert.ok(Math.abs(ground.heightAt(x,z)-y)<.0001);}
@@ -62,5 +62,26 @@ for(const variant of ['stars','random'])test(`${variant}: generated mesh support
   }
   assert.ok(Math.hypot(car.x-DESERT_SPAWN.x,car.z-DESERT_SPAWN.z)>40);
   for(let i=0;i<terrain.positions.length;i+=619*3){const [x,y,z]=terrain.positions.slice(i,i+3);assert.ok(Math.abs(terrain.heightAt(x,z)-y)<.001);}
+ }finally{physics.dispose();}
+});
+
+test('expanded outer quadrants contain varied dunes and the exact rendered contact surface',()=>{
+ for(const sx of [-1,1])for(const sz of [-1,1]){
+  const heights=[];for(let x=750;x<=1100;x+=25)for(let z=350;z<=500;z+=25){const h=ground.heightAt(sx*x,sz*z);assert.ok(Number.isFinite(h)&&h>=1);heights.push(h);}
+  assert.ok(Math.max(...heights)-Math.min(...heights)>10,'new area must contain dunes rather than empty padding');
+ }
+ assert.equal(DESERT_BOUNDS.max.x-DESERT_BOUNDS.min.x,2400);assert.equal(DESERT_BOUNDS.max.z-DESERT_BOUNDS.min.z,1200);
+ assert.equal(ground.indices.length/3,921600,'preserve 2.5 m collision detail over four times the area');
+});
+
+test('the added eastern territory supports a real vehicle far outside the old bounds',async()=>{
+ await initPhysics();let spot=null;
+ for(let z=380;z<=500&&!spot;z+=5)for(let x=850;x<=1100;x+=5){const h=ground.heightAt(x,z),around=[ground.heightAt(x-3,z),ground.heightAt(x+3,z),ground.heightAt(x,z-3),ground.heightAt(x,z+3)];if(around.every(y=>Math.abs(y-h)<.35)){spot={x,z};break;}}
+ assert.ok(spot,'find a locally calm part of the new dune field');
+ const physics=createPhysics(ground,ground.bounds),car={...spot,style:'classic',engineId:'302',speed:0,heading:0};physics.reset(car);
+ try{
+  for(let i=0;i<300;i++){physics.input(car,{throttle:0,handbrake:true,onDirt:true},1/120);physics.step();physics.sync(car,1/120);}
+  assert.equal([0,1,2,3].filter(i=>car.physics.controller.wheelIsInContact(i)).length,4);assert.equal(car.rollover,false);
+  assert.ok(Math.abs(car.height-ground.heightAt(car.x,car.z))<.2);
  }finally{physics.dispose();}
 });

@@ -1,9 +1,9 @@
-import {triangleSampler} from './terrain.js';
+import {gridHeight} from './grid-height.js';
 import {sandWaveHeight} from './sand-waves.js';
-export const DESERT_WIDTH=1200,DESERT_DEPTH=600;
+export const DESERT_WIDTH=2400,DESERT_DEPTH=1200;
 export const DESERT_BOUNDS={min:{x:-DESERT_WIDTH/2,z:-DESERT_DEPTH/2},max:{x:DESERT_WIDTH/2,z:DESERT_DEPTH/2}};
 export const DESERT_SPAWN={x:0,z:210,heading:0};
-export const DESERT_REGIONS=[{x:-380,z:20,label:'FALE'},{x:5,z:-120,label:'GRZBIETY'},{x:380,z:0,label:'WYSOKIE'}];
+export const DESERT_REGIONS=[{x:-800,z:20,label:'FALE'},{x:5,z:-120,label:'GRZBIETY'},{x:800,z:0,label:'WYSOKIE'}];
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 export const DESERT_VARIANTS=[
  {id:'ridges',name:'BURZOWE GRZBIETY',description:'Gęste pasma, strome zbocza i głębokie siodła',amplitude:1.75,width:1.3,count:96,defaultSeed:1947},
@@ -20,10 +20,20 @@ export function createDesertHeight(options={}){
  if(samplers.has(key))return samplers.get(key);
  let seed=normalized.seed;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
  const phase=profile.id==='random'?random()*20:0;
- const dunes=Array.from({length:profile.count},(_,i)=>{
-  const x=-530+random()*1060,z=-225+random()*450,angle=random()*Math.PI;
+ const dunes=Array.from({length:profile.count*4},(_,i)=>{
+  // Preserve the original seeded central dunes; populate the added land at
+  // the same density without stretching existing hills or their slopes.
+  let x,z;
+  if(i<profile.count){x=-530+random()*1060;z=-225+random()*450;}
+  else do{x=DESERT_BOUNDS.min.x+70+random()*(DESERT_WIDTH-140);z=DESERT_BOUNDS.min.z+75+random()*(DESERT_DEPTH-150);}while(Math.abs(x)<=530&&Math.abs(z)<=225);
+  const angle=random()*Math.PI;
   return {x,z,cos:Math.cos(angle),sin:Math.sin(angle),height:(5+random()*(x>180?19:11))*profile.amplitude,width:(17+random()*24)*profile.width,length:(22+random()*55)*profile.width,kind:profile.id==='ridges'?(i%3):profile.id==='stars'?2+i%2:Math.floor(random()*4),curve:(random()-.5)*.007};
  });
+ // Each sample visits only nearby dunes, independent of the total map area.
+ const duneCells=new Map(),cell=190;
+ for(const dune of dunes)for(let x=Math.floor((dune.x-190)/cell);x<=Math.floor((dune.x+190)/cell);x++)for(let z=Math.floor((dune.z-190)/cell);z<=Math.floor((dune.z+190)/cell);z++){
+  const key=x+','+z;if(!duneCells.has(key))duneCells.set(key,[]);duneCells.get(key).push(dune);
+ }
  const height=(x,z)=>{
  const warp=12*Math.sin(z*.017+phase)+9*Math.sin(x*.012+z*.009+phase);
  const u=x*.85+z*.53+warp,v=z*.85-x*.53;
@@ -33,7 +43,7 @@ export function createDesertHeight(options={}){
  const ridges=profile.amplitude*(1.8+2.8*(1-west))*(1+Math.sin(u*.064+Math.sin(v*.027)*1.8))**2/4;
  const ripples=(.12+.4*smooth((z+200)/300))*(1+Math.sin(v*.29+Math.sin(u*.06)*2))/2;
  let features=0;
- for(const dune of dunes){
+ for(const dune of duneCells.get(Math.floor(x/cell)+','+Math.floor(z/cell))??[]){
   const dx=x-dune.x,dz=z-dune.z;
   if(Math.abs(dx)>190||Math.abs(dz)>190)continue;
   const a=dx*dune.cos+dz*dune.sin,b=-dx*dune.sin+dz*dune.cos;
@@ -64,16 +74,23 @@ export function desertHeight(x,z,options={}){return createDesertHeight(options)(
 export function buildDesert(options={}){
  const configuration=normalizeDesertOptions(options),baseHeight=createDesertHeight(configuration);
  const sampleHeight=(x,z)=>baseHeight(x,z)+sandWaveHeight(x,z)*smooth((Math.hypot(x-DESERT_SPAWN.x,z-DESERT_SPAWN.z)-8)/28);
- const step=2.5,cols=DESERT_WIDTH/step,rows=DESERT_DEPTH/step,positions=[],indices=[],uv=[],colors=[];
+ const step=2.5,cols=DESERT_WIDTH/step,rows=DESERT_DEPTH/step,count=(cols+1)*(rows+1);
+ const vertices=new Float32Array(count*3),triangles=new Uint32Array(cols*rows*6),uv=new Float32Array(count*2),colors=new Float32Array(count*3);
  for(let z=0;z<=rows;z++)for(let x=0;x<=cols;x++){
-  const wx=DESERT_BOUNDS.min.x+x*step,wz=DESERT_BOUNDS.min.z+z*step,h=sampleHeight(wx,wz);
-  positions.push(wx,h,wz);uv.push(wx/12,wz/12);
-  // Broad slope shading makes dune faces legible from the overhead camera.
-  const sx=(sampleHeight(wx+step,wz)-sampleHeight(wx-step,wz))/(step*2),sz=(sampleHeight(wx,wz+step)-sampleHeight(wx,wz-step))/(step*2);
-  const shade=Math.max(.24,Math.min(1.20,.88-sx*.9+sz*.9)),tone=(.72+Math.min(h,25)*.012)*shade;
-  colors.push(tone,Math.min(1.15,tone+.035),Math.min(1.1,tone+.055));
+  const i=z*(cols+1)+x,wx=DESERT_BOUNDS.min.x+x*step,wz=DESERT_BOUNDS.min.z+z*step;
+  vertices.set([wx,sampleHeight(wx,wz),wz],i*3);uv.set([wx/12,wz/12],i*2);
  }
- for(let z=0;z<rows;z++)for(let x=0;x<cols;x++){const a=z*(cols+1)+x,b=a+cols+1;indices.push(a,b,a+1,a+1,b,b+1);}
- const vertices=new Float32Array(positions),triangles=new Uint32Array(indices);
- return {positions:vertices,indices:triangles,uv:new Float32Array(uv),colors:new Float32Array(colors),heightAt:triangleSampler(vertices,triangles),bounds:DESERT_BOUNDS,regions:DESERT_REGIONS,configuration};
+ // Reuse the sampled height grid for lighting instead of evaluating the dune
+ // field four more times per vertex. The contact mesh keeps its 2.5 m spacing.
+ for(let z=0;z<=rows;z++)for(let x=0;x<=cols;x++){
+  const i=z*(cols+1)+x,h=vertices[i*3+1],left=Math.max(0,x-1),right=Math.min(cols,x+1),back=Math.max(0,z-1),front=Math.min(rows,z+1);
+  const sx=(vertices[(z*(cols+1)+right)*3+1]-vertices[(z*(cols+1)+left)*3+1])/((right-left)*step);
+  const sz=(vertices[(front*(cols+1)+x)*3+1]-vertices[(back*(cols+1)+x)*3+1])/((front-back)*step);
+  const shade=Math.max(.24,Math.min(1.20,.88-sx*.9+sz*.9)),tone=(.72+Math.min(h,25)*.012)*shade;
+  colors.set([tone,Math.min(1.15,tone+.035),Math.min(1.1,tone+.055)],i*3);
+ }
+ for(let z=0;z<rows;z++)for(let x=0;x<cols;x++){
+  const a=z*(cols+1)+x,b=a+cols+1;triangles.set([a,b,a+1,a+1,b,b+1],(z*cols+x)*6);
+ }
+ return {positions:vertices,indices:triangles,uv,colors,heightAt:gridHeight(vertices,cols,rows,step,DESERT_BOUNDS.min.x,DESERT_BOUNDS.min.z),bounds:DESERT_BOUNDS,regions:DESERT_REGIONS,configuration};
 }

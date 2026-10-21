@@ -116,7 +116,7 @@ menu and use the central start button). `?mode=desert` opens the desert setup
 directly. **WYŚCIG** in the same menu returns to the selected racing circuit.
 Switching mode resets the session.
 
-The desert is a 1200 × 600 m playground with 80–112 varied dune landmarks: crescents,
+The desert is a 2400 × 1200 m playground (four times the original area) with 320–448 varied dune landmarks: crescents,
 asymmetric ridges, solitary domes and star dunes. The west has rolling swells,
 the center winding crests and rippled sand, and the east higher dunes and bowls.
 A flat starting basin, plants and a shaded elevation minimap with region labels
@@ -124,7 +124,7 @@ help navigation. It uses one player vehicle,
 with the same drivetrain, wheel contacts, suspension, rollovers, sound, nitro,
 developer tuning and FPS panel. There are no opponents, laps, finish condition,
 rewards or time limit; the HUD timer only records session duration. F rights
-the truck in place; R returns to the starting basin. The raised outer rim has
+the truck in place; N restarts at the starting basin and R sounds the horn. The raised outer rim has
 a solid boundary, so the finite map cannot be driven off. Track/ramp sliders
 apply to race circuits; desert dunes use their own procedural profiles.
 

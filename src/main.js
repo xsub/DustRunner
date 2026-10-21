@@ -14,7 +14,6 @@ import {createDustPool} from './dust-pool.js';
 import {createSandTrails} from './sand-trails.js';
 import {createRaceKerbs} from './race-kerbs.js';
 import {Handbrake} from './handbrake.js';
-import {engineDriverAudible} from './engine-sound.js';
 import {chunkTerrain} from './terrain-chunks.js';
 import {buildRaceDesert,combineGround,createSandMaterial,createDesertWind} from './desert-scenery.js';
 import {createDesertReflections} from './lighting.js';
@@ -219,8 +218,9 @@ function updateEngineSound(dt){
  const e=engineById(trucks[0].engineId);let state=trucks[0].powertrain,preview=audioPreviewTime>0&&!['racing','countdown'].includes(phase);
  if(preview){audioPreviewTime=Math.max(0,audioPreviewTime-dt);const t=1-audioPreviewTime/3.4;state={rpm:e.idle+(e.redline-e.idle)*Math.sin(t*Math.PI)*.9,load:t<.62?.85:.1};}
  const demo=isAttract();
- const powered=engineDriverAudible(trucks[0],{preview,accelerator:demo?(state?.throttle??0)>.02:keys.has('ArrowUp')||keys.has('KeyW'),brake:!demo&&(keys.has('ArrowDown')||keys.has('KeyS'))});
- const enabled=powered&&!muted&&!document.hidden&&document.hasFocus()&&(preview||(!menuDialog.open&&!document.querySelector('#tuning-menu')?.open&&phase!=='paused'&&(hasStarted||demo)));
+ // A running engine stays audible on overrun: the powertrain load, not
+ // the accelerator key, controls the pull/overrun mix and exhaust intensity.
+ const enabled=!muted&&!document.hidden&&document.hasFocus()&&(preview||(!menuDialog.open&&!document.querySelector('#tuning-menu')?.open&&phase!=='paused'&&(hasStarted||demo)));
  if(import.meta.env.DEV)canvas.dataset.engineAudible=String(enabled);
  engineAudio.update(e,state,{enabled,volume});
  const musicEnabled=demo&&!muted&&!document.hidden&&document.hasFocus()&&!preview;

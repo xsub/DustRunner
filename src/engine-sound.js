@@ -14,11 +14,3 @@ export function audioMix(engine,rpm,load){
   combustion:six?.62:.24
  };
 }
-
-// Road-driven engine RPM must not make an unpowered rolling truck roar.
-// Keep idle and deliberate revs, including the automatic S/Down reverse pedal.
-export function engineDriverAudible(car,{accelerator=false,brake=false,preview=false}={}){
- if(preview)return true;
- const reverseGas=car.transmissionMode!=='manual'&&brake&&car.physics?.controls?.reverse;
- return Math.abs(car.speed??0)<.25||(!brake&&accelerator)||Boolean(reverseGas);
-}

@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {gearboxFor} from '../src/transmissions.js';
+import {tuning as cfg} from '../src/tuning.js';
+import {driveModeById} from '../src/drive-modes.js';
+import {powertrainStep,resetPowertrain} from '../src/powertrain.js';
 import {audioMix} from '../src/engine-sound.js';
 import {ENGINES,engineById} from '../src/engines.js';
 import {CombustionVoice} from '../src/combustion.js';
@@ -67,4 +71,18 @@ test('constant RPM gives constant audio parameters, and loaded-loop pitch keeps 
  }
  const e=engineById('302'),coast=audioMix(e,3000,0),pull=audioMix(e,3000,1);
  assert.ok(pull.gains[1]>coast.gains[1]*3);assert.ok(pull.cutoff>coast.cutoff+2000);
+});
+
+test('downhill overrun unloads the engine but retains audible layers and road-driven RPM',()=>{
+ for(const engine of ENGINES){
+  const car={engineId:engine.id,style:'classic',speed:15,driveMode:'hi',transmissionMode:'manual'};
+  car.speed=engine.redline*.55/(gearboxFor(car).ratios[1]*cfg.finalDrive*driveModeById('hi').range)*cfg.driveRadius*2*Math.PI/60;
+  resetPowertrain(car);car.powertrain.gear=2;
+  for(let i=0;i<120;i++)powertrainStep(car,{throttle:1,brake:false,onDirt:true,slope:.15},1/120);
+  const loaded=car.powertrain.load;
+  for(let i=0;i<120;i++)powertrainStep(car,{throttle:0,brake:false,onDirt:true,slope:-.2},1/120);
+  assert.ok(car.powertrain.load<loaded*.01,engine.id+' unloads');assert.ok(car.powertrain.rpm>engine.idle*1.5,engine.id+' retains coupled RPM');
+  const coast=audioMix(engine,car.powertrain.rpm,car.powertrain.load),pull=audioMix(engine,car.powertrain.rpm,loaded);
+  assert.ok(coast.gains.reduce((a,b)=>a+b,0)>.1,engine.id+' stays audible');assert.ok(coast.gains[1]<pull.gains[1]);assert.ok(coast.gains[2]>pull.gains[2]);assert.deepEqual(coast.rates,pull.rates);
+ }
 });

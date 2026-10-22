@@ -1,3 +1,4 @@
+import {t as msg} from './i18n.js';
 import * as THREE from 'three';
 
 // Reuse the exact outer road triangles, including the reflected diagonal.
@@ -24,6 +25,6 @@ export function createRaceKerbs(terrain,rows,length){
   shader.vertexShader='attribute float kerbAlong; varying float vKerbAlong;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvKerbAlong=kerbAlong;');
   shader.fragmentShader='varying float vKerbAlong; uniform float kerbPairs; uniform vec3 kerbRed; uniform vec3 kerbWhite;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.rgb*=mix(kerbRed,kerbWhite,step(.5,fract(vKerbAlong*kerbPairs)));');
  };
- const mesh=new THREE.Mesh(geometry,material);mesh.name='Red and white race edge strips';mesh.receiveShadow=true;
+ const mesh=new THREE.Mesh(geometry,material);mesh.name=msg("race_kerbs.red_and_white_race_edge_strips");mesh.receiveShadow=true;
  return mesh;
 }

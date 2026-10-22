@@ -1,3 +1,4 @@
+import {t as msg} from './i18n.js';
 // Slider/crank geometry for an illustrative OHV cutaway. Coordinates are
 // normalized; this is kinematics, not a combustion/thermal solver.
 export function sliderCrank(angle,bank=0,radius=.13,rod=.42){
@@ -51,11 +52,11 @@ export function drawEngineAnatomy(ctx,data,phase=0){
  const circle=(x,y,r,fill,stroke=steel,w=1.5)=>{ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);if(fill){ctx.fillStyle=fill;ctx.fill();}ctx.strokeStyle=stroke;ctx.lineWidth=w;ctx.stroke();};
  const text=(s,x,y,color=ink,size=11)=>{ctx.font=`${size}px monospace`;ctx.fillStyle=color;ctx.fillText(s,x,y);};
  for(let x=0;x<720;x+=20)line([x,50],[x,345],'#7c9aa710',.6);for(let y=60;y<345;y+=20)line([0,y],[720,y],'#7c9aa710',.6);
- text(e?.name??'SILNIK · ODCZYT PO ROZPOCZĘCIU JAZDY',18,25,ink,14);
- text('OHV · WAŁ / KORBOWODY / TŁOKI / POPYCHACZE / ZAWORY',18,44,steel,10);
+ text(e?.name??msg("engine_anatomy.engine_start_driving_for_live_data"),18,25,ink,14);
+ text(msg("engine_anatomy.ohv_crank_rods_pistons_pushrods_valves"),18,44,steel,10);
  if(!e){ctx.restore();return;}
- text(six?'01 / PRZEKRÓJ I6':'01 / PRZEKRÓJ V8 · BANKI 90°',18,68);
- text('02 / PRZEKRÓJ WZDŁUŻNY GŁOWICY',435,68);
+ text(six?msg("engine_anatomy.01_inline_six_section"):msg("engine_anatomy.01_v8_section_90_banks"),18,68);
+ text(msg("engine_anatomy.02_cylinder_head_side_view"),435,68);
  line([415,80],[415,338],'#8ba6af40',1);
  // Cast block and sump silhouette inspired by the Reman Engine long blocks.
  poly(six?[[157,150],[243,150],[254,272],[146,272]]:[[53,161],[97,101],[170,157],[230,157],[303,101],[347,161],[290,269],[110,269]],'#34464e');
@@ -92,7 +93,7 @@ export function drawEngineAnatomy(ctx,data,phase=0){
  line([cx-14,cy],[cx-28,cy-48],copper,2);line([cx+14,cy],[cx+28,cy-48],copper,2);
  if(godzilla){
   // Godzilla's EFI plenum/runners replace the round carburetor air cleaner.
-  rect(169,119,62,31,'#15202a',steel);for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(173+i*14,123);ctx.quadraticCurveTo(150+i*25,148,136+i*40,157);ctx.strokeStyle=steel;ctx.lineWidth=3;ctx.stroke();}circle(200,128,10,dark,steel);text('7.3 EFI',171,115,ink,9);
+  rect(169,119,62,31,'#15202a',steel);for(let i=0;i<4;i++){ctx.beginPath();ctx.moveTo(173+i*14,123);ctx.quadraticCurveTo(150+i*25,148,136+i*40,157);ctx.strokeStyle=steel;ctx.lineWidth=3;ctx.stroke();}circle(200,128,10,dark,steel);text(msg("engine_anatomy.7_3_efi"),171,115,ink,9);
  }else{rect(181,139,38,18,'#b79c69',copper);poly([[153,135],[247,135],[235,122],[165,122]],'#466173',steel);line([158,129],[242,129],ink,1);}
  // Four cylinders of one bank (all six for I6); cross-plane crank phases.
  const count=six?6:4,gap=six?39:57,start=six?445:451;
@@ -113,9 +114,9 @@ export function drawEngineAnatomy(ctx,data,phase=0){
   line([x+15,235],[x+12,136],copper,1);circle(x,151,2,dark,steel);
  }
  line([438,269],[697,269],steel,2);line([438,235],[697,235],copper,1);
- text('WAŁ KORBOWY / NAPĘD ROZRZĄDU 2:1',65,325,steel,9);text('GŁOWICA / 2 ZAWORY NA CYLINDER',452,325,steel,9);
- text(`RZECZYWISTE OBROTY: ${Math.round(data.rpm??e.idle)} RPM`,18,350,ink,11);
- text('RUCH POGLĄDOWY ×1/50 · KINEMATYKA OHV',18,369,steel,10);
- text(godzilla?'GODZILLA 7.3 · NOWOCZESNY SWAP':six?'RZĘDOWY 6-CYLINDROWY':'V8 · DWA RZĘDY PO 4 CYLINDRY',435,350,copper,10);
+ text(msg("engine_anatomy.crankshaft_timing_drive_2_1"),65,325,steel,9);text(msg("engine_anatomy.head_two_valves_per_cylinder"),452,325,steel,9);
+ text(msg("engine_anatomy.engine_speed_rpm",{v0:(Math.round(data.rpm??e.idle))}),18,350,ink,11);
+ text(msg("engine_anatomy.illustrative_motion_1_50_ohv_kinematics"),18,369,steel,10);
+ text(godzilla?msg("engine_anatomy.godzilla_7_3_modern_swap"):six?msg("engine_anatomy.inline_six_cylinder"):msg("engine_anatomy.v8_two_banks_of_four"),435,350,copper,10);
  ctx.restore();
 }

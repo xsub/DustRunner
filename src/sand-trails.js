@@ -1,3 +1,4 @@
+import {t as msg} from './i18n.js';
 import * as THREE from 'three';
 
 // A fixed ring of terrain-conforming ribbons: no decals, textures, physics
@@ -21,7 +22,7 @@ export function createSandTrails(scene,capacity=8192){
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
    }`});
- const mesh=new THREE.Mesh(geometry,material);mesh.name='Sand wheel ruts';mesh.frustumCulled=false;mesh.renderOrder=1;scene.add(mesh);
+ const mesh=new THREE.Mesh(geometry,material);mesh.name=msg("sand_trails.sand_wheel_ruts");mesh.frustumCulled=false;mesh.renderOrder=1;scene.add(mesh);
  const contact={x:0,y:0,z:0};let trails=new WeakMap(),cursor=0,count=0;
  geometry.setDrawRange(0,0);
  function emit(a,b,heightAt,intensity){

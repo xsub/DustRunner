@@ -1,0 +1,559 @@
+{
+  "controls": [
+    {
+      "height": 26.5,
+      "id": "open-history",
+      "label": "BRONCO® HISTORY & PERFORMANCE ↗",
+      "width": 174.109375
+    },
+    {
+      "height": 37,
+      "id": "menu-close",
+      "label": "Close game menu",
+      "width": 37
+    },
+    {
+      "height": 44,
+      "id": "mobile-layout",
+      "label": "AUTO · dotyk na telefonieMOBILNY · dwa kciukiPEŁNY · zegary i telemetria",
+      "width": 631
+    },
+    {
+      "height": 41.5,
+      "id": "instrument-style",
+      "label": "AUTO · według modelu samochoduRally Six · sześć zegarówRanger ’78 · prostokątnyHeritage ’66 · okrągły",
+      "width": 631
+    },
+    {
+      "height": 39,
+      "id": "open-tuning",
+      "label": "TRYB DEVELOPERSKI · TUNNING ↗",
+      "width": 193.25
+    },
+    {
+      "height": 13,
+      "id": "show-terrain-markings",
+      "label": "",
+      "width": 13
+    },
+    {
+      "height": 13,
+      "id": "show-stats",
+      "label": "",
+      "width": 13
+    },
+    {
+      "height": 13,
+      "id": "show-vehicle-diagram",
+      "label": "",
+      "width": 13
+    },
+    {
+      "height": 67.5,
+      "id": "",
+      "label": "WYŚCIGTOR · WYBIERZ LICZBĘ AI · 3 OKRĄŻENIA",
+      "width": 310.5
+    },
+    {
+      "height": 67.5,
+      "id": "",
+      "label": "FREE RIDE · PUSTYNIAWYDMY · SKOKI · BEZ LIMITU",
+      "width": 310.5
+    },
+    {
+      "height": 0,
+      "id": "desert-variant",
+      "label": "RAJDOWE WYDMYMORZE WIELKICH WYDMLOSOWA EKSPEDYCJATRUDNE WYDMY",
+      "width": 0
+    },
+    {
+      "height": 0,
+      "id": "desert-seed",
+      "label": "",
+      "width": 0
+    },
+    {
+      "height": 0,
+      "id": "desert-apply-seed",
+      "label": "GENERUJ Z ZIARNA",
+      "width": 0
+    },
+    {
+      "height": 0,
+      "id": "desert-generate",
+      "label": "LOSUJ NOWĄ PUSTYNIĘ ↗",
+      "width": 0
+    },
+    {
+      "height": 0,
+      "id": "share-car",
+      "label": "",
+      "width": 0
+    },
+    {
+      "height": 0,
+      "id": "share-settings",
+      "label": "",
+      "width": 0
+    },
+    {
+      "height": 0,
+      "id": "share-position",
+      "label": "",
+      "width": 0
+    },
+    {
+      "height": 0,
+      "id": "share-route",
+      "label": "",
+      "width": 0
+    },
+    {
+      "height": 0,
+      "id": "desert-share",
+      "label": "UDOSTĘPNIJ TĘ PUSTYNIĘ · KOPIUJ ZAPROSZENIE ↗",
+      "width": 0
+    },
+    {
+      "height": 13,
+      "id": "sand-ruffles",
+      "label": "",
+      "width": 13
+    },
+    {
+      "height": 18,
+      "id": "sand-wave-size",
+      "label": "",
+      "width": 597
+    },
+    {
+      "height": 18,
+      "id": "sand-wave-height",
+      "label": "",
+      "width": 597
+    },
+    {
+      "height": 46.5,
+      "id": "sand-waves-apply",
+      "label": "ZASTOSUJ FALE · RESTART ↗",
+      "width": 244.40625
+    },
+    {
+      "height": 35,
+      "id": "opponent-count",
+      "label": "0 AI · 1 auto łącznie1 AI · 2 auta łącznie2 AI · 3 auta łącznie3 AI · 4 auta łącznie4 AI · 5 aut łącznie5 AI · 6 aut łącznie6 AI · 7 aut łącznie7 AI ·",
+      "width": 162.5
+    },
+    {
+      "height": 35,
+      "id": "opponent-all",
+      "label": "Mieszane umiejętnościAmateurAdvancedSeasonedProMaster",
+      "width": 173
+    },
+    {
+      "height": 35,
+      "id": "",
+      "label": "AmateurAdvancedSeasonedProMaster",
+      "width": 98.5
+    },
+    {
+      "height": 35,
+      "id": "",
+      "label": "AmateurAdvancedSeasonedProMaster",
+      "width": 98.5
+    },
+    {
+      "height": 35,
+      "id": "",
+      "label": "AmateurAdvancedSeasonedProMaster",
+      "width": 98.5
+    },
+    {
+      "height": 35,
+      "id": "",
+      "label": "AmateurAdvancedSeasonedProMaster",
+      "width": 98.5
+    },
+    {
+      "height": 35,
+      "id": "",
+      "label": "AmateurAdvancedSeasonedProMaster",
+      "width": 98.5
+    },
+    {
+      "height": 37,
+      "id": "opponents-apply",
+      "label": "ZASTOSUJ · RESTART POZIOMU",
+      "width": 181.4609375
+    },
+    {
+      "height": 37,
+      "id": "benchmark-start",
+      "label": "URUCHOM BENCHMARK PO ZAMKNIĘCIU INNYCH SESJI",
+      "width": 293.9609375
+    },
+    {
+      "height": 37,
+      "id": "benchmark-export",
+      "label": "POBIERZ RAPORT JSON",
+      "width": 144.5390625
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰HERITAGE · EMERALDKLASYCZNE OKRĄGŁE REFLEKTORY SELECTED ↗",
+      "width": 204.328125
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰RANGER · TANGERINEKLASYCZNY PRZÓD PROSTOKĄTNY SELECT ↗",
+      "width": 204.3359375
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰SUNSET · MIDNIGHTKLASYCZNY PRZÓD PROSTOKĄTNY SELECT ↗",
+      "width": 204.3359375
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰SKY · OPEN AIRKLASYCZNE OKRĄGŁE REFLEKTORY SELECT ↗",
+      "width": 204.328125
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰CRAWLER · OLIVEKLASYCZNE OKRĄGŁE REFLEKTORY SELECT ↗",
+      "width": 204.3359375
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰TRAIL · OLIVEKLASYCZNE OKRĄGŁE REFLEKTORY SELECT ↗",
+      "width": 204.3359375
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰CLASSIC ’78 · COPPERKLASYCZNY PRZÓD PROSTOKĄTNY SELECT ↗",
+      "width": 204.328125
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰GODZILLA ’78 · 7.3KLASYCZNY PRZÓD PROSTOKĄTNY SELECT ↗",
+      "width": 204.3359375
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰ROADSTER · BLACK CAGEOTWARTY · PEŁNA KLATKA · TAN / CHROM SELECT ↗",
+      "width": 204.3359375
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰HALF-CAB · RUBYKRÓTKA KABINA · OTWARTA PAKA · PAŁĄK SELECT ↗",
+      "width": 204.328125
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰OVERLAND · EMBERCZARNY DACH · BAGAŻNIK · WYCIĄGARKA SELECT ↗",
+      "width": 204.3359375
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰HIGH ROLLER ’78 · MOCHALIFT · DUŻE KOŁA · CZERWONE SPRĘŻYNY SELECT ↗",
+      "width": 204.3359375
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰TURF GIANT ’79 · BLUE / IVORYBALONOWE OPONY · DASZEK · DWUKOLOROWY SELECT ↗",
+      "width": 204.328125
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰RANGER ’79 · ORANGE / CREAMPEŁNY HARDTOP · SZEROKI JASNY PAS SELECT ↗",
+      "width": 204.3359375
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰SOFT TRAIL ’78 · INDIGOMIĘKKI CZARNY DACH · KOŁA MUD SELECT ↗",
+      "width": 204.3359375
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰BULLNOSE ’80 · BLUE / WHITEPRZÓD BULLNOSE · BIAŁE BOKI / HARDTOP SELECT ↗",
+      "width": 204.328125
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰BULLNOSE ’82 · TURQUOISETURKUS · KANCIASTY GRILL · JASNY DACH SELECT ↗",
+      "width": 204.3359375
+    },
+    {
+      "height": 75,
+      "id": "",
+      "label": "▰FOREST ’84 · SAFARIBRĄZOWY HARDTOP · BULLBAR · 4 HALOGENY SELECT ↗",
+      "width": 204.3359375
+    },
+    {
+      "height": 68,
+      "id": "",
+      "label": "▰DESERT BEAST · MONSTERMONSTER CUSTOM · OGROMNE OPONY · 7.3 V8 SELECT ↗",
+      "width": 311
+    },
+    {
+      "height": 68,
+      "id": "",
+      "label": "▰HIGH RIDER ’85 · COBALTWYSOKI LIFT · HALOGENY NAD SZYBĄ SELECT ↗",
+      "width": 311
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "01 · DUSTBOWL1.33 KM · 5 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "02 · RATTLESNAKE2.32 KM · 5 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "03 · CANYON RUN1.86 KM · 6 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "04 · SIDEWINDER2.10 KM · 7 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "05 · RED MESA2.76 KM · 8 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "06 · THUNDER BASIN2.22 KM · 9 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "07 · SCORPION2.26 KM · 10 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "08 · HIGH DESERT2.21 KM · 4 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "09 · RAVINE RUSH2.17 KM · 5 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "10 · COYOTE PASS2.37 KM · 6 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "11 · BADLANDS2.44 KM · 7 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "12 · DUNE EXPRESS2.09 KM · 8 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "13 · COPPER RIDGE2.28 KM · 9 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "14 · TWIN PEAKS2.37 KM · 10 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "15 · OUTLAW LOOP1.95 KM · 4 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 114,
+      "id": "",
+      "label": "16 · KING OF THE DIRT2.36 KM · 5 SKOKÓW · 3 WYS.",
+      "width": 151.75
+    },
+    {
+      "height": 37.5,
+      "id": "race-seed",
+      "label": "",
+      "width": 291
+    },
+    {
+      "height": 37.5,
+      "id": "race-apply-seed",
+      "label": "GENERUJ Z ZIARNA",
+      "width": 145
+    },
+    {
+      "height": 37.5,
+      "id": "race-generate",
+      "label": "LOSUJ NOWĄ TRASĘ ↗",
+      "width": 145
+    },
+    {
+      "height": 55.5,
+      "id": "",
+      "label": "↔ REVERSE TRACK MIRROR LEFT / RIGHT · OY",
+      "width": 310.5
+    },
+    {
+      "height": 55.5,
+      "id": "",
+      "label": "↕ FLIP TRACK MIRROR UP / DOWN · OX",
+      "width": 310.5
+    },
+    {
+      "height": 45,
+      "id": "handling-profile",
+      "label": "ARCADE 4×4 · symulacja + pomoc kierowcyKLASYCZNY · dotychczasowe prowadzenie",
+      "width": 631
+    },
+    {
+      "height": 13,
+      "id": "hill-descent",
+      "label": "",
+      "width": 13
+    },
+    {
+      "height": 45,
+      "id": "steering-mode",
+      "label": "AUTO CENTER · release to straightenHOLD STEERING ANGLE · release to keep angle",
+      "width": 631
+    },
+    {
+      "height": 41,
+      "id": "transmission-mode",
+      "label": "A · AUTOMAT · PEŁNA SKRZYNIA SILNIKAM · RĘCZNA · Q / E LUB − / +",
+      "width": 631
+    },
+    {
+      "height": 76,
+      "id": "",
+      "label": "Wybierz automat · klawisz 1",
+      "width": 151.75
+    },
+    {
+      "height": 76,
+      "id": "",
+      "label": "Tryb HI · 4H / długi zakres",
+      "width": 151.75
+    },
+    {
+      "height": 76,
+      "id": "",
+      "label": "Tryb LO · 4L / reduktor",
+      "width": 151.75
+    },
+    {
+      "height": 76,
+      "id": "",
+      "label": "Tryb 4×4 · pełzanie + blokady",
+      "width": 151.75
+    },
+    {
+      "height": 52.5,
+      "id": "",
+      "label": "BLOKADA PRZEDNIEGO MOSTUZ",
+      "width": 311.5
+    },
+    {
+      "height": 52.5,
+      "id": "",
+      "label": "BLOKADA TYLNEGO MOSTUX",
+      "width": 311.5
+    },
+    {
+      "height": 48.5,
+      "id": "engine-select",
+      "label": "170 · 2.8L I6289 Windsor · 4.7L V8302 Windsor · 4.9L V8200 · 3.3L I6351M · 5.8L V8400 · 6.6L V8300 · 4.9L I6 CARB300 · 4.9L I6 EFI302 · 5.0L V8 EFI351",
+      "width": 631
+    },
+    {
+      "height": 38,
+      "id": "engine-preview",
+      "label": "LISTEN · REV ENGINE ↗",
+      "width": 139.40625
+    },
+    {
+      "height": 16,
+      "id": "engine-volume",
+      "label": "",
+      "width": 120
+    },
+    {
+      "height": 53.5,
+      "id": "",
+      "label": "ENGINE $300 · LV 0",
+      "width": 84.6953125
+    },
+    {
+      "height": 53.5,
+      "id": "",
+      "label": "TIRES $300 · LV 0",
+      "width": 84.6953125
+    },
+    {
+      "height": 37,
+      "id": "sound",
+      "label": "Toggle sound",
+      "width": 106.75
+    },
+    {
+      "height": 41,
+      "id": "menu-play",
+      "label": "START RACE ↗",
+      "width": 119.796875
+    }
+  ],
+  "menu": {
+    "height": 690,
+    "scrollHeight": 5375,
+    "width": 683
+  },
+  "viewport": {
+    "height": 720,
+    "width": 1280
+  }
+}

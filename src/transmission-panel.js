@@ -1,3 +1,4 @@
+import {formatFixed,t as msg} from './i18n.js';
 import {transmissionForEngine,transmissionMode,gearboxFor,gearLabel} from './transmissions.js';
 import {selectTransmissionMode,shiftGear} from './powertrain.js';
 import {drivingMode,cycleDrivingMode} from './driving-mode.js';
@@ -16,12 +17,12 @@ export function createTransmissionPanel({getPlayer,onChange,onInteract}){
   toggles.forEach(button=>{
    const label=drivingMode(car)==='4x4'?'4×4':drivingMode(car),pending=car.driveMode!==state?.mode;
    button.textContent=label;button.classList.toggle('pending',pending);
-   button.title=label+' · '+(pending?'Zwolnij poniżej 8 km/h · ':'')+'Kliknij: A → M → 4×4';
-   button.setAttribute('aria-label','Tryb '+label+'. '+(pending?'Oczekuje: zwolnij poniżej 8 km/h. ':'')+'Zmień: A automat, M ręczna, 4×4 pełzanie');
+   button.title=label+' · '+(pending?(msg("transmission_panel.slow_below_8_km_h")+" "):'')+msg("transmission_panel.click_a_m_44");
+   button.setAttribute('aria-label',msg('transmission.mode_accessible',{mode:label,pending:pending?msg('transmission_panel.pending_slow_below_8_km_h')+' ':'',choices:msg('transmission_panel.change_a_automatic_m_manual_44')}));
   });
-  info.textContent=assigned.name+' · przypisana na stałe do silnika. '+(mode==='arcade'?'Arcade używa dotychczasowych trzech przełożeń DEV.':'Wszystkie przełożenia tej skrzyni są aktywne; HI/LO nadal wybiera zakres reduktora.');
-  ratios.textContent='R '+assigned.reverse.toFixed(3)+' · N · '+assigned.ratios.map((ratio,i)=>(i+1)+': '+ratio.toFixed(3)).join(' · ');
-  readout.textContent=mode==='arcade'?'':gearLabel(car)+'/'+box.ratios.length+' · '+(gear===0?'luz':(gear<0?box.reverse:box.ratios[gear-1]).toFixed(2));
+  info.textContent=assigned.name+(" "+msg("transmission_panel.fixed_to_this_engine")+" ")+(mode==='arcade'?msg("transmission_panel.arcade_uses_the_three_legacy_dev"):msg("transmission_panel.all_gearbox_ratios_are_active_hi"));
+  ratios.textContent='R '+formatFixed(assigned.reverse,3)+(" "+msg("transmission_panel.n")+" ")+assigned.ratios.map((ratio,i)=>(i+1)+': '+formatFixed(ratio,3)).join(' · ');
+  readout.textContent=mode==='arcade'?'':gearLabel(car)+'/'+box.ratios.length+' · '+(gear===0?msg("transmission_panel.neutral"):formatFixed(gear<0?box.reverse:box.ratios[gear-1],2));
   document.querySelectorAll('[data-shift]').forEach(button=>button.disabled=mode!=='manual');
   notice.textContent=mode==='manual'?(state?.shiftNotice||''):'';
  }

@@ -1,3 +1,4 @@
+import {t as msg} from './i18n.js';
 import {createHardDesertHeight,HARD_DESERT_REGIONS} from './desert-hard.js';
 import {gridHeight} from './grid-height.js';
 import {desertJumps,shapeDesertJump,jumpPoint,jumpEnd} from './desert-jumps.js';
@@ -6,13 +7,13 @@ import {sandWaveHeight} from './sand-waves.js';
 export const DESERT_WIDTH=2400,DESERT_DEPTH=1200;
 export const DESERT_BOUNDS={min:{x:-DESERT_WIDTH/2,z:-DESERT_DEPTH/2},max:{x:DESERT_WIDTH/2,z:DESERT_DEPTH/2}};
 export const DESERT_SPAWN={x:0,z:210,heading:0};
-export const DESERT_REGIONS=[{x:-700,z:300,label:'KOLEINY'},{x:0,z:70,label:'SKOCZNIE'},{x:750,z:-280,label:'WIELKA'}];
+export const DESERT_REGIONS=[{x:-700,z:300,label:msg("desert.ruts")},{x:0,z:70,label:msg("desert.jumps")},{x:750,z:-280,label:msg("desert.big_dune")}];
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 export const DESERT_VARIANTS=[
- {id:'ridges',name:'RAJDOWE WYDMY',description:'Płaskie koleiny, średnie wydmy, usypane skocznie i długa wielka wydma',amplitude:1,width:1.1,count:96,defaultSeed:1947},
- {id:'stars',name:'MORZE WIELKICH WYDM',description:'Szerokie wydmy i łagodne podjazdy, duże zjazdy oraz skocznie',amplitude:1.15,width:1.3,count:80,defaultSeed:8671},
- {id:'random',name:'LOSOWA EKSPEDYCJA',description:'Losowa mieszanka płaskiego piasku, średnich wydm i skoczni',amplitude:1.05,width:1.2,count:112,defaultSeed:43210},
- {id:'hard',name:'TRUDNE WYDMY',description:'Poprzedni stromy teren: wysokie wydmy, ostre grzbiety i głębokie siodła. Bez przygotowanych skoczni. Zalecany reduktor LO / 4×4.',hard:true,defaultSeed:1947},
+ {id:'ridges',name:msg("desert.rally_dunes"),description:msg("desert.flat_ruts_rolling_dunes_prepared_jumps"),amplitude:1,width:1.1,count:96,defaultSeed:1947},
+ {id:'stars',name:msg("desert.dune_sea"),description:msg("desert.broad_dunes_gentle_climbs_long_descents"),amplitude:1.15,width:1.3,count:80,defaultSeed:8671},
+ {id:'random',name:msg("desert.random_expedition"),description:msg("desert.a_seeded_mix_of_flat_sand"),amplitude:1.05,width:1.2,count:112,defaultSeed:43210},
+ {id:'hard',name:msg("desert.hard_dunes"),description:msg("desert.the_original_steep_terrain_high_dunes"),hard:true,defaultSeed:1947},
 ];
 export function normalizeDesertOptions(options={}){
  const variant=DESERT_VARIANTS.find(v=>v.id===options.variant)??DESERT_VARIANTS[0];

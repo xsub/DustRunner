@@ -1,10 +1,11 @@
+import {t as msg} from './i18n.js';
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 export function desertJumps(seed=1947){
  let state=seed>>>0;const random=()=>{state=(state*1664525+1013904223)>>>0;return state/4294967296;};
  const specs=[
-  [0,110,0,1.8,24,6,true,'ŁATWA PARA'],[-340,100,Math.PI/2,3.2,30,10,false,'SKOK ŚREDNI'],
-  [350,240,-Math.PI/2,3.5,32,12,true,'PARA ŚREDNIA'],[-650,-150,-.7,2.2,27,8,false,'SKOK ŁATWY'],
-  [650,90,Math.PI/2,5.5,40,16,true,'DUŻA PARA'],[400,-400,Math.PI,4.2,36,14,false,'DŁUGI SKOK']
+  [0,110,0,1.8,24,6,true,msg("desert_jumps.easy_pair")],[-340,100,Math.PI/2,3.2,30,10,false,msg("desert_jumps.medium_jump")],
+  [350,240,-Math.PI/2,3.5,32,12,true,msg("desert_jumps.medium_pair")],[-650,-150,-.7,2.2,27,8,false,msg("desert_jumps.easy_jump")],
+  [650,90,Math.PI/2,5.5,40,16,true,msg("desert_jumps.big_pair")],[400,-400,Math.PI,4.2,36,14,false,msg("desert_jumps.long_jump")]
  ];
  return specs.map(([x,z,heading,height,runup,gap,paired,label],i)=>({id:i,x:x+(i?(random()-.5)*40:0),z:z+(i?(random()-.5)*40:0),heading:heading+(i?(random()-.5)*.3:0),height,runup,gap,paired,label,halfWidth:i===0?12:15,approach:110,landing:45,landingHeight:height*.65}));
 }

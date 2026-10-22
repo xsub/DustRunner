@@ -1,3 +1,4 @@
+import {t as msg} from './i18n.js';
 // Sustain one four-stroke engine cycle from each recording. Replaying an
 // entire recorded rev would reintroduce that rev even at constant game RPM.
 export const RECORDING_LAYERS=Object.freeze([
@@ -10,7 +11,7 @@ export function steadyEngineLoop(samples,sampleRate,{rpm,offset}){
  const size=Math.round(sampleRate*120/rpm),overlap=Math.round(sampleRate*.006);
  const center=Math.round(offset*sampleRate),radius=Math.round(sampleRate*.09);
  const minimum=Math.max(0,center-radius),maximum=Math.min(samples.length-size-overlap-1,center+radius);
- if(maximum<minimum)throw new RangeError('Recording is too short for a complete engine cycle');
+ if(maximum<minimum)throw new RangeError(msg("engine_loops.recording_is_too_short_for_a"));
  let start=minimum,best=-Infinity;
  // Match waveform phase across the join before applying the short crossfade.
  for(let candidate=minimum;candidate<=maximum;candidate+=17){

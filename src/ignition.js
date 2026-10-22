@@ -1,3 +1,4 @@
+import {t as msg} from './i18n.js';
 export const START_TIME=1.1,STOP_TIME=.45;
 export const ignitionPhase=car=>car.ignition?.phase??'running';
 export function resetIgnition(car){car.ignition={phase:'running',time:0,notice:'',noticeTime:0,serial:(car.ignition?.serial??0)+1};}
@@ -6,7 +7,7 @@ export function requestIgnition(car){
  if(phase==='starting'||phase==='stopping')return false;
  if(!car.ignition)resetIgnition(car);
  if(phase==='running'&&(car.airborne||Math.abs(car.speed??0)>.25||Math.hypot(car.vx??0,car.vz??0)>.25||Math.abs(car.vertical??0)>.4)){
-  car.ignition.notice='ZATRZYMAJ AUTO, ABY ZGASIĆ';car.ignition.noticeTime=2.5;return false;
+  car.ignition.notice=msg("ignition.stop_before_switching_off");car.ignition.noticeTime=2.5;return false;
  }
  Object.assign(car.ignition,{phase:phase==='off'?'starting':'stopping',time:0,notice:'',noticeTime:0,serial:(car.ignition.serial??0)+1,stopRpm:car.powertrain?.rpm??700});return true;
 }

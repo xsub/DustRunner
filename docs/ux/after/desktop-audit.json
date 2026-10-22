@@ -1,0 +1,114 @@
+[
+  {
+    "content": {
+      "height": 485,
+      "scrollHeight": 716,
+      "scrollWidth": 1038,
+      "width": 1038
+    },
+    "missing": false,
+    "overflows": [],
+    "polish": false,
+    "section": "menu-panel-play",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  {
+    "content": {
+      "height": 485,
+      "scrollHeight": 1204,
+      "scrollWidth": 1038,
+      "width": 1038
+    },
+    "missing": false,
+    "overflows": [],
+    "polish": false,
+    "section": "menu-panel-world",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  {
+    "content": {
+      "height": 485,
+      "scrollHeight": 1661,
+      "scrollWidth": 1038,
+      "width": 1038
+    },
+    "missing": false,
+    "overflows": [],
+    "polish": false,
+    "section": "menu-panel-vehicles",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  {
+    "content": {
+      "height": 485,
+      "scrollHeight": 1170,
+      "scrollWidth": 1038,
+      "width": 1038
+    },
+    "missing": false,
+    "overflows": [],
+    "polish": false,
+    "section": "menu-panel-simulation",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  {
+    "content": {
+      "height": 485,
+      "scrollHeight": 485,
+      "scrollWidth": 1038,
+      "width": 1038
+    },
+    "missing": false,
+    "overflows": [],
+    "polish": false,
+    "section": "menu-panel-stats",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  {
+    "content": {
+      "height": 485,
+      "scrollHeight": 485,
+      "scrollWidth": 1038,
+      "width": 1038
+    },
+    "missing": false,
+    "overflows": [],
+    "polish": false,
+    "section": "menu-panel-history",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  {
+    "content": {
+      "height": 485,
+      "scrollHeight": 485,
+      "scrollWidth": 1038,
+      "width": 1038
+    },
+    "missing": false,
+    "overflows": [],
+    "polish": false,
+    "section": "menu-panel-community",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  }
+]

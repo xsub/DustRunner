@@ -1,9 +1,10 @@
+import {t as msg} from './i18n.js';
 // US model years. Layouts describe options offered within a generation, not
 // every model year / market. Historical sources are linked in the game panel.
 export const GENERATIONS=[
- {id:1,years:'1966–1977',layouts:'Inline-6 · small-block V8',fuel:'Carbureted',title:'The compact original',story:'A short-wheelbase off-roader with a simple body and removable roof. The early six-cylinder engines were joined by the 289 and then the 302 Windsor V8.',engines:['170','289','302','200']},
- {id:2,years:'1978–1979',layouts:'351M / 400 V8 · 335 family',fuel:'Carbureted',title:'Going full-size',story:'Bronco® moved onto a shortened F-Series platform. The 351M and longer-stroke 400 brought the low-rev torque suited to the larger truck.',engines:['351m','400']},
- {id:3,years:'1980–1986',layouts:'Inline-6 · small-block V8*',fuel:'Carbureted / early EFI',title:'Comfort meets the trail',story:'A lighter full-size body and Twin-Traction Beam front suspension improved road manners. The 302 gained EFI for 1985; the 300 six and 351 Windsor also defined this era.',engines:['300','302','351m','351w','302efi']},
- {id:4,years:'1987–1991',layouts:'Inline-6 · small-block V8',fuel:'Transition to EFI (1987–1988)',title:'The aerodynamic age',story:'A smoother nose and a revised cabin updated the full-size Bronco®. The 300 six gained EFI for 1987, followed by the 351W in 1988; the 302 already used injection.',engines:['300efi','302efi','351w','351wefi']},
- {id:5,years:'1992–1996',layouts:'Inline-6† · small-block V8',fuel:'Multi-port EFI',title:'The final classic chapter',story:'The last classic generation refined the full-size formula with rounder front styling and more comfort and safety equipment. The 302 and 351W V8s carried the lineup through its final years.',engines:['300efi','302efi','351wefi']}
+ {id:1,years:'1966–1977',layouts:msg("heritage.inline_6_small_block_v8"),fuel:msg("heritage.carbureted"),title:msg("heritage.the_compact_original"),story:msg("heritage.a_short_wheelbase_off_roader_with"),engines:['170','289','302','200']},
+ {id:2,years:'1978–1979',layouts:msg("heritage.351m_400_v8_335_family"),fuel:msg("heritage.carbureted"),title:msg("heritage.going_full_size"),story:msg("heritage.bronco_moved_onto_a_shortened_f"),engines:['351m','400']},
+ {id:3,years:'1980–1986',layouts:msg("heritage.inline_6_small_block_v8_2"),fuel:msg("heritage.carbureted_early_efi"),title:msg("heritage.comfort_meets_the_trail"),story:msg("heritage.a_lighter_full_size_body_and"),engines:['300','302','351m','351w','302efi']},
+ {id:4,years:'1987–1991',layouts:msg("heritage.inline_6_small_block_v8"),fuel:msg("heritage.transition_to_efi_19871988"),title:msg("heritage.the_aerodynamic_age"),story:msg("heritage.a_smoother_nose_and_a_revised"),engines:['300efi','302efi','351w','351wefi']},
+ {id:5,years:'1992–1996',layouts:msg("heritage.inline_6_small_block_v8_3"),fuel:msg("heritage.multi_port_efi"),title:msg("heritage.the_final_classic_chapter"),story:msg("heritage.the_last_classic_generation_refined_the"),engines:['300efi','302efi','351wefi']}
 ];

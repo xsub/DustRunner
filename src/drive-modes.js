@@ -1,10 +1,11 @@
+import {t as msg} from './i18n.js';
 // Game presets combine automatic gearbox behavior and transfer-case ranges.
 // 4WD alone does not reduce speed; the 4x4 preset uses a crawler reduction.
 export const DRIVE_MODES=Object.freeze([
- {id:'auto',label:'A',name:'A/M · tryb skrzyni',range:.9,pace:1,pedal:1,maxGear:3,boost:true,low:false,description:'Drogowy zakres napędu i wspomagany rozdział momentu. A: automatyczna zmiana wszystkich biegów skrzyni silnika; M: ręcznie Q/E lub −/+.'},
- {id:'hi',label:'HI',name:'HI · 4H / długi zakres',range:.78,pace:1.12,pedal:1,maxGear:3,boost:true,low:false,description:'Dłuższe przełożenie do szybkich prostych. Napęd obu osi. Sterowanie skrzynią A/M pozostaje niezależne.'},
- {id:'lo',label:'LO',name:'LO · 4L / reduktor',range:2.2,pace:.43,pedal:.72,maxGear:3,boost:false,low:true,description:'Reduktor do podjazdów i wydm: więcej momentu na kołach, mniejsza prędkość. Bez nitro.'},
- {id:'4x4',label:'4×4',name:'4×4 · pełzanie + blokady',range:3,pace:0,pedal:.45,maxGear:1,boost:false,low:true,description:'Bardzo wolne pełzanie na pierwszym biegu. Osobne blokady przedniego i tylnego mechanizmu różnicowego. Bez nitro.'}
+ {id:'auto',label:'A',name:msg("drive_modes.a_m_transmission"),range:.9,pace:1,pedal:1,maxGear:3,boost:true,low:false,description:msg("drive_modes.road_range_with_assisted_torque_distribution")},
+ {id:'hi',label:'HI',name:msg("drive_modes.hi_4h_high_range"),range:.78,pace:1.12,pedal:1,maxGear:3,boost:true,low:false,description:msg("drive_modes.high_range_for_fast_straights_both")},
+ {id:'lo',label:'LO',name:msg("drive_modes.lo_4l_low_range"),range:2.2,pace:.43,pedal:.72,maxGear:3,boost:false,low:true,description:msg("drive_modes.low_range_for_climbs_and_dunes")},
+ {id:'4x4',label:'4×4',name:msg("drive_modes.44_crawl_locks"),range:3,pace:0,pedal:.45,maxGear:1,boost:false,low:true,description:msg("drive_modes.slow_first_gear_crawling_with_independent")}
 ].map(Object.freeze));
 export const driveModeById=id=>DRIVE_MODES.find(mode=>mode.id===id)??DRIVE_MODES[0];
 export const RANGE_SHIFT_SPEED=8/3.6;

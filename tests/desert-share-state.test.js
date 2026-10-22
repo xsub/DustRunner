@@ -26,7 +26,7 @@ test('unsafe, oversized, corrupted and unsupported invite contents are rejected'
  for(const value of ['g.corrupted','j.'+'a'.repeat(6100),'z.whatever','j.bm90IGpzb24'])await assert.rejects(()=>decodeDesertShare('https://example.com/#dr='+value));
  const packed=new Uint8Array(await new Response(new Blob([' '.repeat(50000)]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
  const bomb='g.'+btoa(String.fromCharCode(...packed)).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
- await assert.rejects(()=>decodeDesertShare('https://example.com/#dr='+bomb),/za duże/);
+ await assert.rejects(()=>decodeDesertShare('https://example.com/#dr='+bomb),/too large/);
  assert.equal(await decodeDesertShare('https://example.com/#unrelated'),null);
 });
 test('last 100m route sampling is distance-based, bounded, and clears teleport jumps',()=>{

@@ -1,3 +1,4 @@
+import {t as msg} from './i18n.js';
 import * as THREE from 'three';
 import {REFERENCE_MODELS,vehicleProfile} from './vehicle-models.js';
 import {exhaustLayout} from './exhaust-layout.js';
@@ -8,14 +9,14 @@ import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js'
 import {batchRigidMeshes} from './mesh-batching.js';
 
 export const BRONCO_STYLES={
- classic:{name:'HERITAGE · EMERALD',color:'#087a50',roof:'#eee9d9',width:.89,rounded:.055,lights:'round',flares:'#eee9d9'},
- ranger:{name:'RANGER · TANGERINE',color:'#d9581e',roof:'#f0e9d8',width:.96,rounded:.035,lights:'square',flares:'#d9581e'},
- sunset:{name:'SUNSET · MIDNIGHT',color:'#172433',roof:'#172433',width:.96,rounded:.10,lights:'square',flares:'#172433'},
- sky:{name:'SKY · OPEN AIR',color:'#9dbfc9',roof:'#eee9d5',width:.89,rounded:.055,lights:'round',flares:'#eee9d5'},
- crawler:{name:'CRAWLER · OLIVE',color:'#525d32',roof:'#242a21',width:.89,rounded:.055,lights:'round',flares:'#525d32'},
- expedition:{name:'TRAIL · OLIVE',color:'#686c55',roof:'#393e33',width:.89,rounded:.055,lights:'round',flares:'#686c55'},
- copper78:{name:'CLASSIC ’78 · COPPER',color:'#693a24',roof:'#573c2b',width:.99,rounded:.06,lights:'square',flares:'#693a24'},
- godzilla78:{name:'GODZILLA ’78 · 7.3',color:'#182a31',roof:'#182025',width:.99,rounded:.06,lights:'square',flares:'#182a31'},
+ classic:{name:msg("vehicle.heritage_emerald"),color:'#087a50',roof:'#eee9d9',width:.89,rounded:.055,lights:'round',flares:'#eee9d9'},
+ ranger:{name:msg("vehicle.ranger_tangerine"),color:'#d9581e',roof:'#f0e9d8',width:.96,rounded:.035,lights:'square',flares:'#d9581e'},
+ sunset:{name:msg("vehicle.sunset_midnight"),color:'#172433',roof:'#172433',width:.96,rounded:.10,lights:'square',flares:'#172433'},
+ sky:{name:msg("vehicle.sky_open_air"),color:'#9dbfc9',roof:'#eee9d5',width:.89,rounded:.055,lights:'round',flares:'#eee9d5'},
+ crawler:{name:msg("vehicle.crawler_olive"),color:'#525d32',roof:'#242a21',width:.89,rounded:.055,lights:'round',flares:'#525d32'},
+ expedition:{name:msg("vehicle.trail_olive"),color:'#686c55',roof:'#393e33',width:.89,rounded:.055,lights:'round',flares:'#686c55'},
+ copper78:{name:msg("vehicle.classic_78_copper"),color:'#693a24',roof:'#573c2b',width:.99,rounded:.06,lights:'square',flares:'#693a24'},
+ godzilla78:{name:msg("vehicle.godzilla_78_7_3"),color:'#182a31',roof:'#182025',width:.99,rounded:.06,lights:'square',flares:'#182a31'},
  ...REFERENCE_MODELS
 };
 
@@ -155,7 +156,7 @@ export function createBronco(style='classic',number='07'){
   for(const x of [-.15,.15])box(.037,.012,1.12,creamStripe,x,1.665,-.94);
   box(.33,.012,.04,creamStripe,0,1.665,-1.50);
   if(style==='godzilla78'){round(.66,.12,.72,.05,trim,0,1.73,-.87);for(const x of [-.21,-.07,.07,.21])box(.025,.014,.45,metal,x,1.795,-.88);}
-  const badgeCanvas=document.createElement('canvas');badgeCanvas.width=256;badgeCanvas.height=64;const badge=badgeCanvas.getContext('2d');badge.fillStyle=style==='copper78'?'#693a24':'#182a31';badge.fillRect(0,0,256,64);badge.fillStyle='#eee0b2';badge.font='bold 27px sans-serif';badge.textAlign='center';badge.fillText(style==='copper78'?'BRONCO® 1978':'7.3 GODZILLA',128,42);
+  const badgeCanvas=document.createElement('canvas');badgeCanvas.width=256;badgeCanvas.height=64;const badge=badgeCanvas.getContext('2d');badge.fillStyle=style==='copper78'?'#693a24':'#182a31';badge.fillRect(0,0,256,64);badge.fillStyle='#eee0b2';badge.font='bold 27px sans-serif';badge.textAlign='center';badge.fillText(style==='copper78'?msg("vehicle.bronco_1978"):msg("vehicle.7_3_godzilla"),128,42);
   const badgeMaterial=material('#ffffff',{map:new THREE.CanvasTexture(badgeCanvas)});
   for(const side of [-1,1]){const plate=part(new THREE.PlaneGeometry(.62,.15),badgeMaterial,side*(w+.065),1.34,-.45);plate.rotation.y=side*Math.PI/2;}
  }

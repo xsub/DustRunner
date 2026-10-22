@@ -1,3 +1,4 @@
+import {t as msg} from './i18n.js';
 import * as THREE from 'three';
 import {dustEmission} from './dust-emission.js';
 
@@ -15,7 +16,7 @@ export function createDustPool(scene,capacity=384){
   shader.fragmentShader='varying float vDustOpacity;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.a *= vDustOpacity;');
  };
  const mesh=new THREE.InstancedMesh(geometry,material,capacity);mesh.count=0;mesh.frustumCulled=false;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);scene.add(mesh);
- mesh.name='Wheel contact dust';
+ mesh.name=msg("dust_pool.wheel_contact_dust");
  const particles=[],free=Array.from({length:capacity},()=>({})),matrix=new THREE.Object3D(),color=new THREE.Color(),contact={x:0,y:0,z:0};let histories=new WeakMap(),emitted=0;
  return {
   reset(){free.push(...particles);particles.length=0;mesh.count=0;histories=new WeakMap();emitted=0;},

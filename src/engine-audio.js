@@ -1,3 +1,4 @@
+import {t as msg} from './i18n.js';
 import {audioMix} from './engine-sound.js';
 import {RECORDING_LAYERS,steadyEngineLoop} from './engine-loops.js';
 import workletUrl from './engine-worklet.js?worker&url';
@@ -19,7 +20,7 @@ export class EngineAudio{
    await resumed;
    const buffers=await Promise.all(RECORDING_LAYERS.map(async layer=>{
     const {name}=layer;
-    const response=await fetch(`${import.meta.env.BASE_URL}audio/${name}.wav`);if(!response.ok)throw Error('Engine recording unavailable');
+    const response=await fetch(`${import.meta.env.BASE_URL}audio/${name}.wav`);if(!response.ok)throw Error(msg("engine_audio.engine_recording_unavailable"));
     const decoded=await context.decodeAudioData(await response.arrayBuffer());
     const cycle=steadyEngineLoop(decoded.getChannelData(0),decoded.sampleRate,layer);
     const buffer=context.createBuffer(1,cycle.length,decoded.sampleRate);buffer.copyToChannel(cycle,0);return buffer;

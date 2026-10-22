@@ -1,3 +1,4 @@
+import {t as msg} from './i18n.js';
 import {aiLevel} from './ai-drivers.js';
 import {localRoadRelief} from './road-relief.js';
 import {tuning as cfg} from './tuning.js';
@@ -13,14 +14,14 @@ export let ROAD_WIDTH = cfg.roadWidth;
 export let SHOULDER_WIDTH = cfg.shoulderWidth;
 // Map axes: OX runs left/right (world X), OY runs up/down (world Z).
 export const TRACK_VARIANTS=[
- {name:'ORIGINAL',x:1,z:1},
- {name:'MIRROR OY',x:-1,z:1},
- {name:'MIRROR OX',x:1,z:-1},
- {name:'MIRROR OX + OY',x:-1,z:-1},
+ {name:msg("tracks.original"),x:1,z:1},
+ {name:msg("tracks.mirror_oy"),x:-1,z:1},
+ {name:msg("tracks.mirror_ox"),x:1,z:-1},
+ {name:msg("tracks.mirror_ox_oy"),x:-1,z:-1},
 ];
 const BASE_TRACKS = [
   {
-    name: 'DUSTBOWL',
+    name: msg("tracks.dustbowl"),
     points: [[-38,-27],[-15,-30],[12,-30],[36,-26],[45,-12],[38,2],[27,9],[32,25],[12,31],[-6,23],[-21,29],[-41,24],[-48,9],[-40,-6]],
     features: [
       {kind:'jump',start:.045,length:.065,height:1.43},
@@ -32,7 +33,7 @@ const BASE_TRACKS = [
     ],
   },
   {
-    name: 'RATTLESNAKE',
+    name: msg("tracks.rattlesnake"),
     points: [[-36,-28],[-8,-28],[20,-28],[44,-28],[44,-4],[16,-4],[-4,-4],[-4,16],[20,16],[44,16],[44,40],[12,40],[-16,40],[-24,20],[-24,0],[-44,0],[-52,20],[-68,12],[-68,-12],[-52,-28]],
     features: [
       {kind:'jump',start:.04,length:.055,height:1.62},
@@ -103,7 +104,7 @@ function populateRamps(track,index){
   if(!best)for(let start=.14;start+length<.98;start+=.005){
    if(!occupied.some(([a,b])=>start<b&&start+length+10/track.length>a)){best={start};break;}
   }
-  if(!best)throw Error('Not enough road for the requested ramp count');
+  if(!best)throw Error(msg("tracks.not_enough_road_for_the_requested"));
   ramps.push({kind:'jump',start:best.start,length,height:heights[tier],tier,runup,gap,landing});occupied.push([best.start-10/track.length,best.start+length+10/track.length]);
  }
  return {...track,rampCount:count,ramps,features:[...ramps,...track.features.filter(f=>!['jump','canyon'].includes(f.kind))]};

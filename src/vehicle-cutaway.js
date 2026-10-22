@@ -1,3 +1,4 @@
+import {t as msg} from './i18n.js';
 import {vehicleProfile} from './vehicle-models.js';
 import {isOpenBody,isBiminiBody} from './body-types.js';
 import {drawInstalledEngine} from './engine-anatomy.js';
@@ -17,9 +18,9 @@ export function drawVehicleCutaway(ctx,d,{expanded=false}={}){
  const circle=(p,r,fill,stroke=C.ink,w=1.5)=>{ctx.beginPath();ctx.arc(...p,r,0,Math.PI*2);if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=w;ctx.stroke();}};
  const arrow=(a,v,color)=>{const length=Math.hypot(...v);if(length<2)return;const k=Math.min(1,62/length),end=[a[0]+v[0]*k,a[1]+v[1]*k],angle=Math.atan2(v[1],v[0]);line(a,end,color,2.4);path([end,[end[0]-7*Math.cos(angle-.42),end[1]-7*Math.sin(angle-.42)] ,[end[0]-7*Math.cos(angle+.42),end[1]-7*Math.sin(angle+.42)]],color,null);};
  line([457,40],[457,337],'#7798a73b',1);
- text('01 / PRZEKRÓJ WZDŁUŻNY',18,24,C.ink,12);text('02 / WIDOK OD PRZODU',477,24,C.ink,12);
- text('BRONCO® · RAMA / NAPĘD / ZAWIESZENIE',18,43,C.muted,9);
- if(!d){text('ODCZYT PO ROZPOCZĘCIU JAZDY',196,191,C.ink,13);ctx.restore();return;}
+ text(msg("vehicle_cutaway.01_side_section"),18,24,C.ink,12);text(msg("vehicle_cutaway.02_front_view"),477,24,C.ink,12);
+ text(msg("vehicle_cutaway.bronco_frame_drivetrain_suspension"),18,43,C.muted,9);
+ if(!d){text(msg("vehicle_cutaway.start_driving_for_live_data"),196,191,C.ink,13);ctx.restore();return;}
  const open=isOpenBody(d.style),bimini=isBiminiBody(d.style),square=['ranger','sunset','copper78','godzilla78'].includes(d.style)||vehicleProfile(d.style).lights==='square';
  for(const side of [true,false]){
   const scale=side?72*(1-.22*Math.min(1,Math.abs(Math.sin(d.pitch))*1.4)):60*(1-.1*Math.abs(Math.sin(d.roll))),cx=side?229:586,cy=side?195:191;
@@ -135,12 +136,12 @@ export function drawVehicleCutaway(ctx,d,{expanded=false}={}){
   }
   const cg=p(d.center);circle(cg,5,'#12212b',C.weight,1.7);line([cg[0]-8,cg[1]],[cg[0]+8,cg[1]],C.weight,1);line([cg[0],cg[1]-8],[cg[0],cg[1]+8],C.weight,1);arrow(cg,[0,d.weight*.0044],C.weight);
   if(expanded){
-   if(side){label(d.engine?.cylinders===6?'I6 / BLOK SILNIKA':'V8 / BLOK SILNIKA',d.point({x:0,y:.35,z:-1.2}),27,75);label('RAMA PODŁUŻNICOWA',d.point({x:0,y:-.52,z:-.42}),31,324);label('REDUKTOR + WAŁ',d.point({x:0,y:-.38,z:.24}),295,324);}
-   else{label('MOST / MECHANIZM RÓŻNICOWY',{x:(d.wheels[0].hub.x+d.wheels[2].hub.x)/2,y:(d.wheels[0].hub.y+d.wheels[2].hub.y)/2,forward:0},482,324);}
+   if(side){label(d.engine?.cylinders===6?msg("vehicle_cutaway.i6_engine_block"):msg("vehicle_cutaway.v8_engine_block"),d.point({x:0,y:.35,z:-1.2}),27,75);label(msg("vehicle_cutaway.ladder_frame"),d.point({x:0,y:-.52,z:-.42}),31,324);label(msg("vehicle_cutaway.transfer_case_shaft"),d.point({x:0,y:-.38,z:.24}),295,324);}
+   else{label(msg("vehicle_cutaway.axle_differential"),{x:(d.wheels[0].hub.x+d.wheels[2].hub.x)/2,y:(d.wheels[0].hub.y+d.wheels[2].hub.y)/2,forward:0},482,324);}
   }
  }
- if(expanded){text('RAMA',18,339,C.frame,9);text('SILNIK',70,339,C.engine,9);text('AMORTYZATOR',130,339,C.damper,9);text('SPRĘŻYNA / RESOR',235,339,C.spring,9);}
- line([18,354],[40,354],C.support,2);text('5 kN',47,358,C.ink,10);text('Wektory >14 kN skrócone',103,358,C.muted,9);
- text(expanded?'MODEL GRY · RYSUNEK POGLĄDOWY · DYNAMIKA Z TELEMETRII':'PRZEKRÓJ MODELU GRY · ⤢ POWIĘKSZ',18,375,C.muted,9);
+ if(expanded){text(msg("vehicle_cutaway.frame"),18,339,C.frame,9);text(msg("vehicle_cutaway.engine"),70,339,C.engine,9);text(msg("vehicle_cutaway.damper"),130,339,C.damper,9);text(msg("vehicle_cutaway.spring_leaf"),235,339,C.spring,9);}
+ line([18,354],[40,354],C.support,2);text(msg("vehicle_cutaway.5_kn"),47,358,C.ink,10);text(msg("vehicle_cutaway.vectors_above_14_kn_shortened"),103,358,C.muted,9);
+ text(expanded?msg("vehicle_cutaway.game_model_illustration_live_telemetry"):msg("vehicle_cutaway.game_model_section_enlarge"),18,375,C.muted,9);
  ctx.restore();
 }

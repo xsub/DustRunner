@@ -1,3 +1,4 @@
+import {t as msg} from './i18n.js';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
@@ -22,7 +23,7 @@ export function batchRigidMeshes(root,{shared=false}={}){
    transform.multiplyMatrices(inverse,mesh.matrixWorld);geometry.applyMatrix4(transform);return geometry;
   });
   const geometry=mergeGeometries(geometries);geometries.forEach(g=>g.dispose());
-  if(!geometry)throw new Error('Rigid mesh batching failed');
+  if(!geometry)throw new Error(msg("mesh_batching.rigid_mesh_batching_failed"));
   geometry.computeBoundingSphere();const first=meshes[0],batch=new THREE.Mesh(geometry,first.material);
   batch.castShadow=first.castShadow;batch.receiveShadow=first.receiveShadow;batch.userData.sharedWheel=shared;
   root.add(batch);sources.push(...meshes);

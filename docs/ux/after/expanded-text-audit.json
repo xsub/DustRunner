@@ -1,0 +1,128 @@
+[
+  {
+    "contentOverflow": false,
+    "controls": [],
+    "section": "menu-panel-play",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  {
+    "contentOverflow": false,
+    "controls": [],
+    "section": "menu-panel-world",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  {
+    "contentOverflow": false,
+    "controls": [],
+    "section": "menu-panel-vehicles",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  {
+    "contentOverflow": false,
+    "controls": [],
+    "section": "menu-panel-simulation",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  {
+    "contentOverflow": false,
+    "controls": [],
+    "section": "menu-panel-stats",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  {
+    "contentOverflow": false,
+    "controls": [],
+    "section": "menu-panel-history",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  {
+    "contentOverflow": false,
+    "controls": [],
+    "section": "menu-panel-community",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  {
+    "contentOverflow": false,
+    "controls": [],
+    "section": "menu-panel-play",
+    "viewport": {
+      "height": 720,
+      "width": 1280
+    }
+  },
+  {
+    "contentOverflow": false,
+    "controls": [],
+    "section": "menu-panel-world",
+    "viewport": {
+      "height": 713,
+      "width": 319
+    }
+  },
+  {
+    "contentOverflow": false,
+    "controls": [],
+    "section": "menu-panel-vehicles",
+    "viewport": {
+      "height": 709,
+      "width": 320
+    }
+  },
+  {
+    "contentOverflow": false,
+    "controls": [],
+    "section": "menu-panel-simulation",
+    "viewport": {
+      "height": 709,
+      "width": 320
+    }
+  },
+  {
+    "contentOverflow": false,
+    "controls": [],
+    "section": "menu-panel-stats",
+    "viewport": {
+      "height": 709,
+      "width": 320
+    }
+  },
+  {
+    "contentOverflow": false,
+    "controls": [],
+    "section": "menu-panel-history",
+    "viewport": {
+      "height": 709,
+      "width": 320
+    }
+  },
+  {
+    "contentOverflow": false,
+    "controls": [],
+    "section": "menu-panel-community",
+    "viewport": {
+      "height": 709,
+      "width": 320
+    }
+  }
+]

@@ -58,7 +58,7 @@ npm test
 npm run build -- --base=/DustRunner/
 ```
 
-Szczegóły: [udostępnianie pustyni](docs/desert-sharing.md) · [silniki i źródła](ENGINE_NOTES.md) · [modele i fizyka](docs/vehicle-dynamics.md) · [sterowanie mobilne](docs/mobile-controls.md) · [strojenie i rozwój](docs/DEVELOPMENT.md) · [protokół pomiarów wydajności](docs/performance-benchmark.md).
+Szczegóły: [udostępnianie pustyni](docs/desert-sharing.md) · [silniki i źródła](ENGINE_NOTES.md) · [modele i fizyka](docs/vehicle-dynamics.md) · [sterowanie mobilne](docs/mobile-controls.md) · [języki interfejsu](docs/internationalization.md) · [przegląd nowego menu](docs/ux/README.md) · [strojenie i rozwój](docs/DEVELOPMENT.md) · [protokół pomiarów wydajności](docs/performance-benchmark.md).
 
 ## Autorstwo i marki
 

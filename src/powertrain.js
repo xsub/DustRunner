@@ -1,3 +1,4 @@
+import {t as msg} from './i18n.js';
 import {vehicleProfile} from './vehicle-models.js';
 import {ignitionStep,ignitionPhase} from './ignition.js';
 import {tuning as cfg} from './tuning.js';
@@ -25,7 +26,7 @@ function updateRange(car,state){
  return driveModeById(state.mode);
 }
 export function selectDriveMode(car,id){
- if(!DRIVE_MODES.some(mode=>mode.id===id))throw new Error('Unknown drive mode');
+ if(!DRIVE_MODES.some(mode=>mode.id===id))throw new Error(msg("powertrain.unknown_drive_mode"));
  car.driveMode=id;const state=car.powertrain??resetPowertrain(car);updateRange(car,state);return state;
 }
 export function resetPowertrain(car){
@@ -37,7 +38,7 @@ export function resetPowertrain(car){
 }
 // Replacement engines retain speed, selected range and axle lock requests.
 export function swapEngine(car,engineId){
- const engine=engineById(engineId);if(engine.id!==engineId)throw new Error('Unknown engine');
+ const engine=engineById(engineId);if(engine.id!==engineId)throw new Error(msg("powertrain.unknown_engine"));
  const reverse=car.powertrain?.gear<0||transmissionMode(car)!=='manual'&&car.physics?.controls.reverseTravel,neutral=transmissionMode(car)==='manual'&&car.powertrain?.gear===0;
  const old=car.powertrain,previousEngine=engineById(car.engineId);
  car.engineId=engineId;const state=resetPowertrain(car);if(reverse)state.gear=-1;if(neutral)state.gear=0;
@@ -65,7 +66,7 @@ export function powertrainStep(car,input,dt){
   const rpm=clamp(coupledSpeed/ROLLING_RADIUS*60/(2*Math.PI)*FINAL_DRIVE*ratio,e.idle,e.redline);
   return engineTorque(e,rpm)*cfg.torqueScale*upgrade*ratio*FINAL_DRIVE*.84/ROLLING_RADIUS/mass*driveScale;
  };
- state.cooldown=Math.max(0,state.cooldown-dt);state.shiftTime=Math.max(0,state.shiftTime-dt);if(state.shiftTime===0&&state.shiftNotice==='Trwa zmiana biegu')state.shiftNotice='';
+ state.cooldown=Math.max(0,state.cooldown-dt);state.shiftTime=Math.max(0,state.shiftTime-dt);if(state.shiftTime===0&&state.shiftNotice===msg("powertrain.shifting"))state.shiftNotice='';
  if(!manual){if(reverse)state.gear=-1;else if(state.gear<0)state.gear=1;}
  const wheelRpm=coupledSpeed/ROLLING_RADIUS*60/(2*Math.PI)*FINAL_DRIVE;
  const maxGear=gearLimit(car,mode);if(state.gear>maxGear)state.gear=maxGear;
@@ -118,7 +119,7 @@ export function powertrainStep(car,input,dt){
 }
 
 export function selectTransmissionMode(car,mode){
- if(!TRANSMISSION_MODES.includes(mode))throw new Error('Unknown transmission mode');
+ if(!TRANSMISSION_MODES.includes(mode))throw new Error(msg("powertrain.unknown_transmission_mode"));
  const old=car.powertrain,reverse=old?.gear<0;car.transmissionMode=mode;
  const state=resetPowertrain(car);if(reverse)state.gear=-1;
  matchGear(state,engineById(car.engineId),car.speed??0,driveModeById(state.mode),car);
@@ -128,9 +129,9 @@ export function shiftGear(car,gear){
  if(transmissionMode(car)!=='manual')return false;
  const state=car.powertrain??resetPowertrain(car),box=gearboxFor(car),engine=engineById(car.engineId);
  if(!Number.isInteger(gear)||gear< -1||gear>box.ratios.length)return false;
- if(state.shiftTime>.01){state.shiftNotice='Trwa zmiana biegu';return false;}
- if(gear!==0&&((gear<0&&car.speed>.6)||(gear>0&&car.speed<-.6))){state.shiftNotice='Zatrzymaj auto przed zmianą kierunku';return false;}
+ if(state.shiftTime>.01){state.shiftNotice=msg("powertrain.shifting");return false;}
+ if(gear!==0&&((gear<0&&car.speed>.6)||(gear>0&&car.speed<-.6))){state.shiftNotice=msg("powertrain.stop_before_changing_direction");return false;}
  const ratio=gear<0?box.reverse:gear===0?0:box.ratios[gear-1],rpm=Math.abs(car.speed??0)/(cfg.driveRadius*vehicleProfile(car.style).wheelScale)*60/(2*Math.PI)*cfg.finalDrive*driveModeById(state.mode).range*ratio;
- if(!car.airborne&&rpm>engine.redline*.97&&(state.gear<=0||gear<state.gear)){state.shiftNotice='Za wysokie obroty · najpierw zwolnij';return false;}
+ if(!car.airborne&&rpm>engine.redline*.97&&(state.gear<=0||gear<state.gear)){state.shiftNotice=msg("powertrain.rpm_too_high_slow_down_first");return false;}
  state.gear=gear;state.shiftTime=box.shiftTime;state.cooldown=.5;state.shiftNotice='';return true;
 }

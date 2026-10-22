@@ -1,0 +1,93 @@
+[
+  {
+    "content": {
+      "height": 194,
+      "scrollWidth": 822,
+      "width": 822
+    },
+    "dialogOverflow": false,
+    "section": "menu-panel-play",
+    "viewport": {
+      "height": 392,
+      "width": 852
+    }
+  },
+  {
+    "content": {
+      "height": 194,
+      "scrollWidth": 822,
+      "width": 822
+    },
+    "dialogOverflow": false,
+    "section": "menu-panel-world",
+    "viewport": {
+      "height": 392,
+      "width": 852
+    }
+  },
+  {
+    "content": {
+      "height": 194,
+      "scrollWidth": 822,
+      "width": 822
+    },
+    "dialogOverflow": false,
+    "section": "menu-panel-vehicles",
+    "viewport": {
+      "height": 392,
+      "width": 852
+    }
+  },
+  {
+    "content": {
+      "height": 194,
+      "scrollWidth": 822,
+      "width": 822
+    },
+    "dialogOverflow": false,
+    "section": "menu-panel-simulation",
+    "viewport": {
+      "height": 392,
+      "width": 852
+    }
+  },
+  {
+    "content": {
+      "height": 194,
+      "scrollWidth": 822,
+      "width": 822
+    },
+    "dialogOverflow": false,
+    "section": "menu-panel-stats",
+    "viewport": {
+      "height": 392,
+      "width": 852
+    }
+  },
+  {
+    "content": {
+      "height": 194,
+      "scrollWidth": 822,
+      "width": 822
+    },
+    "dialogOverflow": false,
+    "section": "menu-panel-history",
+    "viewport": {
+      "height": 392,
+      "width": 852
+    }
+  },
+  {
+    "content": {
+      "height": 194,
+      "scrollWidth": 822,
+      "width": 822
+    },
+    "dialogOverflow": false,
+    "section": "menu-panel-community",
+    "viewport": {
+      "height": 392,
+      "width": 852
+    }
+  }
+]

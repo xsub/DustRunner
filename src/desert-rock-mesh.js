@@ -1,3 +1,4 @@
+import {t as msg} from './i18n.js';
 import * as THREE from 'three';
 // Extract exactly the same triangles that Rapier contacts. No visual-only ramp.
 export function createDesertRockMesh(ground){
@@ -22,5 +23,5 @@ export function createDesertRockMesh(ground){
  }
  const material=new THREE.MeshStandardMaterial({color:'#8c806c',map,bumpMap:map,bumpScale:.035,vertexColors:true,roughness:1,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1});
  material.addEventListener('dispose',()=>map?.dispose());
- const mesh=new THREE.Mesh(geometry,material);mesh.receiveShadow=true;mesh.castShadow=true;mesh.name='Skalne formacje i sztywne rampy';return mesh;
+ const mesh=new THREE.Mesh(geometry,material);mesh.receiveShadow=true;mesh.castShadow=true;mesh.name=msg("desert_rock_mesh.rock_formations_and_solid_ramps");return mesh;
 }

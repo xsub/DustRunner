@@ -1,10 +1,11 @@
+import {t as msg} from './i18n.js';
 import {jumpCoordinates,jumpSurface,shapeDesertJump} from './desert-jumps.js';
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 const cache=new Map();
 export function desertRockFeatures(seed=1947){
  seed>>>=0;if(cache.has(seed))return cache.get(seed);
  let state=seed;const random=()=>{state=(1664525*state+1013904223)>>>0;return state/4294967296;};
- const ramps=[[95,145,0,2.4,30,9],[-240,310,-Math.PI/2,3.5,38,13],[520,-60,Math.PI/2,5,48,18]].map(([x,z,heading,height,runup,gap],id)=>({id:'rock-'+id,x,z,heading,height,runup,gap,paired:true,label:'SKALNA PARA '+(id+1),halfWidth:10,edgeWidth:8,approach:75,landing:48,landingHeight:height*.7,rock:true}));
+ const ramps=[[95,145,0,2.4,30,9],[-240,310,-Math.PI/2,3.5,38,13],[520,-60,Math.PI/2,5,48,18]].map(([x,z,heading,height,runup,gap],id)=>({id:'rock-'+id,x,z,heading,height,runup,gap,paired:true,label:(msg("desert_rocks.rock_pair")+" ")+(id+1),halfWidth:10,edgeWidth:8,approach:75,landing:48,landingHeight:height*.7,rock:true}));
  const formations=[{x:230,z:-70,rx:65,rz:95,height:11},{x:-500,z:-280,rx:85,rz:110,height:15},{x:930,z:320,rx:90,rz:100,height:18}];
  const stones=[];
  for(let cluster=0;cluster<48;cluster++){

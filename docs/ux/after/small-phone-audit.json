@@ -1,0 +1,114 @@
+[
+  {
+    "content": {
+      "scrollWidth": 302,
+      "width": 302
+    },
+    "dialog": {
+      "scrollWidth": 302,
+      "width": 302
+    },
+    "overflows": [],
+    "section": "menu-panel-play",
+    "viewport": {
+      "height": 709,
+      "width": 320
+    }
+  },
+  {
+    "content": {
+      "scrollWidth": 302,
+      "width": 302
+    },
+    "dialog": {
+      "scrollWidth": 302,
+      "width": 302
+    },
+    "overflows": [],
+    "section": "menu-panel-world",
+    "viewport": {
+      "height": 709,
+      "width": 320
+    }
+  },
+  {
+    "content": {
+      "scrollWidth": 302,
+      "width": 302
+    },
+    "dialog": {
+      "scrollWidth": 302,
+      "width": 302
+    },
+    "overflows": [],
+    "section": "menu-panel-vehicles",
+    "viewport": {
+      "height": 709,
+      "width": 320
+    }
+  },
+  {
+    "content": {
+      "scrollWidth": 302,
+      "width": 302
+    },
+    "dialog": {
+      "scrollWidth": 302,
+      "width": 302
+    },
+    "overflows": [],
+    "section": "menu-panel-simulation",
+    "viewport": {
+      "height": 709,
+      "width": 320
+    }
+  },
+  {
+    "content": {
+      "scrollWidth": 302,
+      "width": 302
+    },
+    "dialog": {
+      "scrollWidth": 302,
+      "width": 302
+    },
+    "overflows": [],
+    "section": "menu-panel-stats",
+    "viewport": {
+      "height": 709,
+      "width": 320
+    }
+  },
+  {
+    "content": {
+      "scrollWidth": 302,
+      "width": 302
+    },
+    "dialog": {
+      "scrollWidth": 302,
+      "width": 302
+    },
+    "overflows": [],
+    "section": "menu-panel-history",
+    "viewport": {
+      "height": 709,
+      "width": 320
+    }
+  },
+  {
+    "content": {
+      "scrollWidth": 302,
+      "width": 302
+    },
+    "dialog": {
+      "scrollWidth": 302,
+      "width": 302
+    },
+    "overflows": [],
+    "section": "menu-panel-community",
+    "viewport": {
+      "height": 709,
+      "width": 320
+    }
+  }
+]

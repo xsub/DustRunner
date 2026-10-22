@@ -1,8 +1,9 @@
+import {t as msg} from './i18n.js';
 export const PODIUM=[
- {medal:'ZŁOTO',color:'#ed454d',metal:'#e7bb42',reward:900,title:'FIRST PLACE!'},
- {medal:'SREBRO',color:'#53bd77',metal:'#cbd4dc',reward:600,title:'SECOND PLACE'},
- {medal:'BRĄZ',color:'#f28b38',metal:'#be8351',reward:400,title:'THIRD PLACE'},
- {medal:null,color:null,metal:'#8b997a',reward:300,title:'KEEP ON TRUCKIN’'},
+ {medal:msg("race_completion.gold"),color:'#ed454d',metal:'#e7bb42',reward:900,title:msg("race_completion.first_place")},
+ {medal:msg("race_completion.silver"),color:'#53bd77',metal:'#cbd4dc',reward:600,title:msg("race_completion.second_place")},
+ {medal:msg("race_completion.bronze"),color:'#f28b38',metal:'#be8351',reward:400,title:msg("race_completion.third_place")},
+ {medal:null,color:null,metal:'#8b997a',reward:300,title:msg("race_completion.keep_on_truckin")},
 ];
 export class RaceCompletion{
  constructor(){this.reset();}

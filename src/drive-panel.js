@@ -1,10 +1,11 @@
+import {t as msg,tx as msgHTML} from './i18n.js';
 import {transmissionMode} from './transmissions.js';
 import {DRIVE_MODES,driveModeById} from './drive-modes.js';
 import {selectDriveMode,selectTransmissionMode} from './powertrain.js';
 
 export function createDrivePanel({getPlayer,onChange,onInteract}){
  const menu=document.querySelector('#drive-menu-modes'),hud=document.querySelector('#drive-hud-modes');
- const buttons=compact=>DRIVE_MODES.map((mode,i)=>`<button type="button" data-drive="${mode.id}" aria-pressed="false" aria-keyshortcuts="${i+1}" title="${mode.name} · klawisz ${i+1}" aria-label="Tryb ${mode.name}">${mode.label}${compact?'':`<small>${mode.name.split(' · ')[1]}</small>`}<kbd aria-hidden="true">${i+1}</kbd></button>`).join('');
+ const buttons=compact=>DRIVE_MODES.map((mode,i)=>`<button type="button" data-drive="${mode.id}" aria-pressed="false" aria-keyshortcuts="${i+1}" title="${msgHTML("drive_panel.key",{v2:(mode.name),v3:(i+1)})}" aria-label="${msgHTML("drive_panel.mode",{v4:(mode.name)})}">${mode.label}${compact?'':`<small>${mode.name.split(' · ')[1]}</small>`}<kbd aria-hidden="true">${i+1}</kbd></button>`).join('');
  menu.innerHTML=buttons(false);hud.innerHTML=buttons(true);let signature='';
  const select=id=>{const car=getPlayer();if(id==='auto'||id==='4x4')selectTransmissionMode(car,'automatic');selectDriveMode(car,id);signature='';update();onChange();onInteract();};
  document.querySelectorAll('[data-drive]').forEach(button=>button.onclick=()=>select(button.dataset.drive));
@@ -25,16 +26,16 @@ export function createDrivePanel({getPlayer,onChange,onInteract}){
   const car=getPlayer(),state=car.powertrain,requested=driveModeById(car.driveMode),active=driveModeById(state?.mode),locks=state?.locks??{};
   const key=JSON.stringify([requested.id,active.id,car.axleLocks,locks,transmissionMode(car)]);if(key===signature)return;signature=key;
   document.querySelectorAll('[data-drive]').forEach(button=>{button.setAttribute('aria-pressed',String(button.dataset.drive===active.id));button.classList.toggle('pending',requested.id!==active.id&&button.dataset.drive===requested.id);});
-  document.querySelectorAll('[data-drive=auto]').forEach(button=>{button.firstChild.textContent='A';button.title='Wybierz automat · klawisz 1';button.setAttribute('aria-label',button.title);});
+  document.querySelectorAll('[data-drive=auto]').forEach(button=>{button.firstChild.textContent='A';button.title=msg("drive_panel.select_automatic_key_1");button.setAttribute('aria-label',button.title);});
   let waiting=requested.id!==active.id;
   document.querySelectorAll('[data-axle-lock]').forEach(button=>{
    const axle=button.dataset.axleLock,wanted=car.axleLocks?.[axle]??true,pending=requested.id==='4x4'&&Boolean(locks[axle])!==wanted;
    button.disabled=requested.id!=='4x4';button.setAttribute('aria-pressed',String(Boolean(locks[axle])));button.classList.toggle('pending',pending);waiting||=pending;
-   button.title=(locks[axle]?'Blokada włączona':'Blokada wyłączona')+(pending?' · oczekuje na prędkość poniżej 8 km/h':'')+' · klawisz '+(axle==='front'?'Z':'X');
+   button.title=(locks[axle]?msg("drive_panel.differential_locked"):msg("drive_panel.differential_unlocked"))+(pending?(" "+msg("drive_panel.pending_below_8_km_h")):'')+(" "+msg("drive_panel.key_2")+" ")+(axle==='front'?'Z':'X');
   });
-  document.querySelector('#drive-help').textContent=requested.description+(waiting?' Oczekuje: zwolnij poniżej 8 km/h i postaw koła na podłożu.':'');
-  document.querySelector('#drive-range-status').textContent=waiting?`${active.id!==requested.id?active.label+' → '+requested.label:'BLOKADY'} · ZWOLNIJ <8 km/h`:`${active.label}${locks.front?' · PRZÓD 🔒':''}${locks.rear?' · TYŁ 🔒':''}`;
-  const notice=document.querySelector('#drive-hud-status');notice.hidden=!waiting;notice.textContent=waiting?'ZWOLNIJ <8 km/h':'';
+  document.querySelector('#drive-help').textContent=requested.description+(waiting?(" "+msg("drive_panel.pending_slow_below_8_km_h")):'');
+  document.querySelector('#drive-range-status').textContent=waiting?msg("drive_panel.slow_below_8_km_h",{v0:(active.id!==requested.id?active.label+' → '+requested.label:msg("drive_panel.locks"))}):`${active.label}${locks.front?(" "+msg("drive_panel.front")):''}${locks.rear?(" "+msg("drive_panel.rear")):''}`;
+  const notice=document.querySelector('#drive-hud-status');notice.hidden=!waiting;notice.textContent=waiting?msg("drive_panel.slow_below_8_km_h_2"):'';
  }
  update();return {update,select,shortcut};
 }

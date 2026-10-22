@@ -110,7 +110,7 @@
 @media(orientation:portrait){.mobile-layout .mobile-telemetry{bottom:calc(var(--edge-bottom) + 158px);width:150px}.mobile-layout .hud{gap:10px}.mobile-layout .timer strong{font-size:20px}.mobile-layout .minimap{top:calc(var(--edge-top) + 62px);width:96px}.mobile-layout #minimap{height:64px}.mobile-layout .hud-box strong{font-size:22px}.mobile-layout .game-tools{gap:5px}.mobile-layout .game-tools button{padding:0;min-width:44px}.mobile-layout.prestart .message{left:var(--edge-left);bottom:var(--edge-bottom);width:calc(100% - var(--edge-left) - var(--edge-right))}}
 @media(orientation:landscape) and (max-height:500px){.mobile-layout .hud{padding:7px 10px}.mobile-layout .minimap{width:96px}.mobile-layout #minimap{height:58px}.mobile-layout .mobile-telemetry{width:144px;padding:7px 10px}.mobile-layout .prestart .message{padding:12px}.mobile-layout .race-victory{top:var(--edge-top);left:50%;transform:translateX(-50%);width:260px}.mobile-layout .race-victory small{display:none}}
 .mobile-shifts{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);gap:8px}.mobile-shifts button{pointer-events:auto;width:48px;height:44px;border:1px solid #d7dfbb70;border-radius:12px;background:#172016e6;color:#f4cf58;font-size:24px;touch-action:manipulation}
-.mobile-layout.prestart .message small{display:none}.mobile-layout.prestart .message::after{content:'DOTKNIJ RACE · NAJLEPIEJ GRAĆ POZIOMO';display:block;font-size:9px;letter-spacing:.6px;color:#c5cdb4;margin-top:12px}
+.mobile-layout.prestart .message small{display:none}.mobile-layout.prestart .message::after{content:attr(data-mobile-start-hint);display:block;font-size:9px;letter-spacing:.6px;color:#c5cdb4;margin-top:12px}
 
 /* Keep the driving corridor empty, especially in portrait on Safari. */
 .mobile-layout .mobile-telemetry{top:var(--edge-top);bottom:auto;left:50%;width:180px;padding:6px 10px;border-radius:10px;background:#172016b8}
@@ -145,3 +145,74 @@
 }
 @media(orientation:portrait) and (max-width:379px){.mobile-layout .hud-box:not(.timer){display:none}}
 .share-options{border:1px solid #61704e;border-radius:6px;padding:12px;margin:12px 0;display:grid;gap:10px}.share-options legend{font-size:10px;letter-spacing:.7px;color:#f4cf58}.desert-options .share-options label{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.5;margin:0;letter-spacing:0}.share-options input{width:18px;height:18px;flex:none;accent-color:#f4cf58;margin:0}.share-options small{font-size:10px;color:#a9bb96}#desert-import-status{color:#70d8dd;font-size:11px;line-height:1.6}
+
+/* Pit stop: fixed navigation and actions, one scrolling content region. */
+#game-menu{width:min(1040px,calc(100vw - 28px));max-width:none;max-height:calc(100dvh - 28px);height:min(860px,calc(100dvh - 28px));padding:0;overflow:hidden;border-radius:12px}
+#game-menu[open]{display:grid;grid-template-rows:auto auto minmax(0,1fr) auto}
+#game-menu [hidden]{display:none!important}
+#game-menu .menu-heading{padding:18px 24px;margin:0;border-bottom:1px solid #82906a55;align-items:center}
+#game-menu .menu-heading>div{display:flex;flex-wrap:wrap;align-items:center;gap:8px 20px;flex:1}
+#game-menu .menu-heading .section-label{display:none}#game-menu .menu-heading h1{font-size:30px;margin:0;margin-right:auto}
+#game-menu #menu-close{min-width:44px;height:44px;flex-shrink:0}
+.menu-expertise{display:flex;gap:8px;align-items:center;font-size:12px;color:#c2cbb2}
+.pitstop-nav{padding:0 16px;border-bottom:1px solid #82906a55;background:#20291d}
+.pitstop-nav [role=tablist]{display:flex;gap:4px}
+#game-menu .pitstop-nav [role=tab]{flex:1;min-height:48px;padding:10px 8px;background:none;border:0;border-bottom:3px solid transparent;border-radius:0;font:600 13px/1.3 system-ui,sans-serif;letter-spacing:0;color:#c7d0b8;white-space:normal}
+#game-menu .pitstop-nav [aria-selected=true]{color:#f4cf58;border-bottom-color:#f4cf58;background:#f4cf580a}
+#menu-content{min-height:0;overflow:auto;overscroll-behavior:contain;padding:24px 28px 32px;scrollbar-gutter:stable}
+.pitstop-panel{min-width:0;outline:none}.pitstop-panel:focus-visible{outline:2px solid #f4cf58;outline-offset:4px}
+#game-menu .pitstop-panel>h2{font:700 28px/1.2 'Barlow Condensed',system-ui,sans-serif;letter-spacing:0;margin:0 0 8px}
+#game-menu .pitstop-lead{font-size:14px;line-height:1.5;color:#c2cbb2;max-width:70ch;margin:0 0 24px}
+#game-menu .pitstop-panel>section,#game-menu .pitstop-panel>.truck-select,#game-menu .pitstop-panel>.track-select{margin:0 0 20px;padding:18px;border:1px solid #82906a45;border-radius:8px;background:#26301e60}
+#game-menu .pitstop-panel label:not(.stats-toggle){font-size:12px;line-height:1.4;letter-spacing:.4px}
+#game-menu .pitstop-panel p:not(.pitstop-lead),#game-menu .pitstop-panel small{line-height:1.6}
+#game-menu .pitstop-panel p{font-size:13px}
+#game-menu .pitstop-panel button{min-height:44px;white-space:normal;overflow-wrap:break-word}
+#game-menu .pitstop-panel select,#game-menu .pitstop-panel input:not([type=checkbox]):not([type=range]){min-height:44px}
+#game-menu .pitstop-panel .section-label{font-size:11px;letter-spacing:1px}
+#game-menu .truck-select>.section-label,#game-menu .track-select>.section-label{display:none}
+#game-menu .trucks{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+#game-menu .truck-option{min-width:0;padding:12px 8px}#game-menu .truck-option>span:last-child{min-width:0;overflow-wrap:anywhere}
+#game-menu .track-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#game-menu .track-grid button{min-width:0}
+#game-menu .pitstop-card{border:1px solid #82906a45;border-radius:8px;padding:16px;margin:20px 0;background:#26301e60}
+#game-menu .pitstop-card>summary{cursor:pointer;font-size:14px;font-weight:600;min-height:28px}
+#game-menu .pitstop-card[open]>summary{margin-bottom:18px}
+#game-menu .mobile-settings,#game-menu .instrument-settings{margin:0 0 20px}
+#game-menu .menu-help{font-size:12px;white-space:normal;line-height:1.8}
+#game-menu .menu-footer{margin:0;padding:14px 24px;border-top:1px solid #82906a55;background:#1d2619;gap:12px}
+#game-menu .menu-footer button{min-height:46px;white-space:normal}#game-menu #menu-play{flex:1}
+#game-menu .game-credits{margin-top:24px}#game-menu .history-link{min-height:48px;padding:12px 18px;border:1px solid #f4cf5877;border-radius:6px;margin:0;color:#f4cf58;font-size:13px}
+#game-menu .menu-inline-link{border:0;background:none;text-decoration:underline;color:#f4cf58;padding:0;margin:0 0 16px;font-size:13px}
+#game-menu .coming-soon{display:inline-block;padding:6px 14px;border-radius:20px;color:#f4cf58;background:#f4cf5815;border:1px solid #f4cf5850}
+#game-menu .pitstop-switch{display:flex;align-items:center;gap:14px;padding:18px;border:1px solid #82906a45;border-radius:8px;margin:14px 0;font-size:15px;background:#26301e60;min-height:64px}
+.pitstop-switch input{appearance:none;width:42px!important;height:24px;min-width:42px;border-radius:20px;background:#525e47;border:1px solid #82906a;position:relative;cursor:pointer}
+.pitstop-switch input:before{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#eff2df;transition:transform .15s}
+.pitstop-switch input:checked{background:#d5b641;border-color:#f4cf58}.pitstop-switch input:checked:before{transform:translateX(18px);background:#1c2418}
+.menu-mobile-section{display:none}#quick-dev[hidden]{display:none!important}
+@media(max-width:720px){
+ #game-menu{width:calc(100vw - 16px);height:calc(100dvh - 16px);max-height:calc(100dvh - 16px);margin:8px;border-radius:10px}
+ #game-menu .menu-heading{padding:10px 14px}#game-menu .menu-heading>div{gap:6px 10px}#game-menu .menu-heading h1{font-size:24px}
+
+ .pitstop-nav{padding:10px 14px}.pitstop-nav [role=tablist]{display:none}.menu-mobile-section{display:flex;align-items:center;gap:12px;font-size:12px}.menu-mobile-section select{flex:1;min-width:0;min-height:44px;margin:0;font-size:14px}
+ #menu-content{padding:18px 14px 24px}#game-menu .pitstop-panel>h2{font-size:25px}
+ #game-menu .pitstop-panel>section,#game-menu .pitstop-panel>.truck-select,#game-menu .pitstop-panel>.track-select{padding:14px}
+ #game-menu .trucks{grid-template-columns:repeat(2,minmax(0,1fr))}#game-menu .track-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #game-menu .menu-footer{padding:10px 14px;gap:8px}#game-menu .menu-footer button{font-size:12px;padding:10px}
+ #game-menu .pitstop-panel .desert-seed-row{display:flex;flex-wrap:wrap}#game-menu .desert-seed-row input{width:100%;min-width:0}
+ #game-menu .desert-seed-row button{flex:1;min-width:110px}
+ #game-menu .share-options label{align-items:flex-start}
+}
+@media(max-height:500px) and (min-width:721px){#game-menu .menu-heading{padding:6px 18px}#game-menu .menu-heading h1{font-size:24px}#game-menu .pitstop-nav [role=tab]{min-height:40px;padding:6px}#game-menu .menu-footer{padding:8px 18px}#menu-content{padding:16px 22px}}
+@media(prefers-reduced-motion:reduce){.pitstop-switch input:before{transition:none}}
+#game-menu .menu-mobile-section select{background:#2d3825;color:#f4f2dd;border:1px solid #899773;border-radius:6px}
+#game-menu .individual-skills{margin:16px 0}#game-menu .individual-skills summary{font-size:13px;cursor:pointer;padding:8px 0;color:#f4cf58}
+#game-menu .individual-skills[open] summary{margin-bottom:8px}
+#game-menu .menu-expertise{font-size:12px;gap:8px;margin:0 8px}
+#game-menu .menu-expertise input{appearance:none;width:40px;height:24px;margin:0;border:1px solid #899773;border-radius:20px;background:#3a4830;position:relative;cursor:pointer}
+#game-menu .menu-expertise input:before{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;background:#f0f2df;border-radius:50%;transition:transform .15s}
+#game-menu .menu-expertise input:checked{background:#d1ae32;border-color:#f4cf58}#game-menu .menu-expertise input:checked:before{transform:translateX(16px);background:#172016}
+#game-menu .vehicle-search{display:block;margin:18px 0}#game-menu .vehicle-search input{display:block;width:100%;margin:8px 0}#game-menu .vehicle-search small{display:block;min-height:20px;color:#c7d0b8}
+@media(max-width:720px){#game-menu .menu-expertise>span{display:inline;font-size:11px}#game-menu .menu-expertise{margin:0 4px;gap:5px}#game-menu .menu-heading>div{gap:4px 8px}}
+#game-menu :is(button,select,input,summary):focus-visible{outline:2px solid #f4cf58;outline-offset:3px}
+@media(prefers-reduced-motion:reduce){#game-menu .menu-expertise input:before{transition:none}}

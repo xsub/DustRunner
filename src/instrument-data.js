@@ -1,8 +1,9 @@
+import {t as msg} from './i18n.js';
 import {vehicleProfile} from './vehicle-models.js';
 import {engineById} from './engines.js';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const INSTRUMENT_STYLES=['auto','six','rect','round'];
-export const INSTRUMENT_NAMES={six:'Rally Six',rect:'Ranger ’78',round:'Heritage ’66'};
+export const INSTRUMENT_NAMES={six:msg("instrument_data.rally_six"),rect:msg("instrument_data.ranger_78"),round:msg("instrument_data.heritage_66")};
 export function instrumentStyle(preference,body){
  if(INSTRUMENT_STYLES.includes(preference)&&preference!=='auto')return preference;
  if(body==='godzilla78'||body==='monster80')return 'six';

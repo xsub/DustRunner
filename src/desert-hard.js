@@ -1,6 +1,7 @@
+import {t as msg} from './i18n.js';
 // Original steep desert generator retained as the optional challenge terrain.
 // Its seeded formulas and dune sequence come from the pre-playground version.
-export const HARD_DESERT_REGIONS=[{x:-800,z:20,label:'FALE'},{x:5,z:-120,label:'GRZBIETY'},{x:800,z:0,label:'WYSOKIE'}];
+export const HARD_DESERT_REGIONS=[{x:-800,z:20,label:msg("desert_hard.waves")},{x:5,z:-120,label:msg("desert_hard.ridges")},{x:800,z:0,label:msg("desert_hard.high_dunes")}];
 const smooth=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
 export function createHardDesertHeight(initialSeed,{width=2400,depth=1200,spawn={x:0,z:210}}={}){
  const profile={id:'ridges',amplitude:1.75,width:1.3,count:96};

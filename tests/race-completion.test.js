@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {RaceCompletion} from '../src/race-completion.js';
 test('podium medals use requested confetti colors and finishing freezes results and awards only once',()=>{
- for(const [rank,medal,color,reward] of [[1,'ZŁOTO','#ed454d',900],[2,'SREBRO','#53bd77',600],[3,'BRĄZ','#f28b38',400],[4,null,null,300]]){
+ for(const [rank,medal,color,reward] of [[1,'GOLD','#ed454d',900],[2,'SILVER','#53bd77',600],[3,'BRONZE','#f28b38',400],[4,null,null,300]]){
   const state=new RaceCompletion(),result=state.record(rank,193.56);assert.deepEqual([result.medal,result.color,result.reward],[medal,color,reward]);
   assert.equal(state.record(1,999),null);assert.equal(state.result.time,193.56);assert.equal(state.result.rank,rank);assert.ok(Object.isFrozen(state.result));
  }

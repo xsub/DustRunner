@@ -49,7 +49,9 @@ import {GARAGE_SELECTION_KEY} from './vehicle-selection.js';
 import {transmissionMode,gearLabel} from './transmissions.js';
 import {RaceCompletion} from './race-completion.js';
 import {createRaceCelebration} from './race-celebration.js';
-import {desertInvitation} from './desert-share.js';
+import {extendedDesertInvitation} from './desert-share.js';
+import {decodeDesertShare} from './desert-share-state.js';
+import {DesertRoute} from './desert-route.js';
 import {jumpPoint} from './desert-jumps.js';
 import {buildDesert,DESERT_SPAWN,DESERT_BOUNDS,DESERT_VARIANTS,normalizeDesertOptions} from './desert.js';
 import {initPhysics,createPhysics,CHASSIS_HEIGHT} from './physics.js';
@@ -63,6 +65,12 @@ try{restoreTuning(window.localStorage);}catch{}
 refreshTracks();
 
 async function boot(){
+let sharedState=null,shareImportError='';
+if(new URLSearchParams(location.search).get('mode')==='desert'){
+ try{sharedState=await decodeDesertShare(location.href);if(sharedState?.s){setTuning(sharedState.s.tuning);refreshTracks();}}
+ catch{shareImportError='Nie udało się odczytać dodatków z linku. Wczytano samą pustynię.';}
+}
+const routeHistory=new DesertRoute();
 await initPhysics();
 const $=s=>document.querySelector(s),canvas=$('#scene'),game=$('#game'),menuDialog=$('#game-menu');
 canvas.tabIndex=0;
@@ -125,7 +133,26 @@ function makeDesertWorld(){
   cylinder(.055,2.5,pole,point.x,y+1.25,point.z);
   const flag=box(.85,.45,.04,material,point.x,y+2.2,point.z);flag.rotation.y=-jump.heading;
  }
+ drawSharedRoute();
+ minimap.setRoute(sharedState?.r??[]);
  minimap.setDesert({...ground,jumps:[...ground.jumps,...ground.rockRamps],regions:[...ground.regions,...ground.rockFormations.map(f=>({x:f.x,z:f.z,label:'SKAŁY'}))]});
+}
+function drawSharedRoute(){
+ const route=sharedState?.r;if(!freeRide||!route?.length)return;
+ const vertices=[];
+ for(let i=1;i<route.length;i++){
+  const a=route[i-1],b=route[i],steps=Math.max(1,Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])));
+  for(let n=0;n<=steps;n++){const t=n/steps,x=a[0]+(b[0]-a[0])*t,z=a[1]+(b[1]-a[1])*t;vertices.push(x,heightAt(x,z)+.16,z);}
+ }
+ const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+ const line=new THREE.Line(geometry,new THREE.LineDashedMaterial({color:'#52e5ed',dashSize:1.2,gapSize:.65,depthTest:true}));line.computeLineDistances();line.name='Udostępniony ślad przejazdu';world.add(line);
+ const markers=new THREE.InstancedMesh(new THREE.CylinderGeometry(.48,.48,.04,10),new THREE.MeshBasicMaterial({color:'#52e5ed'}),route.length),matrix=new THREE.Matrix4();
+ route.forEach(([x,z],i)=>markers.setMatrixAt(i,matrix.makeTranslation(x,heightAt(x,z)+.12,z)));markers.instanceMatrix.needsUpdate=true;markers.computeBoundingSphere();world.add(markers);
+}
+function applySharedPosition(){
+ if(!freeRide||!sharedState?.p)return;
+ const [x,z,heading]=sharedState.p,c=trucks[0];Object.assign(c,{x,z,heading,speed:0,vx:0,vz:0,vertical:0,height:heightAt(x,z)});
+ resetPowertrain(c);physics.reset(c,{groundHeight:heightAt(x,z)});physics.sync(c,0);poseTruck(c,0,true);
 }
 function makeWorld(){
  terrainMarkings.visible=showTerrainMarkings;
@@ -195,10 +222,10 @@ const transmissionPanel=createTransmissionPanel({getPlayer:()=>trucks[0],onChang
 const handlingPanel=createHandlingPanel({getPlayer:()=>trucks[0],onChange:()=>{completion.interrupt();keys.clear();},onInteract:()=>{if(!menuDialog.open)canvas.focus({preventScroll:true});}});
 const instrumentPanel=createInstrumentPanel({getPlayer:()=>trucks[0],onInteract:()=>{completion.interrupt();if(!menuDialog.open)canvas.focus({preventScroll:true});}});
 function isAttract(){if(hasStarted||freeRide||phase!=='ready'||document.hidden)return false;return attractRunning({started:hasStarted,freeRide,phase,hidden:document.hidden,editing:!!document.querySelector('dialog[open]')});}
-function reset(){horn.stop();game.classList.toggle('prestart',!hasStarted);handbrake.reset();completion.reset();celebration.reset();$('#race-victory').hidden=true;simulationClock.reset(true);physics.resetBarriers();scenery.resetBarriers();elapsed=0;count=0;phase='ready';$('#race-status').textContent=freeRide?'FREE RIDE · PUSTYNIA':'FREE PRACTICE';$('#countdown').textContent='';$('#pause').textContent='Ⅱ';$('#message').style.display='block';$('#message').innerHTML='<span>DUST RUNNER</span><strong>'+TRACKS[trackIndex].name+'</strong><p>Three laps · '+(curve.getLength()/1000).toFixed(2)+' km per lap · Split landing ahead.</p><button id="start">RACE <span>↗</span></button><button class="setup-link" id="open-setup">TRUCK · TRACK · PIT STOP</button><small>ENTER TO RACE · WASD / ARROWS TO DRIVE</small>';if(freeRide){$('#message').innerHTML='<span>FREE RIDE</span><strong>PUSTYNIA</strong><p>2400 × 1200 m · Płaskie koleiny, średnie wydmy, 6 piaskowych skoczni, 3 pary skalnych ramp, skalne podjazdy i wielkie wydmy. Bez przeciwników i limitu czasu.</p><button id="start">JEDŹ NA PUSTYNIĘ ↗</button><button class="setup-link" id="open-setup">SAMOCHÓD · SILNIK · MENU</button><small>F · POSTAW AUTO NA KOŁACH &nbsp; N · RESTART &nbsp; R · KLAKSON</small>';}if(freeRide&&desertOptions.variant==='hard')$('#message p').textContent='2400 × 1200 m · TRUDNE WYDMY · Wysokie strome zbocza, głębokie siodła i dawne grzbiety. Przydadzą się LO lub 4×4.';if(!hasStarted&&!freeRide){$('#message>span').textContent='DUST RUNNER · POKAZ '+trucks.length+' AUT';$('#message p').textContent=trucks.length+' aut, prawdziwy wyścig. Wskocz za kierownicę!';}$('#start').onclick=start;$('#open-setup').onclick=openMenu;updateMenu();
+function reset(){routeHistory.clear();horn.stop();game.classList.toggle('prestart',!hasStarted);handbrake.reset();completion.reset();celebration.reset();$('#race-victory').hidden=true;simulationClock.reset(true);physics.resetBarriers();scenery.resetBarriers();elapsed=0;count=0;phase='ready';$('#race-status').textContent=freeRide?'FREE RIDE · PUSTYNIA':'FREE PRACTICE';$('#countdown').textContent='';$('#pause').textContent='Ⅱ';$('#message').style.display='block';$('#message').innerHTML='<span>DUST RUNNER</span><strong>'+TRACKS[trackIndex].name+'</strong><p>Three laps · '+(curve.getLength()/1000).toFixed(2)+' km per lap · Split landing ahead.</p><button id="start">RACE <span>↗</span></button><button class="setup-link" id="open-setup">TRUCK · TRACK · PIT STOP</button><small>ENTER TO RACE · WASD / ARROWS TO DRIVE</small>';if(freeRide){$('#message').innerHTML='<span>FREE RIDE</span><strong>PUSTYNIA</strong><p>2400 × 1200 m · Płaskie koleiny, średnie wydmy, 6 piaskowych skoczni, 3 pary skalnych ramp, skalne podjazdy i wielkie wydmy. Bez przeciwników i limitu czasu.</p><button id="start">JEDŹ NA PUSTYNIĘ ↗</button><button class="setup-link" id="open-setup">SAMOCHÓD · SILNIK · MENU</button><small>F · POSTAW AUTO NA KOŁACH &nbsp; N · RESTART &nbsp; R · KLAKSON</small>';}if(freeRide&&desertOptions.variant==='hard')$('#message p').textContent='2400 × 1200 m · TRUDNE WYDMY · Wysokie strome zbocza, głębokie siodła i dawne grzbiety. Przydadzą się LO lub 4×4.';if(!hasStarted&&!freeRide){$('#message>span').textContent='DUST RUNNER · POKAZ '+trucks.length+' AUT';$('#message p').textContent=trucks.length+' aut, prawdziwy wyścig. Wskocz za kierownicę!';}$('#start').onclick=start;$('#open-setup').onclick=openMenu;updateMenu();
  trucks.forEach((c,i)=>c.mesh.visible=!freeRide||i===0);
  activeTrucks().forEach((c,i)=>{const j=(N-20-Math.floor(i/2)*25+N)%N,p=samples[j],t=curve.getTangentAt(j/N),side=(i%2?1:-1)*2.1*curve.lateralSign;Object.assign(c,{x:p.x-t.z*side,z:p.z+t.x*side,vx:0,vz:0,heading:Math.atan2(-t.x,-t.z),speed:0,index:j,checkpoint:-1,lap:0,height:terrain(j),vertical:0,airborne:false,lastGround:terrain(j),suspension:0,suspensionVelocity:0,rampRiseVelocity:0,collisionYaw:0,nitro:100,boosting:false,finish:false});c.mesh.position.set(c.x,0,c.z);c.mesh.rotation.set(0,c.heading,0);c.wheels.forEach(w=>{w.previousRotation=undefined;w.previousX=undefined;w.previousHeading=undefined;w.angle=0;w.steer=0;w.angularVelocity=0;});c.stuckTime=0;c.recoveries=0;c.demoDistance=-Math.floor(i/2)*9;c.lane=(i%2?3.5:-3.5)*curve.lateralSign;if(freeRide)Object.assign(c,{...DESERT_SPAWN,height:heightAt(DESERT_SPAWN.x,DESERT_SPAWN.z)});resetIgnition(c);resetPowertrain(c);physics.reset(c);poseTruck(c,0,true);});
- sandTrails.reset();dustPool.reset();exhaustPool.reset();updateCamera(0,true);}
+ applySharedPosition();sandTrails.reset();dustPool.reset();exhaustPool.reset();updateCamera(0,true);}
 function start(){if(phase==='racing'||phase==='countdown')return;hasStarted=true;keys.clear();audioPreviewTime=0;reset();phase=freeRide?'racing':'countdown';count=3.4;$('#message').style.display='none';$('#race-status').textContent=freeRide?'FREE RIDE · PUSTYNIA':'GET READY';canvas.focus({preventScroll:true});initAudio();}
 function pause(){if(benchmark?.running){benchmark.cancel('Pomiar przerwany przez pauzę.');return;}horn.stop();handbrake.cancelHold();completion.interrupt();if(!['racing','countdown','paused'].includes(phase))return;if(phase==='paused'){phase=previousPhase;$('#countdown').textContent='';$('#pause').textContent='Ⅱ';}else{previousPhase=phase;phase='paused';$('#countdown').textContent='PAUSED';$('#pause').textContent='▶';engineAudio.silence();}keys.clear();canvas.focus({preventScroll:true});}
 let menuPaused=false;
@@ -272,13 +299,13 @@ $('#handbrake-hud').onclick=toggleParking;$('#ignition-toggle').onclick=toggleIg
 $('#recover-touch').onclick=()=>recover(trucks[0]);
 $('#pause').onclick=pause;$('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $('#app').requestFullscreen();}catch{$('#garage-note').textContent='Fullscreen is unavailable in this browser.';}};
 document.addEventListener('fullscreenchange',()=>{$('#fullscreen').textContent=document.fullscreenElement?'⊡':'⛶';$('#fullscreen').setAttribute('aria-label',document.fullscreenElement?'Exit fullscreen':'Fullscreen game');});
-function selectPlayerModel(style,live=false){
+function selectPlayerModel(style,live=false,persist=true){
  if(!BRONCO_STYLES[style]||style===trucks[0].style)return;
  const player=trucks[0],model=createBronco(style,player.number);scene.remove(player.mesh);player.dispose();
  Object.assign(player,model,{style});scene.add(player.mesh);
  if(live){physics.replaceVehicle(player);swapEngine(player,defaultEngine(style));physics.refreshMass(player);sandTrails.breakTrail(player);dustPool.breakTrail(player);}
  else if(['copper78','godzilla78'].includes(style)||BRONCO_STYLES[style]?.era)player.engineId=defaultEngine(style);
- try{localStorage.setItem(GARAGE_SELECTION_KEY,style);}catch{}
+ if(persist)try{localStorage.setItem(GARAGE_SELECTION_KEY,style);}catch{}
  selectedColor=BRONCO_STYLES[style].color;poseTruck(player,0,true);updateEngineMenu();
  document.querySelectorAll('[data-model]').forEach(el=>{const selected=el.dataset.model===style;el.classList.toggle('selected',selected);el.querySelector('b').textContent=selected?'SELECTED ↗':'SELECT ↗';});
  if(!live)rebuildTrack();else{completion.interrupt();updateGameHud();save();}
@@ -317,14 +344,21 @@ function updateDesertOptions(){
  $('#desert-generator').hidden=profile.id!=='random'&&!profile.hard;$('#desert-description').textContent=profile.description;$('#desert-driving-hint').textContent=profile.hard?'Dawny teren z wysokimi, stromymi wydmami. Wybierz LO lub 4×4 do wymagających podjazdów. Zmiana wariantu lub ziarna rozpoczyna sesję od nowa.':'Żółte flagi: wybicie. Zielone flagi: przeciwległa rampa lądowania. Na minimapie trójkąty wskazują kierunek skoku. Zmiana wariantu lub ziarna rozpoczyna sesję od nowa.';
  try{localStorage.setItem('dust-runner-desert-v1',JSON.stringify(desertOptions));}catch{}
 }
-function applyDesertOptions(options){desertOptions=normalizeDesertOptions(options);updateDesertOptions();if(freeRide)rebuildTrack();}
+function applyDesertOptions(options){const next=normalizeDesertOptions(options);if(next.seed!==desertOptions.seed||next.variant!==desertOptions.variant){sharedState=null;routeHistory.clear();minimap.setRoute([]);$('#desert-import-status').textContent='';}desertOptions=next;updateDesertOptions();if(freeRide)rebuildTrack();}
 desertSelect.onchange=()=>applyDesertOptions({variant:desertSelect.value,...(desertSelect.value==='random'?{seed:crypto.getRandomValues(new Uint32Array(1))[0]}:{})});
 function applyDesertSeed(){if(!desertSeed.checkValidity()){desertSeed.reportValidity();return;}applyDesertOptions({variant:desertOptions.variant==='hard'?'hard':'random',seed:desertSeed.value});}
 desertSeed.onchange=applyDesertSeed;$('#desert-apply-seed').onclick=applyDesertSeed;desertSeed.onkeydown=event=>{if(event.code==='Enter'){event.preventDefault();applyDesertSeed();}};
 $('#desert-share').onclick=async()=>{
- const invitation=desertInvitation(desertOptions),field=$('#desert-share-text');field.value=invitation.text;
- try{await navigator.clipboard.writeText(invitation.text);field.hidden=true;$('#desert-share-status').textContent='Skopiowano zaproszenie i link do tej pustyni. Wyślij je znajomym!';}
+ const c=trucks[0],state={v:1},button=$('#desert-share'),field=$('#desert-share-text');button.disabled=true;
+ try{
+ if($('#share-car').checked)state.m=c.style;
+ if($('#share-settings').checked)state.s={engineId:c.engineId,driveMode:c.driveMode,transmissionMode:transmissionMode(c),handlingProfile:c.handlingProfile??'arcade',steeringMode,hillDescent:c.hillDescent!==false,frontLock:c.axleLocks?.front??true,rearLock:c.axleLocks?.rear??true,upgrades:{...levels},tuning:{...cfg}};
+ if($('#share-position').checked&&!$('#share-position').disabled)state.p=[c.x,c.z,c.heading];
+ const route=routeHistory.snapshot();if($('#share-route').checked&&route.length>=2)state.r=route;
+ const invitation=await extendedDesertInvitation(desertOptions,state);field.value=invitation.text;
+ try{await navigator.clipboard.writeText(invitation.text);field.hidden=true;$('#desert-share-status').textContent='Skopiowano zaproszenie · link: '+invitation.url.length+' znaków. Wyślij je znajomym!';}
  catch{field.hidden=false;field.focus();field.select();$('#desert-share-status').textContent='Skopiuj zaznaczone zaproszenie: Ctrl/Cmd+C lub przytrzymaj tekst.';}
+ }catch(error){$('#desert-share-status').textContent=error.message;}finally{button.disabled=false;}
 };
 $('#desert-generate').onclick=()=>applyDesertOptions({variant:desertOptions.variant==='hard'?'hard':'random',seed:crypto.getRandomValues(new Uint32Array(1))[0]});updateDesertOptions();
 $('#track-grid').onclick=event=>{const b=event.target.closest('[data-track]');if(!b)return;trackIndex=Number(b.dataset.track);renderTrackChoices();rebuildTrack();};
@@ -440,7 +474,7 @@ function poseTruck(c,dt,snap=false){
 }
 function recover(c,advance=0){
  c.recoveries=(c.recoveries??0)+1;
- if(c===trucks[0])handbrake.reset();
+ if(c===trucks[0]){handbrake.reset();routeHistory.clear();}
  sandTrails.breakTrail(c);dustPool.breakTrail(c);
  let spot;const profile=vehicleProfile(c.style),footprint={widthScale:profile.track,lengthScale:profile.wheelbase};
  if(freeRide){
@@ -500,6 +534,7 @@ function step(dt){const demo=isAttract();if(phase==='countdown'){count-=dt;$('#c
    if(demo)withDemoDrivetrain(c,drive);else drive();
   });
   physics.step();activeTrucks().forEach(c=>physics.sync(c,dt));
+  if(freeRide&&!demo&&!benchmark?.running)routeHistory.sample(trucks[0].x,trucks[0].z);
   framePhysicsMs+=performance.now()-physicsStarted;framePhysicsSteps++;
  activeTrucks().forEach((c,i)=>{
   sandTrails.sample(c,heightAt);
@@ -520,6 +555,7 @@ function step(dt){const demo=isAttract();if(phase==='countdown'){count-=dt;$('#c
  }
 }
 function updateGameHud(){
+ const recorded=routeHistory.snapshot();$('#share-position').disabled=!hasStarted||!freeRide;$('#share-route').disabled=recorded.length<2;$('#share-route-info').textContent=recorded.length>=2?'Zapisano '+recorded.length+' punktów · do 100 m, co 5 m.':'Przejedź kilka metrów, aby dołączyć ślad.';
  const touchDriving=hasStarted&&phase==='racing'&&!benchmark?.running&&!document.querySelector('dialog[open]');
  if(!touchDriving)touchControls.clear();
  if(document.querySelector('dialog[open]'))touchCamera.clear();
@@ -592,7 +628,16 @@ benchmark=new RaceBenchmark({onResult:report=>benchmarkPanel.checkpoint(report),
  raceSetup=saved.setup;if(saved.hadGenerated)setGeneratedTrack(saved.seed);else clearGeneratedTrack();trackIndex=saved.track;trackVariant=saved.variant;freeRide=saved.freeRide;hasStarted=saved.started;muted=saved.muted;renderBudget.scale=saved.scale;renderBudget.reset();syncFleet();trucks.forEach((c,i)=>Object.assign(c,saved.drivetrains[i]??{driveMode:'auto',transmissionMode:'automatic'}));Object.assign(cameraOrbit,saved.camera);syncModeUI();rebuildTrack();renderTrackChoices();updateSoundLabels();raceSetupPanel.sync();
  if(!menuDialog.open)menuDialog.showModal();menuPaused=false;
 }});
-new ResizeObserver(resize).observe(game);reset();resize();try{const selected=localStorage.getItem(GARAGE_SELECTION_KEY);if(BRONCO_STYLES[selected])selectPlayerModel(selected);}catch{}if(new URLSearchParams(location.search).get('mode')==='desert')document.querySelector('[data-mode="desert"]').click();let lastHudPaint=0;
+new ResizeObserver(resize).observe(game);reset();resize();try{const selected=localStorage.getItem(GARAGE_SELECTION_KEY);if(BRONCO_STYLES[selected])selectPlayerModel(selected);}catch{}if(new URLSearchParams(location.search).get('mode')==='desert')document.querySelector('[data-mode="desert"]').click();if(sharedState){
+ if(sharedState.m)selectPlayerModel(sharedState.m,false,false);
+ if(sharedState.s){const c=trucks[0],s=sharedState.s;Object.assign(c,{engineId:s.engineId,driveMode:s.driveMode,transmissionMode:s.transmissionMode,handlingProfile:s.handlingProfile,hillDescent:s.hillDescent,axleLocks:{front:s.frontLock,rear:s.rearLock}});steeringMode=s.steeringMode;steeringSelect.value=steeringMode;Object.assign(levels,s.upgrades);updateSteeringHelp();updateGarage();}
+ rebuildTrack();updateEngineMenu();drivePanel.update();transmissionPanel.update();handlingPanel.update();
+ const included=[sharedState.m?'model auta':null,sharedState.s?'ustawienia auta i fizyki':null,sharedState.p?'miejsce startu':null,sharedState.r?'turkusowy ślad przejazdu':null].filter(Boolean);
+ $('#desert-import-status').textContent='Z linku: '+included.join(', ')+'. Ustawienia zastosowano do tej sesji.';
+ $('#message p').textContent+=' Zaproszenie: '+included.join(', ')+'.';
+}
+if(shareImportError){$('#desert-import-status').textContent=shareImportError;$('#message p').textContent+=' '+shareImportError;}
+let lastHudPaint=0;
 function frame(now){
  requestAnimationFrame(frame);benchmark?.advance();const frameStarted=performance.now();framePhysicsMs=framePhysicsSteps=0;
  const elapsedFrame=Math.max(0,(now-lastTime)/1000),dt=Math.min(elapsedFrame,.1);lastTime=now;

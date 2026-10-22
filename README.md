@@ -17,7 +17,7 @@ To gra pisana dla siebie, z zajawki do terenówek, fizyki i dłubania w szczegó
 - **Garaż Bronco:** 20 proceduralnych modeli i 12 profili silników, w tym Godzilla 7.3 V8. Indywidualne masy, większe koła i lift wpływają na prowadzenie.
 - **Napęd 4×4:** automat domyślnie, ręczna zmiana biegów, skrzynie przypisane do silników, HI/LO, pełzanie, blokady obu mostów, HDC i ręczny. Prowadzenie Arcade lub Classic.
 - **Odczuwalną fizykę:** pracę zawieszenia i kół, przyczepność, poślizg, rozkład masy, skoki, lądowania, zderzenia i wywrotki. Ślady opon, kurz, wydech i dźwięk reagują na jazdę.
-- **Wspólne odkrywanie:** generuj pustynie i kopiuj zaproszenia z linkiem, aby znajomi trafili na ten sam teren.
+- **Wspólne odkrywanie:** generuj pustynie i kopiuj zaproszenia z linkiem. Opcjonalnie dołącz model auta, ustawienia, pozycję i ślad ostatnich 100 m.
 - **Mnóstwo detali:** konfigurowalne zegary, kompas, nachylenie zbocza, animowane przekroje silnika i zawieszenia, telemetrię i strojenie fizyki. Klawiaturę na komputerze, dotyk i gesty kamery na telefonie.
 
 ## Jak zacząć
@@ -30,7 +30,7 @@ Otwórz grę, wybierz wyścig lub **Free Ride** i jedź. Menu pozwala zmienić s
 
 **Three.js / WebGL** rysuje proceduralny świat, **Rapier 3D / WebAssembly** liczy fizykę przy 120 Hz, a własny model napędu przekłada pracę silnika i skrzyni na siły na kołach. Widoczny teren i kontakt korzystają ze wspólnej geometrii. Pozostały stack: **JavaScript, Web Audio / AudioWorklet, HTML/CSS, Canvas i Vite**; testy i publikacja przez **GitHub Actions / Pages**.
 
-To symulacja nastawiona na frajdę z jazdy: masy customów, charakterystyki silników i część mechaniki są kalibracjami gry, a nie danymi homologacyjnymi. Postęp i ustawienia zapisują się lokalnie w przeglądarce; link do pustyni odtwarza teren, nie przenosi osobistych ustawień.
+To symulacja nastawiona na frajdę z jazdy: masy customów, charakterystyki silników i część mechaniki są kalibracjami gry, a nie danymi homologacyjnymi. Postęp i ustawienia zapisują się lokalnie w przeglądarce; zakres danych w zaproszeniu wybierasz osobno czterema checkboxami.
 
 ## Uruchomienie lokalne
 
@@ -43,7 +43,7 @@ npm test
 npm run build -- --base=/DustRunner/
 ```
 
-Szczegóły: [silniki i źródła](ENGINE_NOTES.md) · [modele i fizyka](docs/vehicle-dynamics.md) · [sterowanie mobilne](docs/mobile-controls.md) · [strojenie i rozwój](docs/DEVELOPMENT.md) · [protokół pomiarów wydajności](docs/performance-benchmark.md).
+Szczegóły: [udostępnianie pustyni](docs/desert-sharing.md) · [silniki i źródła](ENGINE_NOTES.md) · [modele i fizyka](docs/vehicle-dynamics.md) · [sterowanie mobilne](docs/mobile-controls.md) · [strojenie i rozwój](docs/DEVELOPMENT.md) · [protokół pomiarów wydajności](docs/performance-benchmark.md).
 
 ## Autorstwo i marki
 

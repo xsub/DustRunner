@@ -3,6 +3,7 @@ import {minimapTransform} from './view.js';
 export function createMinimap(canvas){
  const ctx=canvas.getContext('2d');
  const background=document.createElement('canvas'),bg=background.getContext('2d');
+ let sharedRoute=[];
  let points=[],halfWidth=0,transform,width=0,height=0,density=1,features=[],length=1,desert=null,dirty=true;
  function project(p){return {x:p.x*transform.scale+transform.offsetX,y:p.z*transform.scale+transform.offsetZ};}
  function rebuild(){
@@ -32,8 +33,9 @@ export function createMinimap(canvas){
    }
  }
  return {
+   setRoute(route){sharedRoute=route;},
    setDesert(ground){desert=ground;points=[ground.bounds.min,ground.bounds.max];halfWidth=0;features=[];rebuild();},
-   setTrack(samples,width,trackFeatures=[],trackLength=1){desert=null;points=samples;halfWidth=width;features=trackFeatures;length=trackLength;rebuild();},
+   setTrack(samples,width,trackFeatures=[],trackLength=1){sharedRoute=[];desert=null;points=samples;halfWidth=width;features=trackFeatures;length=trackLength;rebuild();},
    resize:rebuild,
    render(cars,color,viewCorners=[]){
      // The HUD starts hidden: its first measurable size may arrive without
@@ -43,6 +45,7 @@ export function createMinimap(canvas){
      ctx.setTransform(density,0,0,density,0,0);ctx.clearRect(0,0,width,height);ctx.drawImage(background,0,0,width,height);
      ctx.save();ctx.beginPath();ctx.rect(0,0,width,height);ctx.clip();
      if(viewCorners.length){ctx.beginPath();viewCorners.forEach((p,i)=>{const q=project(p);if(!i)ctx.moveTo(q.x,q.y);else ctx.lineTo(q.x,q.y);});ctx.closePath();ctx.fillStyle='#e7efcb10';ctx.fill();ctx.strokeStyle='#edf3d16b';ctx.lineWidth=1;ctx.setLineDash([3,3]);ctx.stroke();ctx.setLineDash([]);}
+     if(desert&&sharedRoute.length>1){ctx.beginPath();sharedRoute.forEach(([x,z],i)=>{const q=project({x,z});if(i)ctx.lineTo(q.x,q.y);else ctx.moveTo(q.x,q.y);});ctx.strokeStyle='#52e5ed';ctx.lineWidth=2;ctx.stroke();}
      const colors=cars.map((car,i)=>i===0?color:'#'+car.body.color.getHexString());
      for(let i=cars.length-1;i>=0;i--){const car=cars[i],p=project(car);ctx.save();ctx.translate(p.x,p.y);
        if(i===0){ctx.rotate(-car.heading);ctx.beginPath();ctx.moveTo(0,-5);ctx.lineTo(3.6,4);ctx.lineTo(0,2);ctx.lineTo(-3.6,4);ctx.closePath();ctx.strokeStyle='#fffce5';ctx.lineWidth=2;ctx.fillStyle=color;ctx.fill();ctx.stroke();}

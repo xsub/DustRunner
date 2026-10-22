@@ -144,3 +144,4 @@
  .mobile-layout .timer strong{font-size:17px}
 }
 @media(orientation:portrait) and (max-width:379px){.mobile-layout .hud-box:not(.timer){display:none}}
+.share-options{border:1px solid #61704e;border-radius:6px;padding:12px;margin:12px 0;display:grid;gap:10px}.share-options legend{font-size:10px;letter-spacing:.7px;color:#f4cf58}.desert-options .share-options label{display:flex;align-items:flex-start;gap:9px;font-size:12px;line-height:1.5;margin:0;letter-spacing:0}.share-options input{width:18px;height:18px;flex:none;accent-color:#f4cf58;margin:0}.share-options small{font-size:10px;color:#a9bb96}#desert-import-status{color:#70d8dd;font-size:11px;line-height:1.6}

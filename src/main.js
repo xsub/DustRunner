@@ -351,7 +351,7 @@ function updateDesertOptions(){
 }
 function applyDesertOptions(options){const next=normalizeDesertOptions(options);if(next.seed!==desertOptions.seed||next.variant!==desertOptions.variant){sharedState=null;routeHistory.clear();minimap.setRoute([]);$('#desert-import-status').textContent='';}desertOptions=next;updateDesertOptions();if(freeRide)rebuildTrack();}
 desertSelect.onchange=()=>applyDesertOptions({variant:desertSelect.value,...(desertSelect.value==='random'?{seed:crypto.getRandomValues(new Uint32Array(1))[0]}:{})});
-function applyDesertSeed(){if(!desertSeed.checkValidity()){desertSeed.reportValidity();return;}applyDesertOptions({variant:desertOptions.variant==='hard'?'hard':'random',seed:desertSeed.value});}
+function applyDesertSeed(){if(!desertSeed.checkValidity()){desertSeed.reportValidity();return;}applyDesertOptions({variant:desertOptions.variant,seed:desertSeed.value});}
 desertSeed.onchange=applyDesertSeed;$('#desert-apply-seed').onclick=applyDesertSeed;desertSeed.onkeydown=event=>{if(event.code==='Enter'){event.preventDefault();applyDesertSeed();}};
 $('#desert-share').onclick=async()=>{
  const c=trucks[0],state={v:1},button=$('#desert-share'),field=$('#desert-share-text');button.disabled=true;
@@ -365,7 +365,7 @@ $('#desert-share').onclick=async()=>{
  catch{field.hidden=false;field.focus();field.select();$('#desert-share-status').textContent=msg("main.copy_the_selected_invitation_ctrl_cmd");}
  }catch(error){$('#desert-share-status').textContent=error.message;}finally{button.disabled=false;}
 };
-$('#desert-generate').onclick=()=>applyDesertOptions({variant:desertOptions.variant==='hard'?'hard':'random',seed:crypto.getRandomValues(new Uint32Array(1))[0]});updateDesertOptions();
+$('#desert-generate').onclick=()=>applyDesertOptions({variant:desertOptions.variant,seed:crypto.getRandomValues(new Uint32Array(1))[0]});updateDesertOptions();
 $('#track-grid').onclick=event=>{const b=event.target.closest('[data-track]');if(!b)return;trackIndex=Number(b.dataset.track);renderTrackChoices();rebuildTrack();};
 try{const saved=localStorage.getItem('dust-runner-race-seed');if(saved!==null)$('#race-seed').value=String(Number(saved)>>>0);}catch{}
 function generateRace(random=false){

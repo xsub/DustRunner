@@ -21,7 +21,13 @@ export function jumpSurface(jump,s){
 }
 export function shapeDesertJump(jump,x,z,natural){
  const {s,side}=jumpCoordinates(jump,x,z),end=jumpEnd(jump);
- if(s< -jump.approach-35||s>end+40||Math.abs(side)>jump.halfWidth+35)return natural;
- const width=1-smooth((Math.abs(side)-jump.halfWidth)/35),entry=smooth((s+jump.approach+35)/35),exit=1-smooth((s-end)/40),blend=width*entry*exit;
+ if(jump.rock){
+  if(s< -jump.approach-35||s>end+40||Math.abs(side)>jump.halfWidth+45)return natural;
+  const entry=smooth((s+jump.approach+35)/35),exit=1-smooth((s-end)/40),pad=(1-smooth((Math.abs(side)-jump.halfWidth-10)/35))*entry*exit;
+  const deck=1-smooth((Math.abs(side)-jump.halfWidth)/(jump.edgeWidth??8));
+  return natural*(1-pad)+pad+jumpSurface(jump,s)*deck*entry*exit;
+ }
+ if(s< -jump.approach-35||s>end+40||Math.abs(side)>jump.halfWidth+(jump.edgeWidth??35))return natural;
+ const width=1-smooth((Math.abs(side)-jump.halfWidth)/(jump.edgeWidth??35)),entry=smooth((s+jump.approach+35)/35),exit=1-smooth((s-end)/40),blend=width*entry*exit;
  return natural*(1-blend)+(1+jumpSurface(jump,s))*blend;
 }

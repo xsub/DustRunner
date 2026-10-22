@@ -3,7 +3,7 @@ import {snakeRetreat} from './wildlife.js';
 export const MARKER_SPACING=8;
 
 // Shared geometries and instanced plants keep the desert inexpensive to draw.
-export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()=>-.25,addBarrier=()=>{},addRocks=()=>{},protectedAreas=[],nearest,bounds,random}){
+export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()=>-.25,addBarrier=()=>{},addRocks=()=>{},protectedAreas=[],smallRocks=[],nearest,bounds,random}){
  const material=color=>new THREE.MeshStandardMaterial({color,roughness:1});
  const rubber=material('#30322b'),worn=material('#45463a'),orange=material('#ee792e'),white=material('#f4ebd8');
  const barrierBatches=new Map(),barrierMatrix=new THREE.Object3D(),barrierBindings=[];let currentBarrier;
@@ -56,7 +56,7 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
  const trunks=batch(new THREE.CylinderGeometry(1,1,1,7),'#65703b',1600);
  const leaves=batch(new THREE.ConeGeometry(1,1,5),'#79834c',2600);
  const rockGeometry=new THREE.IcosahedronGeometry(1,0),rockVertices=[],rockCells=new Map();
- const bushes=batch(rockGeometry,'#82745b',2200);
+ const bushes=batch(rockGeometry,'#82745b',2200+smallRocks.length);
  const rockPosition=rockGeometry.attributes.position;
  const rock=(x,y,z,sx,sy,sz)=>{
   put(bushes,x,y,z,sx,sy,sz);
@@ -93,6 +93,10 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
   }else{
    for(let k=0;k<5;k++)put(dry,x+(random()-.5)*.8,y+.28*size,z+(random()-.5)*.8,.07,.7*size,.07,(random()-.5)*.7,random()*6,(random()-.5)*.7);
   }
+ }
+ for(const stone of smallRocks){
+  if(protectedAreas.some(p=>Math.hypot(p.x-stone.x,p.z-stone.z)<8))continue;
+  rock(stone.x,heightAt(stone.x,stone.z)+stone.offset,stone.z,stone.sx,stone.sy,stone.sz);
  }
  if(rockVertices.length)addRocks(new Float32Array(rockVertices));
  for(const batch of plantBatches){batch.instanceMatrix.needsUpdate=true;batch.computeBoundingSphere();}

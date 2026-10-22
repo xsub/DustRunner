@@ -53,7 +53,7 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
  const matrix=new THREE.Object3D();
  const plantBatches=[];
  const batch=(geometry,color,capacity)=>{const m=new THREE.InstancedMesh(geometry,material(color),capacity);m.castShadow=true;m.receiveShadow=true;m.count=0;world.add(m);plantBatches.push(m);return m;};
- const trunks=batch(new THREE.CylinderGeometry(1,1,1,7),'#65703b',1600);
+ const trunks=batch(new THREE.CylinderGeometry(1,1,1,7),'#65703b',8400);
  const leaves=batch(new THREE.ConeGeometry(1,1,5),'#79834c',2600);
  const rockGeometry=new THREE.IcosahedronGeometry(1,0),rockVertices=[],rockCells=new Map();
  const bushes=batch(rockGeometry,'#82745b',2200+smallRocks.length);
@@ -78,10 +78,15 @@ export function createScenery({world,samples,curve,roadWidth,terrain,heightAt=()
   if(type<.27){ // branching saguaro
    const h=(1.5+random()*2.2)*size;
    put(trunks,x,y+h/2,z,.22*size,h,.22*size);
-   for(const side of [-1,1]){
-    const arm=h*(.45+random()*.16),reach=.6*size;
-    put(trunks,x+side*reach*.5,y+arm,z,.16*size,reach,.16*size,0,0,Math.PI/2);
-    put(trunks,x+side*reach,y+arm+.4*size,z,.16*size,.8*size,.16*size);
+   // Three different azimuths keep at least one arm outside the trunk's
+   // silhouette at every camera yaw. Preserve the seeded random sequence.
+   const heights=[h*(.45+random()*.16),h*(.45+random()*.16),h*.36];
+   const azimuth=x*.618+z*.414;
+   for(let arm=0;arm<3;arm++){
+    const angle=azimuth+arm*Math.PI*2/3,reach=(arm===1?.82:1.02)*size,tip=(arm===2?.6:.9)*size;
+    const dx=Math.cos(angle)*reach,dz=Math.sin(angle)*reach,level=heights[arm];
+    put(trunks,x+dx*.5,y+level,z+dz*.5,.15*size,reach,.15*size,0,-angle,-Math.PI/2);
+    put(trunks,x+dx,y+level+tip/2,z+dz,.15*size,tip,.15*size);
    }
   }else if(type<.49){ // agave rosettes
    for(let k=0;k<7;k++){

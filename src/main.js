@@ -43,7 +43,8 @@ import {clamp,angleDelta,advanceProgress,formatTime} from './race.js';
 import {buildTerrain} from './terrain.js';
 import {findRecoverySpot} from './recovery.js';
 import {createTransmissionPanel} from './transmission-panel.js';
-import {transmissionMode,gearLabel,savedTransmissionMode} from './transmissions.js';
+import {GARAGE_SELECTION_KEY} from './vehicle-selection.js';
+import {transmissionMode,gearLabel} from './transmissions.js';
 import {RaceCompletion} from './race-completion.js';
 import {createRaceCelebration} from './race-celebration.js';
 import {desertInvitation} from './desert-share.js';
@@ -182,7 +183,7 @@ makeWorld();syncFleet();
 const completion=new RaceCompletion(),celebration=createRaceCelebration(game);
 const keys=new Set();let hasStarted=false,phase='ready',previousPhase='racing',elapsed=0,count=0,selectedColor='#087a50',cash=0,levels={engine:0,grip:0},lastTime=0,muted=true,volume=.55,steeringMode='return',audioPreviewTime=0;
 const horn=new Horn(),engineAudio=new EngineAudio(),attractMusic=new AttractMusic(),handbrake=new Handbrake();
-try{const save=JSON.parse(localStorage.getItem('dust-runner-save'));if(save){trucks[0].transmissionMode=savedTransmissionMode(save.transmissionMode);trucks[0].driveMode=driveModeById(save.driveMode).id;trucks[0].axleLocks={front:typeof save.axleLocks?.front==='boolean'?save.axleLocks.front:true,rear:typeof save.axleLocks?.rear==='boolean'?save.axleLocks.rear:true};if(['return','hold'].includes(save.steeringMode))steeringMode=save.steeringMode;if(ENGINES.some(e=>e.id===save.engineId))trucks[0].engineId=save.engineId;if(Number.isFinite(save.volume))volume=clamp(save.volume,0,1);cash=Math.max(0,Number(save.cash)||0);levels.engine=clamp(Number(save.engine)||0,0,3);levels.grip=clamp(Number(save.grip)||0,0,3);}}catch{}
+try{const save=JSON.parse(localStorage.getItem('dust-runner-save'));if(save){trucks[0].transmissionMode='automatic';trucks[0].driveMode='auto';trucks[0].axleLocks={front:typeof save.axleLocks?.front==='boolean'?save.axleLocks.front:true,rear:typeof save.axleLocks?.rear==='boolean'?save.axleLocks.rear:true};if(['return','hold'].includes(save.steeringMode))steeringMode=save.steeringMode;if(ENGINES.some(e=>e.id===save.engineId))trucks[0].engineId=save.engineId;if(Number.isFinite(save.volume))volume=clamp(save.volume,0,1);cash=Math.max(0,Number(save.cash)||0);levels.engine=clamp(Number(save.engine)||0,0,3);levels.grip=clamp(Number(save.grip)||0,0,3);}}catch{}
 function save(){try{localStorage.setItem('dust-runner-save',JSON.stringify({cash,...levels,engineId:trucks[0].engineId,volume,steeringMode,driveMode:trucks[0].driveMode,transmissionMode:transmissionMode(trucks[0]),axleLocks:trucks[0].axleLocks}));}catch{}updateGarage();}
 function updateGarage(){$('#cash').textContent=cash;for(const type of ['engine','grip']){$(`#${type}-level`).textContent=levels[type];const b=$(`[data-upgrade="${type}"]`);b.disabled=levels[type]>=3;b.title=levels[type]>=3?'Fully upgraded':'Buy upgrade for $300';}}
 updateGarage();
@@ -274,6 +275,7 @@ function selectPlayerModel(style,live=false){
  Object.assign(player,model,{style});scene.add(player.mesh);
  if(live){physics.replaceVehicle(player);swapEngine(player,defaultEngine(style));sandTrails.breakTrail(player);dustPool.breakTrail(player);}
  else if(['copper78','godzilla78'].includes(style)||BRONCO_STYLES[style]?.era)player.engineId=defaultEngine(style);
+ try{localStorage.setItem(GARAGE_SELECTION_KEY,style);}catch{}
  selectedColor=BRONCO_STYLES[style].color;poseTruck(player,0,true);updateEngineMenu();
  document.querySelectorAll('[data-model]').forEach(el=>{const selected=el.dataset.model===style;el.classList.toggle('selected',selected);el.querySelector('b').textContent=selected?'SELECTED ↗':'SELECT ↗';});
  if(!live)rebuildTrack();else{completion.interrupt();updateGameHud();save();}
@@ -282,7 +284,10 @@ function cyclePlayerModel(direction){
  const styles=Object.keys(BRONCO_STYLES),index=styles.indexOf(trucks[0].style);
  selectPlayerModel(styles[(index+direction+styles.length)%styles.length],true);
 }
-document.querySelectorAll('[data-model]').forEach(b=>b.onclick=()=>selectPlayerModel(b.dataset.model));
+document.querySelectorAll('[data-model]').forEach(b=>b.onclick=()=>selectPlayerModel(b.dataset.model,hasStarted));
+window.addEventListener('storage',event=>{
+ if(event.key===GARAGE_SELECTION_KEY&&BRONCO_STYLES[event.newValue]&&!benchmark?.running)selectPlayerModel(event.newValue,hasStarted);
+});
 
 function rebuildTrack(){
  keys.clear();makeWorld();resize();reset();
@@ -581,7 +586,7 @@ benchmark=new RaceBenchmark({onResult:report=>benchmarkPanel.checkpoint(report),
  raceSetup=saved.setup;if(saved.hadGenerated)setGeneratedTrack(saved.seed);else clearGeneratedTrack();trackIndex=saved.track;trackVariant=saved.variant;freeRide=saved.freeRide;hasStarted=saved.started;muted=saved.muted;renderBudget.scale=saved.scale;renderBudget.reset();syncFleet();trucks.forEach((c,i)=>Object.assign(c,saved.drivetrains[i]??{driveMode:'auto',transmissionMode:'automatic'}));Object.assign(cameraOrbit,saved.camera);syncModeUI();rebuildTrack();renderTrackChoices();updateSoundLabels();raceSetupPanel.sync();
  if(!menuDialog.open)menuDialog.showModal();menuPaused=false;
 }});
-new ResizeObserver(resize).observe(game);reset();resize();if(new URLSearchParams(location.search).get('mode')==='desert')document.querySelector('[data-mode="desert"]').click();let lastHudPaint=0;
+new ResizeObserver(resize).observe(game);reset();resize();try{const selected=localStorage.getItem(GARAGE_SELECTION_KEY);if(BRONCO_STYLES[selected])selectPlayerModel(selected);}catch{}if(new URLSearchParams(location.search).get('mode')==='desert')document.querySelector('[data-mode="desert"]').click();let lastHudPaint=0;
 function frame(now){
  requestAnimationFrame(frame);benchmark?.advance();const frameStarted=performance.now();framePhysicsMs=framePhysicsSteps=0;
  const elapsedFrame=Math.max(0,(now-lastTime)/1000),dt=Math.min(elapsedFrame,.1);lastTime=now;

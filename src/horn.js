@@ -20,6 +20,6 @@ export class Horn {
     source.onended=()=>{source.disconnect();if(--remaining===0){filter.disconnect();gain.disconnect();}};source.start();
    }
   }
-  this.voice.gain.gain.setTargetAtTime(Math.max(0,Math.min(1,volume))*.075,context.currentTime,.018);
+  this.voice.gain.gain.setTargetAtTime(Math.max(0,Math.min(1,volume))*.18,context.currentTime,.018);
  }
 }

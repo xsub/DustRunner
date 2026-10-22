@@ -5,6 +5,7 @@ import {Quaternion,Vector3} from 'three';
 import {axleWheelForces,driveModeById} from './drive-modes.js';
 import {powertrainStep} from './powertrain.js';
 import {vehicleMassProperties} from './vehicle-mass.js';
+import {vehicleDynamics} from './vehicle-dynamics.js';
 import {isOpenBody,rollCageSegments} from './body-types.js';
 import {drivingControls,rollingResistance,steeringStep} from './driving-controls.js';
 import {arcadePedals,arcadeSteering,descentDeceleration} from './handling.js';
@@ -12,11 +13,12 @@ import {transmissionMode} from './transmissions.js';
 import {WHEEL_LAYOUT,VEHICLE_SCALE,TIRE_RADIUS} from './contact.js';
 export const GRAVITY=DEFAULT_TUNING.gravity,CHASSIS_HEIGHT=1.5,REST_LENGTH=.55;
 export const initPhysics=()=>RAPIER.init();
+const STATIC_GROUP=0x0001ffff,UPRIGHT_TIRE_GROUP=0x00020004,ROLLOVER_TIRE_GROUP=0x0002ffff;
 const q=new Quaternion(),forward=new Vector3(),up=new Vector3();
 export function createPhysics(terrain,bounds){
  const world=new RAPIER.World({x:0,y:-cfg.gravity,z:0});world.timestep=1/120;world.numSolverIterations=cfg.solverIterations;
- world.createCollider(RAPIER.ColliderDesc.trimesh(terrain.positions,terrain.indices).setFriction(cfg.groundFriction).setRestitution(.03));
- world.createCollider(RAPIER.ColliderDesc.cuboid((bounds.max.x-bounds.min.x)/2+80,.5,(bounds.max.z-bounds.min.z)/2+80).setTranslation((bounds.min.x+bounds.max.x)/2,-.75,(bounds.min.z+bounds.max.z)/2).setFriction(.8));
+ world.createCollider(RAPIER.ColliderDesc.trimesh(terrain.positions,terrain.indices).setFriction(cfg.groundFriction).setRestitution(.03).setCollisionGroups(STATIC_GROUP));
+ world.createCollider(RAPIER.ColliderDesc.cuboid((bounds.max.x-bounds.min.x)/2+80,.5,(bounds.max.z-bounds.min.z)/2+80).setTranslation((bounds.min.x+bounds.max.x)/2,-.75,(bounds.min.z+bounds.max.z)/2).setFriction(.8).setCollisionGroups(STATIC_GROUP));
  const vehicles=new Set(),barriers=[],barrierBodies=new Set(),barrierGrid=new Map(),cellSize=12,activeMarkers=new Set();
  let markerBudget=Infinity,visibleMarkers=0,hasMarkerView=false;
  function moveMarkerCell(prop){
@@ -81,13 +83,16 @@ export function createPhysics(terrain,bounds){
   const tireColliders=[];
   WHEEL_LAYOUT.forEach((w,i)=>{
    controller.addWheel({x:w.x*profile.track*VEHICLE_SCALE,y:connectionY,z:w.z*profile.wheelbase*VEHICLE_SCALE},{x:0,y:-1,z:0},{x:-1,y:0,z:0},cfg.restLength,TIRE_RADIUS*VEHICLE_SCALE*profile.wheelScale);
-   controller.setWheelSuspensionStiffness(i,cfg.spring);controller.setWheelSuspensionCompression(i,cfg.compression);controller.setWheelSuspensionRelaxation(i,cfg.rebound);
-   controller.setWheelMaxSuspensionTravel(i,cfg.suspensionTravel);controller.setWheelMaxSuspensionForce(i,mass*cfg.suspensionForce);
+   const dynamics=vehicleDynamics(car.style);
+   controller.setWheelSuspensionStiffness(i,cfg.spring*dynamics.spring);controller.setWheelSuspensionCompression(i,cfg.compression*dynamics.compression);controller.setWheelSuspensionRelaxation(i,cfg.rebound*dynamics.rebound);
+   controller.setWheelMaxSuspensionTravel(i,cfg.suspensionTravel*dynamics.travel);controller.setWheelMaxSuspensionForce(i,mass*cfg.suspensionForce);
    controller.setWheelFrictionSlip(i,cfg.roadGrip);controller.setWheelSideFrictionStiffness(i,cfg.sideGrip);
-   // A smaller collision envelope catches the tires when the truck is on its side.
-   tireColliders.push(world.createCollider(RAPIER.ColliderDesc.ball(.58*profile.wheelScale).setTranslation(w.x*profile.track*VEHICLE_SCALE,connectionY-cfg.restLength,w.z*profile.wheelbase*VEHICLE_SCALE).setMass(0).setFriction(.8),body));
+   // Static contacts only on its side; upright terrain contacts belong to the suspension.
+   // Dynamic props and other chassis still collide with these tire envelopes.
+   // A rigid tire sphere hitting a rock bypasses the dampers and kicks the chassis.
+   tireColliders.push(world.createCollider(RAPIER.ColliderDesc.ball(.58*profile.wheelScale).setTranslation(w.x*profile.track*VEHICLE_SCALE,connectionY-cfg.restLength,w.z*profile.wheelbase*VEHICLE_SCALE).setMass(0).setFriction(.8).setCollisionGroups(UPRIGHT_TIRE_GROUP),body));
   });
-  const vehicle={body,controller,mass,tireColliders,profile,connectionY,steer:0,controls:{brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false},arcade:{},massKey:`${car.style}:${car.engineId}:${tuningRevision()}`};car.physics=vehicle;vehicles.add(car);return vehicle;
+  const vehicle={body,controller,mass,tireColliders,profile,connectionY,uprightTires:true,steer:0,controls:{brakePressure:0,stoppedTime:0,reverse:false,reverseTravel:false},arcade:{},massKey:`${car.style}:${car.engineId}:${tuningRevision()}`};car.physics=vehicle;vehicles.add(car);return vehicle;
  }
  function reset(car,{groundHeight=terrain.heightAt(car.x,car.z)}={}){
   const v=car.physics??add(car),rotation=new Quaternion().setFromAxisAngle(new Vector3(0,1,0),car.heading);
@@ -186,14 +191,15 @@ export function createPhysics(terrain,bounds){
   car.airborne=!WHEEL_LAYOUT.some((_,i)=>c.wheelIsInContact(i));car.height=p.y-CHASSIS_HEIGHT;
   car.rollover=up.y<.35;car.rolloverTime=car.rollover?(car.rolloverTime??0)+dt:0;
   car.suspensionLengths=WHEEL_LAYOUT.map((_,i)=>c.wheelSuspensionLength(i)??cfg.restLength);
+  const upright=up.y>.65;if(upright!==v.uprightTires){v.uprightTires=upright;v.tireColliders.forEach(collider=>collider.setCollisionGroups(upright?UPRIGHT_TIRE_GROUP:ROLLOVER_TIRE_GROUP));}
   v.tireColliders.forEach((collider,i)=>{const w=WHEEL_LAYOUT[i];collider.setTranslationWrtParent({x:w.x*v.profile.track*VEHICLE_SCALE,y:v.connectionY-car.suspensionLengths[i],z:w.z*v.profile.wheelbase*VEHICLE_SCALE});});
  }
- return {world,add,reset,input,sync,refreshMass,replaceVehicle,addBoundary(x,z,hx,hz,height){world.createCollider(RAPIER.ColliderDesc.cuboid(hx,height,hz).setTranslation(x,height,z).setFriction(.8));},setMarkerVisibility,getStats(){return {awake:vehicles.size+activeMarkers.size,bodies:vehicles.size+barriers.length,visibleMarkers:hasMarkerView?visibleMarkers:barriers.length,movingMarkers:activeMarkers.size,markerBudget:hasMarkerView?markerBudget:barriers.length};},step(){world.step();updateMarkers();},dispose(){for(const car of vehicles)delete car.physics;world.free();},
+ return {world,add,reset,input,sync,refreshMass,replaceVehicle,addBoundary(x,z,hx,hz,height){world.createCollider(RAPIER.ColliderDesc.cuboid(hx,height,hz).setTranslation(x,height,z).setFriction(.8).setCollisionGroups(STATIC_GROUP));},setMarkerVisibility,getStats(){return {awake:vehicles.size+activeMarkers.size,bodies:vehicles.size+barriers.length,visibleMarkers:hasMarkerView?visibleMarkers:barriers.length,movingMarkers:activeMarkers.size,markerBudget:hasMarkerView?markerBudget:barriers.length};},step(){world.step();updateMarkers();},dispose(){for(const car of vehicles)delete car.physics;world.free();},
   resetBarriers(){for(const prop of barriers)anchorMarker(prop,true);},
   addRocks(vertices){
    // One fixed BVH triangle collider for all instanced rocks; no awake bodies.
    const indices=Uint32Array.from({length:vertices.length/3},(_,i)=>i);
-   return world.createCollider(RAPIER.ColliderDesc.trimesh(vertices,indices).setFriction(.9).setRestitution(.02));
+   return world.createCollider(RAPIER.ColliderDesc.trimesh(vertices,indices).setFriction(.9).setRestitution(.02).setCollisionGroups(STATIC_GROUP));
   },
   addBarrier(x,y,z,{kind='tires',layers=2}={}){
    const makeBody=(height)=>world.createRigidBody(RAPIER.RigidBodyDesc.dynamic().setTranslation(x,height,z).setLinearDamping(cfg.propLinearDamping).setAngularDamping(cfg.propAngularDamping).setCcdEnabled(true));

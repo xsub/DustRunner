@@ -274,7 +274,7 @@ function selectPlayerModel(style,live=false){
  if(!BRONCO_STYLES[style]||style===trucks[0].style)return;
  const player=trucks[0],model=createBronco(style,player.number);scene.remove(player.mesh);player.dispose();
  Object.assign(player,model,{style});scene.add(player.mesh);
- if(live){physics.replaceVehicle(player);swapEngine(player,defaultEngine(style));sandTrails.breakTrail(player);dustPool.breakTrail(player);}
+ if(live){physics.replaceVehicle(player);swapEngine(player,defaultEngine(style));physics.refreshMass(player);sandTrails.breakTrail(player);dustPool.breakTrail(player);}
  else if(['copper78','godzilla78'].includes(style)||BRONCO_STYLES[style]?.era)player.engineId=defaultEngine(style);
  try{localStorage.setItem(GARAGE_SELECTION_KEY,style);}catch{}
  selectedColor=BRONCO_STYLES[style].color;poseTruck(player,0,true);updateEngineMenu();

@@ -276,7 +276,7 @@ test('open bodies have tube contacts instead of an invisible solid roof',()=>{
   step(f,{},240);
   const position=body.translation(),emptyCabin={x:position.x,y:position.y+1.5,z:position.z+.2};
   for(let i=0;i<body.numColliders();i++)assert.equal(body.collider(i).containsPoint(emptyCabin),false,'open center remains empty');
-  assert.ok(Math.abs(body.mass()-vehicleMass('classic','302'))<.01);assert.equal(f.car.airborne,false);f.physics.dispose();
+  assert.ok(Math.abs(body.mass()-vehicleMass(style,'302'))<.01);assert.equal(f.car.airborne,false);f.physics.dispose();
  }
 });
 

@@ -29,6 +29,6 @@ Rigid body parts are merged into batches. Wheel geometry and rim finishes are ca
 
 - [Ford: 1966–1977 original Bronco](https://www.ford.com/bronco/history/1966-1977/) — early family and body forms.
 - [Ford Motor Company: The Ford Bronco](https://corporate.ford.com/corporate/corporate/articles/history/the-ford-bronco/) — roadster/half-cab/wagon history, 1978 redesign and 1980–1986 generation.
-- [Ford: 1978 Bronco brochure](https://www.vdm.ford.com/content/dam/brand_ford/en_us/brand/suvs-crossovers/bronco/pdf/78_Ford_Bronco_Brochure.pdf) — full-size styling reference.
+- [Ford: 1978 Bronco brochure](https://www.ford.com/acslibs/content/dam/na/ford/en_us/documents/bronco-history/78_Ford_Bronco_Brochure.pdf) — full-size styling reference.
 
 Ford® and Bronco® remain Ford Motor Company trademarks. The game models are original, independent procedural artwork inspired by vehicle forms and the user's references.

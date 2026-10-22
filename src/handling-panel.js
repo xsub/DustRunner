@@ -3,9 +3,10 @@ import {HANDLING_PROFILES} from './handling.js';
 const KEY='dust-runner-handling-v1';
 export function createHandlingPanel({getPlayer,onChange,onInteract}){
  const select=document.querySelector('#handling-profile'),descent=document.querySelector('#hill-descent'),description=document.querySelector('#handling-help');
- const hud=document.createElement('div');hud.className='handling-hud';hud.innerHTML=`<small id="handling-badge"></small><button type="button" id="descent-hud" title="${msgHTML("handling_panel.descent_control_in_lo_44_h")}" aria-label="${msgHTML("handling_panel.hill_descent_control")}">${msgHTML("handling_panel.hdc")}</button>`;
- document.querySelector('#drive-hud-modes').before(hud);
- const badge=hud.querySelector('small'),button=hud.querySelector('button'),car=getPlayer();let saved={};try{saved=JSON.parse(localStorage.getItem(KEY)??'{}')??{};}catch{}
+ const hud=document.createElement('div');hud.className='handling-hud';hud.innerHTML=`<button type="button" id="descent-hud" title="${msgHTML("handling_panel.descent_control_in_lo_44_h")}" aria-label="${msgHTML("handling_panel.hill_descent_control")}">${msgHTML("handling_panel.hdc")}</button>`;
+ document.querySelector('.drivetrain-controls').append(hud);
+ const badge=document.createElement('small');badge.id='handling-badge';document.querySelector('.instrument-heading').append(badge);
+ const button=hud.querySelector('button'),car=getPlayer();let saved={};try{saved=JSON.parse(localStorage.getItem(KEY)??'{}')??{};}catch{}
  car.handlingProfile=HANDLING_PROFILES.includes(saved.profile)?saved.profile:'arcade';car.hillDescent=saved.hillDescent!==false;
  function save(){const c=getPlayer();try{localStorage.setItem(KEY,JSON.stringify({profile:c.handlingProfile,hillDescent:c.hillDescent}));}catch{}}
  let signature='';

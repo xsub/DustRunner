@@ -216,3 +216,17 @@
 @media(max-width:720px){#game-menu .menu-expertise>span{display:inline;font-size:11px}#game-menu .menu-expertise{margin:0 4px;gap:5px}#game-menu .menu-heading>div{gap:4px 8px}}
 #game-menu :is(button,select,input,summary):focus-visible{outline:2px solid #f4cf58;outline-offset:3px}
 @media(prefers-reduced-motion:reduce){#game-menu .menu-expertise input:before{transition:none}}
+
+/* Compact drivetrain row: mode, both differential locks and descent control. */
+.cluster-controls .drivetrain-controls{grid-column:1/-1;grid-row:2;display:grid;grid-template-columns:48px 1fr 1fr 76px;gap:5px;align-items:stretch}
+.drivetrain-controls #transmission-toggle,.drivetrain-controls .axle-pad button,.drivetrain-controls #descent-hud{width:100%;min-height:34px;margin:0;padding:5px 3px;border:1px solid #788663;border-radius:3px;background:#293724;color:#d8e3ca;font:700 9px monospace;cursor:pointer;white-space:nowrap}
+.drivetrain-controls #transmission-toggle{color:#f4cf58;font-size:12px}
+.drivetrain-controls .axle-pad,.drivetrain-controls .handling-hud{display:contents}
+.drivetrain-controls .axle-pad kbd{display:inline;margin:0 0 0 4px}
+.drivetrain-controls #descent-hud[aria-pressed=true]{color:#f4cf58}
+.drivetrain-controls #descent-hud.descent-active{background:#f4cf58;color:#172016}
+.instrument-heading #handling-badge{font:7px monospace;letter-spacing:0;color:#a8b49e;align-self:center}
+.cluster-controls .gearbox-hud{grid-row:3}
+.cluster-controls .gearbox-hud:has(.gear-shifts button:disabled){display:none}
+.drivetrain-controls .axle-pad button[aria-pressed=true]{color:#1b2415;background:#f4cf58;border-color:#f4cf58}
+.drivetrain-controls button.pending{border-color:#f4cf58;border-style:dashed}

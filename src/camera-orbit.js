@@ -16,10 +16,13 @@ export class CameraOrbit {
   const horizontal=Number(keys.has('KeyL'))-Number(keys.has('KeyJ'));
   const vertical=Number(keys.has('KeyI'))-Number(keys.has('KeyK'));
   const zoom=Number(keys.has('Minus')||keys.has('NumpadSubtract'))-Number(keys.has('Equal')||keys.has('NumpadAdd'));
-  if(horizontal||vertical||zoom)this.manual=true;
-  this.yaw=Math.atan2(Math.sin(this.yaw+horizontal*dt),Math.cos(this.yaw+horizontal*dt));
-  this.pitch=clamp(this.pitch+vertical*dt*.65,25*Math.PI/180,80*Math.PI/180);
-  this.distance=clamp(this.distance*Math.exp(zoom*dt*.7),.5,1);
+  if(horizontal||vertical||zoom)this.adjust(horizontal*dt,vertical*dt*.65,Math.exp(zoom*dt*.7));
+ }
+ adjust(yaw,pitch,zoom=1){
+  this.manual=true;
+  this.yaw=Math.atan2(Math.sin(this.yaw+yaw),Math.cos(this.yaw+yaw));
+  this.pitch=clamp(this.pitch+pitch,25*Math.PI/180,80*Math.PI/180);
+  this.distance=clamp(this.distance*zoom,.5,1);
  }
  offset(){const radius=RADIUS*this.distance,horizontal=radius*Math.cos(this.pitch);return {x:Math.sin(this.yaw)*horizontal,y:radius*Math.sin(this.pitch),z:Math.cos(this.yaw)*horizontal};}
 }

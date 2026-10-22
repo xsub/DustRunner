@@ -128,3 +128,19 @@
 .mobile-layout #mobile-driving-mode.pending{border-style:dashed}
 @media(orientation:landscape){.mobile-layout .mobile-telemetry{width:228px}}
 @media(orientation:portrait){.mobile-layout .mobile-telemetry{width:min(250px,calc(100% - var(--edge-left) - var(--edge-right) - 112px))}}
+.mobile-slope{display:none}
+.mobile-layout .game-tools #quick-sound{display:block;position:static;height:44px;font-size:19px;letter-spacing:0}
+.mobile-layout .mobile-slope{display:flex;flex-direction:column;justify-content:center;align-items:center;width:44px;height:44px;border-radius:10px;background:#172016bd;pointer-events:none;font-variant-numeric:tabular-nums}
+.mobile-slope small{font-size:6px;letter-spacing:.5px;color:#c9d1b5}
+.mobile-slope strong{font:700 21px/1.1 'Barlow Condensed',sans-serif;color:#f4cf58}
+.mobile-layout.prestart .mobile-slope{display:none}
+@media(orientation:portrait){
+ .mobile-layout .game-tools{gap:4px}
+ .mobile-layout .game-tools button{width:44px;min-width:44px;padding:0}
+ .mobile-layout .hud{gap:5px;padding:7px 6px;min-height:44px}
+ .mobile-layout .hud-box>span{font-size:6px;letter-spacing:.7px}
+ .mobile-layout .hud-box strong{font-size:19px;white-space:nowrap}
+ .mobile-layout .hud-box small{font-size:9px}
+ .mobile-layout .timer strong{font-size:17px}
+}
+@media(orientation:portrait) and (max-width:379px){.mobile-layout .hud-box:not(.timer){display:none}}

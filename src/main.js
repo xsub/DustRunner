@@ -28,6 +28,7 @@ import {createBronco,BRONCO_STYLES} from './vehicle.js';
 import {followCameraStep} from './view.js';
 import {vehicleProfile} from './vehicle-models.js';
 import {CameraOrbit,CAMERA_KEYS} from './camera-orbit.js';
+import {bindTouchCamera} from './touch-camera.js';
 import {Horn} from './horn.js';
 import {bindTouchControls} from './touch-controls.js';
 import {normalizeRaceSetup,readRaceSetup,saveRaceSetup} from './ai-drivers.js';
@@ -209,7 +210,7 @@ menuDialog.addEventListener('cancel',event=>{event.preventDefault();closeMenu();
 menuDialog.addEventListener('keydown',event=>{event.stopPropagation();if(event.code==='Escape'){event.preventDefault();closeMenu();}});
 function updateSoundLabels(){
  $('#sound').innerHTML=`SOUND ${muted?'OFF':'ON'} <span>◖))</span>`;
- $('#quick-sound').textContent=muted?'♪ OFF':'♪ ON';$('#quick-sound').setAttribute('aria-pressed',String(!muted));
+ $('#quick-sound').textContent=muted?'🔇':'🔊';$('#quick-sound').title=muted?'Włącz dźwięk':'Wycisz dźwięk';$('#quick-sound').setAttribute('aria-label',muted?'Włącz dźwięk':'Wycisz dźwięk');$('#quick-sound').setAttribute('aria-pressed',String(!muted));
 }
 async function initAudio(){
  if(muted)return;
@@ -373,12 +374,13 @@ const vehicleDiagram=createVehicleDiagnosticsOverlay({game,toggle:$('#show-vehic
 window.addEventListener('keydown',e=>{if(benchmark?.running){if(e.code==='Escape'){e.preventDefault();benchmark.cancel();}return;}if(menuDialog.open||document.querySelector('#tuning-menu')?.open)return;if(['BracketLeft','BracketRight'].includes(e.code)&&hasStarted&&phase==='racing'&&!e.repeat&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&!e.target?.matches?.('input,select,textarea')&&!e.target?.isContentEditable){e.preventDefault();cyclePlayerModel(e.code==='BracketLeft'?-1:1);return;}if(CAMERA_KEYS.has(e.code)){if(e.target?.matches?.('input,select,textarea')||e.target?.isContentEditable)return;e.preventDefault();if(e.code==='KeyO'){if(!e.repeat){cameraOrbit.reset(freeRide?'desert':'race');updateCamera(0,true);}}else keys.add(e.code);return;}if(e.target instanceof HTMLButtonElement&&e.code==='Space'&&!['racing','countdown','paused'].includes(phase))return;if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();if(e.repeat)return;if(!hasStarted){if(e.code==='Enter'){e.preventDefault();start();}return;}if(transmissionPanel.shortcut(e)||drivePanel.shortcut(e)){e.preventDefault();return;}keys.add(e.code);if(e.code==='Comma'){e.preventDefault();toggleParking();}if(e.code==='Period'){e.preventDefault();toggleIgnition();}if(['ShiftLeft','ShiftRight'].includes(e.code)){handbrake.press();updateGameHud();}if(e.code==='Enter'&&['ready','finished'].includes(phase))start();if(e.code==='KeyH')handlingPanel.toggleDescent();if(e.code==='KeyP'||e.code==='Escape')pause();if(e.code==='KeyN'){horn.stop();keys.clear();reset();}if(e.code==='KeyF')recover(trucks[0]);});window.addEventListener('keyup',e=>{keys.delete(e.code);if(e.code==='KeyR')horn.stop();if(['ShiftLeft','ShiftRight'].includes(e.code)&&!keys.has('ShiftLeft')&&!keys.has('ShiftRight')){handbrake.release();updateGameHud();}});window.addEventListener('blur',()=>{benchmark?.cancel('Pomiar przerwany: utrata fokusu.');horn.stop();handbrake.cancelHold();audioPreviewTime=0;engineAudio.silence();attractMusic.silence();keys.clear();if(phase==='racing'||phase==='countdown')pause();});
 document.addEventListener('visibilitychange',()=>{simulationClock.reset();lastTime=performance.now();if(document.hidden){benchmark?.cancel('Pomiar przerwany: karta została ukryta.');horn.stop();handbrake.cancelHold();keys.clear();audioPreviewTime=0;engineAudio.silence();attractMusic.silence();}});
 const touchControls=bindTouchControls(document.querySelectorAll('#touch [data-key]'),{keys,enabled:()=>hasStarted&&phase==='racing'&&!benchmark?.running&&!document.querySelector('dialog[open]'),onHandbrake:pressed=>{if(pressed)handbrake.press();else handbrake.release();updateGameHud();}});
-window.addEventListener('blur',()=>touchControls.clear());
-document.addEventListener('visibilitychange',()=>{if(document.hidden)touchControls.clear();});
+const touchCamera=bindTouchCamera(canvas,{orbit:cameraOrbit,enabled:()=>game.classList.contains('mobile-layout')&&hasStarted&&!benchmark?.running&&!document.querySelector('dialog[open]'),onChange:()=>updateCamera(0)});
+window.addEventListener('blur',()=>{touchControls.clear();touchCamera.clear();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){touchControls.clear();touchCamera.clear();}});
 const mobileMedia=matchMedia('(any-pointer: coarse) and (max-width: 1100px)'),mobileSelect=$('#mobile-layout');
 try{mobileSelect.value=localStorage.getItem('dust-runner-mobile-layout')??'auto';}catch{}
 if(!mobileSelect.value)mobileSelect.value='auto';
-function syncMobileLayout(){touchControls.clear();game.classList.toggle('mobile-layout',mobileSelect.value==='touch'||(mobileSelect.value==='auto'&&mobileMedia.matches));minimap.resize();}
+function syncMobileLayout(){touchControls.clear();touchCamera.clear();game.classList.toggle('mobile-layout',mobileSelect.value==='touch'||(mobileSelect.value==='auto'&&mobileMedia.matches));minimap.resize();}
 mobileSelect.onchange=()=>{try{localStorage.setItem('dust-runner-mobile-layout',mobileSelect.value);}catch{}syncMobileLayout();};
 mobileMedia.addEventListener('change',syncMobileLayout);syncMobileLayout();
 function finish(){
@@ -518,11 +520,13 @@ function step(dt){const demo=isAttract();if(phase==='countdown'){count-=dt;$('#c
 function updateGameHud(){
  const touchDriving=hasStarted&&phase==='racing'&&!benchmark?.running&&!document.querySelector('dialog[open]');
  if(!touchDriving)touchControls.clear();
+ if(document.querySelector('dialog[open]'))touchCamera.clear();
  document.querySelectorAll('#touch button').forEach(button=>button.disabled=!touchDriving);
  const nav=navigationReading(trucks[0],heightAt),signed=n=>`${n>=0?'+':''}${n.toFixed(1)}°`;
  $('#compass-bearing').textContent=`${nav.direction} · ${Math.round(nav.bearing)%360}°`;
  $('#compass-rose').style.transform=`rotate(${-nav.bearing}deg)`;
  $('#slope-total').textContent=`${nav.slope.toFixed(1)}°`;
+ $('#mobile-slope').textContent=`${nav.slope.toFixed(0)}°`;
  $('#slope-detail').textContent=`WZDŁUŻ ${signed(nav.longitudinal)} · W POPRZEK ${signed(nav.lateral)}`;
  $('#slope-line').style.transform=`rotate(${-nav.longitudinal}deg)`;
  if(import.meta.env.DEV)canvas.dataset.attract=JSON.stringify({running:isAttract(),elapsed,cash,cars:activeTrucks().map(c=>({x:c.x,z:c.z,lap:c.lap,speed:c.speed,airborne:c.airborne,distance:c.demoDistance}))});
@@ -535,7 +539,7 @@ function updateGameHud(){
  game.dataset.manual=String(transmissionMode(c)==='manual');
  $('#mobile-speed').textContent=Math.round(Math.abs(c.speed??0)*3.6);$('#mobile-gear').textContent=gearLabel(c);
  const mobileLoad=clamp(c.powertrain?.load??0,0,1);$('#mobile-gear').style.color=(c.powertrain?.gear??1)<0?'#c5c8bf':`hsl(${120*(1-mobileLoad)} 78% 65%)`;
- $('#mobile-rpm').textContent=`${Math.round(c.powertrain?.rpm??0)} RPM`;$('#mobile-nav').textContent=`${nav.direction} · ${nav.slope.toFixed(0)}°`;
+ $('#mobile-rpm').textContent=`${Math.round(c.powertrain?.rpm??0)} RPM`;$('#mobile-nav').textContent=`${nav.direction} · ${Math.round(nav.bearing)%360}°`;
  $('#mobile-revs').style.width=`${100*clamp((c.powertrain?.rpm??0)/(engineById(c.engineId).redline??6000),0,1)}%`;
  $('#time').textContent=formatTime(completion.result?.time??elapsed);$('#lap').innerHTML=`${String(Math.min(c.lap+1,3)).padStart(2,'0')}<small> / 03</small>`;$('#position').innerHTML=`${String(completion.result?.rank??ranking().indexOf(c)+1).padStart(2,'0')}<small> / ${activeTrucks().length.toString().padStart(2,'0')}</small>`;$('#nitro-text').textContent=Math.round(c.nitro)+'%';$('#nitro-fill').style.width=c.nitro+'%';const drivetrain=c.powertrain;$('#drive-range').textContent=drivetrain?.mode==='auto'?'':driveModeById(drivetrain?.mode).label+' ·';$('#gear').textContent=gearLabel(c);instrumentPanel.update();
 }

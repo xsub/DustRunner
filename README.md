@@ -8,7 +8,22 @@ To gra pisana dla siebie, z zajawki do terenówek, fizyki i dłubania w szczegó
 
 **[ZAGRAJ W PRZEGLĄDARCE ↗](https://xsub.github.io/DustRunner/)** · **[OBEJRZYJ GARAŻ 3D](https://xsub.github.io/DustRunner/garage.html)** · [Przykładowa losowa pustynia](https://xsub.github.io/DustRunner/?mode=desert&dunes=random&seed=20261020)
 
-![Skok miniaturowego Bronco na pustyni — zrzut z gry](docs/screenshots/dune-jump.jpg)
+![Sześć Bronco w wyścigu na Dustbowl — aktualny kadr z gry](public/media/race-pack.jpg)
+
+**[▶ Dwa filmy z gry i pełna galeria](https://xsub.github.io/DustRunner/gallery.html)** · [Wyścig · MP4](https://xsub.github.io/DustRunner/media/race-pack.mp4) · [Skok z wydmy · MP4](https://xsub.github.io/DustRunner/media/dune-jump.mp4)
+
+| Skok bokiem z wydmy | Ślady opon po lądowaniu |
+| --- | --- |
+| ![Bronco w locie nad wydmą, ujęcie od przodu i z boku](public/media/dune-jump.jpg) | ![Bronco i koleiny pozostawione na piasku](public/media/desert-trails.jpg) |
+
+<details>
+<summary>Widok mobilny — dotykowy HUD, automat i minimapa</summary>
+
+<img src="public/media/mobile-portrait.png" alt="Wyścig w portretowym układzie mobilnym ze sterowaniem dotykowym" width="260">
+
+Układ telefonu w emulacji przeglądarki, 390 × 777. Wszystkie materiały pochodzą z działającej gry; ujęcia filmowe mają ukryty HUD.
+
+</details>
 
 ## Co tu znajdziesz
 

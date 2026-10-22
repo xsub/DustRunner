@@ -24,4 +24,4 @@ These are specific scripted trials, not guarantees for every speed, body, tune o
 
 ## Optional original challenge terrain
 
-Menu → PUSTYNIA → TRUDNE WYDMY (`dunes=hard`) restores the original steep ridge generator from af792eb, at 2400 × 1200 m. Default seed is 1947; custom seeds and share links are supported. It has the old FALE / GRZBIETY / WYSOKIE districts and no engineered jump corridors or flags. This does not replace the accessible default. Numerical fixtures verify the historical height field rather than merely amplifying the new moderate dunes.
+Pit Stop → Tracks & terrain → HARD DUNES (`dunes=hard`) restores the original steep ridge generator from af792eb, at 2400 × 1200 m. Default seed is 1947; custom seeds and share links are supported. It has the old WAVES / RIDGES / HIGH districts and no engineered jump corridors or flags. This does not replace the accessible default. Numerical fixtures verify the historical height field rather than merely amplifying the new moderate dunes.

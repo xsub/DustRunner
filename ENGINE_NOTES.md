@@ -170,7 +170,7 @@ launches a truck; gravity and airborne steering remain physical.
   separate cast block/head/rocker covers, sump, timing drive, ports, cooling stack
   and accessory drive. Godzilla substitutes an EFI plenum/runners for the round
   carburetor air cleaner. Product photography is not bundled with the game.
-- The SILNIK / OHV inspector shows a normalized slider-crank mechanism with fixed
+- The ENGINE / OHV inspector shows a normalized slider-crank mechanism with fixed
   conrod length and two 45-degree banks, cam speed 1/2 crank speed and four-stroke
   valve timing. It is an illustrative kinematic model, not factory CAD, a
   model-specific cam/firing-order reconstruction, or a thermodynamic/CFD solver.

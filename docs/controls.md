@@ -1,15 +1,15 @@
-# Sterowanie Dust Runner
+# Dust Runner controls
 
-| Klawisze | Działanie |
+| Keys | Action |
 | --- | --- |
-| WASD / strzałki | Jazda; hamulec przytrzymany po zatrzymaniu włącza cofanie w automacie |
-| Shift / przecinek | Chwilowy ręczny / blokada ręcznego |
-| Q / E / B | Niższy bieg / wyższy bieg / luz w trybie ręcznym |
-| 1 / 2 / 3 / 4 | Automat / HI / LO / pełzanie 4×4 |
-| Z / X / H | Blokada przedniego mostu / tylnego mostu / HDC |
-| IJKL / +− / O | Obrót kamery / zoom / domyślny widok |
-| [ / ] | Poprzedni / następny samochód podczas jazdy |
-| Spacja / R / kropka | Nitro / klakson / uruchomienie lub zgaszenie silnika |
-| F / N / P | Recovery / restart poziomu / pauza |
+| WASD / arrow keys | Drive; hold the brake after stopping to reverse in automatic mode |
+| Shift / comma | Hold the handbrake / toggle the parking brake latch |
+| Q / E / B | Shift down / shift up / select neutral in manual mode |
+| 1 / 2 / 3 / 4 | Automatic / HI / LO / 4×4 crawl |
+| Z / X / H | Front differential lock / rear differential lock / HDC |
+| IJKL / +− / O | Orbit camera / zoom / reset view |
+| [ / ] | Previous / next vehicle while driving |
+| Space / R / period | Nitro / horn / start or stop the engine (stop the vehicle before switching off) |
+| F / N / P | Recover / restart level / pause |
 
-Na telefonie korzystaj z przycisków dotykowych. Przeciągnij po terenie, aby obracać kamerę; dwa palce sterują zoomem. Szczegóły: [sterowanie mobilne](mobile-controls.md).
+On phones, use the touch controls. Drag the terrain to orbit the camera; pinch with two fingers to zoom. See [mobile controls](mobile-controls.md).

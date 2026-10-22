@@ -1,6 +1,6 @@
 # Share a desert with optional driving context
 
-Menu → Free Ride → **UDOSTĘPNIJ TĘ PUSTYNIĘ** always copies an invitation containing the dune variant and seed. Four independent checkboxes add:
+Pit Stop → Tracks & terrain → **COPY DESERT INVITATION** always copies an invitation containing the dune variant and seed. Four independent checkboxes add:
 
 1. The exact procedural vehicle model.
 2. Engine, automatic/manual gearbox mode, transfer range, both differential locks, HDC, handling/steering profile, upgrade levels and the full current DEV physics tune. Sound, display preferences, cash, instantaneous RPM and velocity are not included.

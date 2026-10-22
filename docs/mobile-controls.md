@@ -1,6 +1,6 @@
 # Minimal phone cockpit
 
-The game automatically uses this layout when any coarse pointer is available and the viewport is at most 1100 CSS pixels wide. Menu → EKRAN JAZDY provides AUTO, MOBILNY and PEŁNY overrides, saved per browser origin. The desktop instrument preference remains unchanged.
+The game automatically uses this layout when any coarse pointer is available and the viewport is at most 1100 CSS pixels wide. Pit Stop → Play → Screen & controls → DRIVING DISPLAY provides AUTO, TOUCH and FULL overrides, saved per browser origin. The desktop instrument preference remains unchanged.
 
 - Landscape is recommended. Portrait remains playable without an orientation lock or fullscreen requirement, including iOS Safari.
 - Left thumb: separate left/right steering buttons (76 × 80 CSS pixels).

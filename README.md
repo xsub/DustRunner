@@ -65,7 +65,7 @@ npm test
 npm run build -- --base=/DustRunner/
 ```
 
-Further reading: [desert sharing](docs/desert-sharing.md) · [engines and sources](ENGINE_NOTES.md) · [vehicle dynamics](docs/vehicle-dynamics.md) · [mobile controls](docs/mobile-controls.md) · [localization](docs/internationalization.md) · [menu UX review](docs/ux/README.md) · [development and tuning](docs/DEVELOPMENT.md) · [performance benchmark protocol](docs/performance-benchmark.md). Some supporting documents retain their original Polish text.
+Further reading: [desert sharing](docs/desert-sharing.md) · [engines and sources](ENGINE_NOTES.md) · [vehicle dynamics](docs/vehicle-dynamics.md) · [mobile controls](docs/mobile-controls.md) · [localization](docs/internationalization.md) · [menu UX review](docs/ux/README.md) · [development and tuning](docs/DEVELOPMENT.md) · [performance benchmark protocol](docs/performance-benchmark.md).
 
 ## Credits and trademarks
 

@@ -1,6 +1,6 @@
 # Pit stop UX and English migration review
 
-Feature branch: `codex/english-i18n-menu-ux`. Baseline: `9e38cab` (22 October 2026). This work does not merge into `main` or deploy to production.
+Feature branch: `codex/english-i18n-menu-ux`. Baseline: `9e38cab` (22 October 2026). Released on `main` and GitHub Pages as v1.1.0 on 22 October 2026.
 
 ## What changed
 

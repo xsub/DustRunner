@@ -53,32 +53,32 @@ Touch controls appear on touch devices. Sound is opt-in via ♪ ON or the menu. 
 
 **Menu → Driving controls → Steering mode** switches between **Auto center** (the default, smooth steering with speed-dependent lock) and **Hold steering angle**. In held-angle mode, a tap adjusts the steering rack, a longer press turns it farther, and releasing keeps that exact angle even as speed changes. The opposite direction unwinds the steering. **C**, or both steering directions together on keyboard/touch controls, centers the wheels. Recovery and race reset also center them. The choice is saved locally, can be changed while paused without restarting the race, and does not affect AI drivers.
 
-### Developer mode and browser-local “tunning” presets
+### Developer mode and browser-local tuning presets
 
-Open **DEV** in the HUD, or **Menu → Tryb developerski · Tunning** (also on
+Open **DEV** in the HUD, or **Pit Stop → Simulation → Developer tuning** (also on
 small screens). The panel contains 73 sliders with numeric inputs, parameter
 search, per-field reset and factory reset. Groups cover mass/center of mass,
 gravity/contact solving, suspension, impacts, grip/rolling resistance,
 brakes/steering, engine/gearing/nitro, track/ramp/landing geometry, movable
 markers and camera behavior.
 
-Changes are staged while the race is paused. **Zastosuj · Restart** rebuilds
+Changes are staged while the race is paused. **APPLY & RESTART** rebuilds
 the render mesh and Rapier world with the same configuration and returns to
-the grid; **Zastosuj i jedź** also starts a fresh race. The HUD readout in the
+the grid; **APPLY & DRIVE** also starts a fresh race. The HUD readout in the
 panel reports the actual rigid-body mass, speed, vertical velocity, wheel
 contacts and RPM. Settings apply to all trucks; frame rate and the 120 Hz
 physics timestep remain fixed. Factory defaults reproduce the shipped tune.
 
-**Zapisz tunning** saves a named preset to localStorage on this origin. A
-matching name overwrites that preset. **Wczytaj** stages it for application;
-**Usuń zestaw** removes it locally. Applied settings are restored on reload.
+**SAVE PRESET** saves a named preset to localStorage on this origin. A
+matching name overwrites that preset. **LOAD** stages it for application;
+**DELETE PRESET** removes it locally. Applied settings are restored on reload.
 Neither action modifies GitHub or uploads the preset. localhost, GitHub Pages
 and other browsers have separate storage. Clearing site storage removes the
 local presets; JSON export is the portable copy.
 
-**Kopiuj wartości · JSON** copies all staged values, schema version and
+**COPY SETTINGS · JSON** copies all staged values, schema version and
 informational context (body, engine, track variant, steering mode and
-upgrades). Paste that JSON into the chat to share a tune. **Pobierz JSON**
+upgrades). Paste that JSON into the chat to share a tune. **DOWNLOAD JSON**
 saves a file; the import section accepts a pasted document or file. Imports
 validate finite numeric ranges, gear ordering and format version before
 changing anything. If clipboard access is blocked, the panel selects the
@@ -101,7 +101,7 @@ window, independent of the clamped simulation delta. CPU measurements exclude
 GPU execution; these are not GPU timings. Readouts refresh twice per second.
 
 Drag the heading, collapse to FPS only with **−**, or hide with **×**. Restore it
-via **Menu → FPS i statystyki podczas jazdy**. Small screens start collapsed.
+via **Pit Stop → Stats → Performance**. Small screens start collapsed.
 Visibility, collapse state and position persist locally in the browser. Only
 the heading captures pointer input; the readout lets touches/clicks pass through.
 
@@ -111,9 +111,9 @@ the heading captures pointer input; the readout lets touches/clicks pass through
 
 ### Free Ride — desert
 
-Choose **Menu → FREE RIDE · PUSTYNIA**, then **JEDŹ NA PUSTYNIĘ** (or close the
+Choose **Pit Stop → Play → FREE RIDE · DESERT**, then **DRIVE INTO THE DESERT** (or close the
 menu and use the central start button). `?mode=desert` opens the desert setup
-directly. **WYŚCIG** in the same menu returns to the selected racing circuit.
+directly. **RACE** in the same menu returns to the selected racing circuit.
 Switching mode resets the session.
 
 The desert is a 2400 × 1200 m playground (four times the original area) with 240–336 moderate dune landmarks, a flat rut district, two rare broad giant dunes and six engineered sand jumps. Three jumps have paired landing slopes. Yellow flags mark takeoffs, green flags mark landing approaches; minimap triangles show launch direction. Protected runways keep rocks and plants out of the jump lanes.
@@ -149,12 +149,12 @@ when reversing. Close the menu to continue. The engine choice saves locally.
 
 ### Three rough desert variants and random generation
 
-**Menu → Free Ride → Ukształtowanie terenu** offers **Burzowe Grzbiety**
-(dense ridges, 96 landmarks), **Morze Wielkich Wydm** (80 taller domes/star
-dunes), and **Losowa Ekspedycja** (112 seeded dune formations). The new
+**Pit Stop → Tracks & terrain → Desert terrain** offers **Storm Ridges**
+(dense ridges, 96 landmarks), **Sea of Giant Dunes** (80 taller domes/star
+dunes), and **Random Expedition** (112 seeded dune formations). The new
 profiles amplify rolling terrain and have over 35 m of interior elevation
-range while retaining a level starting basin. **Losuj nową pustynię** chooses
-a fresh 32-bit seed; typing the same seed and pressing **Generuj z ziarna** recreates the same geometry. The
+range while retaining a level starting basin. **RANDOM DESERT** chooses
+a fresh 32-bit seed; typing the same seed and pressing **USE SEED** recreates the same geometry. The
 variant and seed persist locally. Changing either restarts the session.
 A reproducible link can use `?mode=desert&dunes=random&seed=20261020`.
 
@@ -284,7 +284,7 @@ vehicles. Under sustained overload, overdue wall time is discarded and the
 simulation can run slower than wall time; physics is never sped up with a
 larger timestep, and there is no growing catch-up backlog. The countdown/race
 clock uses simulated time. Pausing or hiding the tab clears the accumulator.
-The FPS panel reports **Budżet fizyki** (4 ms · number of catch-up limits in
+The FPS panel reports **Physics budget** (4 ms · number of catch-up limits in
 this session); read-only telemetry also exposes dropped seconds.
 
 Marker render poses remain synchronized each frame, including when decorative
@@ -292,7 +292,7 @@ work is deferred. Only snakes in the camera view plus a 5 m safety envelope
 are animated, at up to **30 Hz**; offscreen snakes perform no animated terrain
 height queries or instance uploads. Decorations wait when catch-up consumes
 the simulation budget. HUD/minimap updates run at **10 Hz**, while driving,
-camera and rendering remain responsive at their normal rates. **Tło · 30 Hz**
+camera and rendering remain responsive at their normal rates. **Scenery · 30 Hz**
 shows the number of active decorative snakes. All existing anchored-marker
 and ten-percent movement limits remain in force.
 
@@ -338,11 +338,10 @@ combines four-wheel drive with crawler reduction. This is a game preset, not a
 claim that all historical Broncos had these exact transfer modes. The roles of
 high/low ranges follow the [Ford Bronco owner's manual](https://www.fordservicecontent.com/Ford_Content/vdirsnet/OwnerManual/Home/Content?ProcUid=G2200206&Uid=G2200205&buildtype=web&countryCode=USA&div=f&languageCode=en&moidRef=G2126349&userMarket=USA&vFilteringEnabled=False&variantid=9666).
 
-Choose presets and front/rear locks from the speed HUD or **Menu → Napęd ·
-Zakres · Blokady**. HI/LO engage while moving as an Arcade convenience. Requesting
+Choose presets and front/rear locks from the speed HUD or **Pit Stop → Simulation → Drivetrain**. HI/LO engage while moving as an Arcade convenience. Requesting
 crawler 4×4 while moving quickly or airborne queues the request until grounded
 below 8 km/h. Axle lock changes use the same safe threshold.
-A dashed button and **ZWOLNIJ <8 km/h** indicate a pending request; the highlighted
+A dashed button and **SLOW BELOW 8 km/h** indicate a pending request; the highlighted
 button shows the active range/lock. No position, velocity, lap, nitro or vehicle
 mass is reset by a range change. The chosen preset and lock preferences save in
 browser storage, survive engine hot-swaps, and appear in copied tuning context.
@@ -381,7 +380,7 @@ real two-wheel diagonal articulation and a 35% hill start/recovery.
 
 ### Vehicle cutaway telemetry
 
-Menu → **Przekroje auta · siły i zawieszenie** controls the small draggable
+Pit Stop → **Stats → Car inspector** controls the small draggable
 side/front cutaway overlay. Collapse/hide buttons and normalized position persist
 in browser localStorage, independently of tuning presets. It starts collapsed on
 narrow screens. No contact readings are shown before driving begins.
@@ -403,7 +402,7 @@ scene rendering; hidden/collapsed panels skip telemetry reads and drawing.
 
 ### Arcade 4×4 handling profile
 
-New players default to **ARCADE 4×4** in Menu → Charakter jazdy. **Klasyczny**
+New players default to **ARCADE 4×4** in Pit Stop → Simulation → Handling profile. **Classic**
 retains the previous accelerator/steering path for comparison. Switching profile
 pauses through the normal menu and preserves the vehicle, engine, velocity and
 race. The profile and HDC preference persist under `dust-runner-handling-v1`.
@@ -425,7 +424,7 @@ speed with at least two contacts, normal wheel braking limits the descent.
 Accelerator or service brake takes priority; HDC does not pull uphill or hold
 a stopped vehicle. The highlighted HDC ↓ indicator means braking is active;
 HDC ON means armed. Default target is 6 km/h. Seven Arcade settings are available
-in DEV/TUNNING and in copied tuning JSON; context records profile/HDC choice.
+in Developer tuning and in copied tuning JSON; context records profile/HDC choice.
 
 Full-physics tests cover a parking U-turn, responsive 0–50 launch, rear-only
 brake impulses, unchanged airborne trajectory, and a 35% downhill comparison:
@@ -470,7 +469,7 @@ rear bimini, square lamps, 400/6.6 V8 by default) and **GODZILLA ’78 · 7.3**
 Selecting either body installs its dedicated default; subsequent engine hot-swaps
 remain available. The new bodies use the full-size mass calibration.
 
-The telemetry window has **AUTO / ZAWIESZENIE** and **SILNIK / OHV** tabs. Seats
+The telemetry window has **CAR / SUSPENSION** and **ENGINE / OHV** tabs. Seats
 and the crude steering-wheel sketch have been removed from the cutaway. Engine
 view has its own larger animated sections and also permits a static pre-race
 inspection. Expand with ⤢. Mechanical geometry, source links, physical calibration
@@ -495,12 +494,12 @@ Snakes are wildlife rather than targets: a swept approach check makes them retre
 
 ### Finish line and victory lap
 
-Crossing the third-lap finish records the place, time and cash reward once, while full driving and physics continue indefinitely. A compact medal bar offers **ZAKOŃCZ WYŚCIG**. Gold uses red screen confetti, silver green, bronze orange; fourth place has no podium medal. The noninteractive, 96-piece canvas celebration lasts six seconds at at most 30 Hz and honors reduced-motion preferences.
+Crossing the third-lap finish records the place, time and cash reward once, while full driving and physics continue indefinitely. A compact medal bar offers **END RACE**. Gold uses red screen confetti, silver green, bronze orange; fourth place has no podium medal. The noninteractive, 96-piece canvas celebration lasts six seconds at at most 30 Hz and honors reduced-motion preferences.
 
 Results open only via that button or after ten uninterrupted seconds stopped with no driving input. Sliding, flight, driving controls, pause, hidden/unfocused tabs, menu and developer editing interrupt that countdown. Returning from a menu starts a fresh ten-second interval; normal parameter changes that rebuild the world still start a fresh session. Final time/place and earnings remain fixed during victory laps.
 
 ### Full engine gearbox option
 
-Menu → **NAPĘD · ZAKRES · BLOKADY → SKRZYNIA BIEGÓW** selects Arcade, full AUTO or full MANUAL. The small **ARCADE / AUTO / MAN** HUD button cycles those options during a run. Each engine has one fixed full gearbox: three-speed classics, NP435/AOD/E4OD four-speeds, and a ten-speed TorqShift for Godzilla. The menu lists every ratio. Changing engines automatically changes the gearbox. Pairings are representative game choices; sources and historical limitations are in `ENGINE_NOTES.md`.
+Menu → **Simulation → Drivetrain → Transmission** selects Arcade, full AUTO or full MANUAL. The small **ARCADE / AUTO / MAN** HUD button cycles those options during a run. Each engine has one fixed full gearbox: three-speed classics, NP435/AOD/E4OD four-speeds, and a ten-speed TorqShift for Godzilla. The menu lists every ratio. Changing engines automatically changes the gearbox. Pairings are representative game choices; sources and historical limitations are in `ENGINE_NOTES.md`.
 
 Manual: **Q** down, **E** up, **N** neutral; sequence **R → N → 1 → …**. HUD buttons provide the same controls. The clutch is automatic. In R use **W/↑** to accelerate and **S/↓** to brake; the brake never selects reverse automatically in manual mode. Opposite-direction engagements require stopping, and over-rev downshifts are refused. HI/LO/crawl remain separate from the gearbox. Full profiles ignore the three Arcade gear-ratio sliders; other tuning controls still apply. Selection is saved locally in the browser and included in exported tuning context.

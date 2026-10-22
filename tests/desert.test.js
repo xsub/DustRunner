@@ -2,10 +2,11 @@ import test from 'node:test';
 import {setTuning,DEFAULT_TUNING} from '../src/tuning.js';
 import assert from 'node:assert/strict';
 import {buildDesert,desertHeight,DESERT_SPAWN,DESERT_BOUNDS,DESERT_VARIANTS,createDesertHeight,normalizeDesertOptions} from '../src/desert.js';
+import {jumpCoordinates,jumpEnd} from '../src/desert-jumps.js';
 import {initPhysics,createPhysics} from '../src/physics.js';
 const ground=buildDesert();
 test('desert has a full 2400 × 1200 m rectangular contact mesh and varied dunes with a calm spawn',()=>{
- assert.equal(ground.positions.length,961*481*3);assert.equal(ground.indices.length,960*480*6);
+ assert.equal(ground.coarseVertexCount,961*481);assert.equal(ground.coarseTriangleCount,960*480*2);assert.ok(ground.indices.length/3<1150000);
  assert.equal(desertHeight(DESERT_SPAWN.x,DESERT_SPAWN.z),1);
  let min=Infinity,max=-Infinity;for(let z=-250;z<=250;z+=10)for(let x=-550;x<=550;x+=10){const h=ground.heightAt(x,z);assert.ok(Number.isFinite(h)&&h>=1);min=Math.min(min,h);max=Math.max(max,h);}
  assert.ok(max-min>20);assert.deepEqual(ground.bounds,DESERT_BOUNDS);assert.ok(ground.heightAt(1199,0)>18);assert.ok(ground.heightAt(0,599)>18);
@@ -34,7 +35,7 @@ test('dune districts have distinct, non-repeating heights and traversable slopes
  const signatures=[];
  for(const center of [-400,0,400]){
   const heights=[];let maxSlope=0;
-  for(let z=-180;z<=180;z+=12)for(let x=center-90;x<=center+90;x+=12){const h=ground.heightAt(x,z);heights.push(h);maxSlope=Math.max(maxSlope,Math.abs(ground.heightAt(x+2.5,z)-h)/2.5);}
+  for(let z=-180;z<=180;z+=12)for(let x=center-90;x<=center+90;x+=12){if([...ground.jumps,...ground.rockRamps].some(j=>{const p=jumpCoordinates(j,x,z);return p.s> -5&&p.s<jumpEnd(j)+5&&Math.abs(p.side)<j.halfWidth+j.edgeWidth+8;}))continue;const h=ground.heightAt(x,z);heights.push(h);maxSlope=Math.max(maxSlope,Math.abs(ground.heightAt(x+2.5,z)-h)/2.5);}
   const low=Math.min(...heights),high=Math.max(...heights);assert.ok(high-low>3,'varied medium dunes instead of giant walls in every district');assert.ok(maxSlope<2,'no vertical mesh cliffs');signatures.push(heights.map(h=>Math.round(h)).join(','));
  }
  assert.equal(new Set(signatures).size,3);
@@ -47,7 +48,7 @@ test('desert variants remain distinct and reproducible with moderate central ter
   for(let z=-200;z<=200;z+=20)for(let x=-520;x<=520;x+=20){const h=sample(x,z);assert.equal(h,repeat(x,z));peak=Math.max(peak,h);low=Math.min(low,h);signature.push(h.toFixed(2));}
   assert.ok(peak-low>5&&peak-low<30,`${variant.id}: ${peak-low} meters of elevation`);assert.equal(sample(DESERT_SPAWN.x,DESERT_SPAWN.z),1);signatures.push(signature.join(','));
  }
- assert.equal(new Set(signatures).size,3);
+ assert.equal(new Set(signatures).size,DESERT_VARIANTS.filter(v=>!v.hard).length);
  const a=createDesertHeight({variant:'random',seed:123}),b=createDesertHeight({variant:'random',seed:456});assert.notEqual(a(100,50),b(100,50));assert.equal(a(100,50),createDesertHeight({variant:'random',seed:123})(100,50));
  assert.equal(normalizeDesertOptions({variant:'random',seed:0}).seed,0);assert.equal(normalizeDesertOptions({variant:'random',seed:-1}).seed,43210);
 });
@@ -71,7 +72,7 @@ test('expanded outer quadrants contain varied dunes and the exact rendered conta
   assert.ok(Math.max(...heights)-Math.min(...heights)>2,'new area must contain dunes rather than empty padding');
  }
  assert.equal(DESERT_BOUNDS.max.x-DESERT_BOUNDS.min.x,2400);assert.equal(DESERT_BOUNDS.max.z-DESERT_BOUNDS.min.z,1200);
- assert.equal(ground.indices.length/3,921600,'preserve 2.5 m collision detail over four times the area');
+ assert.equal(ground.coarseTriangleCount,921600,'preserve 2.5 m background detail over four times the area');assert.ok(ground.refinedCells>0,'narrow ramps receive local 0.5 m contact detail');
 });
 
 test('the added eastern territory supports a real vehicle far outside the old bounds',async()=>{

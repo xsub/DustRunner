@@ -326,7 +326,7 @@ window.addEventListener('storage',event=>{
 
 function rebuildTrack(){
  keys.clear();makeWorld();resize();reset();
- $('#track-name').textContent=freeRide?(msg("main.desert_2")+" ")+DESERT_VARIANTS.find(v=>v.id===desertOptions.variant).name+(desertOptions.variant==='random'?' · #'+desertOptions.seed:''):msg("main.text",{v0:(String(trackIndex+1).padStart(2,'0')),v1:(TRACKS[trackIndex].name),v2:(trackVariant?' · '+TRACK_VARIANTS[trackVariant].name:'')});
+ $('#track-name').textContent=freeRide?(msg("main.desert_2")+" ")+DESERT_VARIANTS.find(v=>v.id===desertOptions.variant).name+(['random','jumpy'].includes(desertOptions.variant)?' · #'+desertOptions.seed:''):msg("main.text",{v0:(String(trackIndex+1).padStart(2,'0')),v1:(TRACKS[trackIndex].name),v2:(trackVariant?' · '+TRACK_VARIANTS[trackVariant].name:'')});
  $('#track-variant-status').textContent=TRACK_VARIANTS[trackVariant].name+(" "+msg("main.variant")+" ")+(trackVariant+1)+' / 4';
  document.querySelectorAll('[data-reflection]').forEach(b=>{const active=Boolean(trackVariant&Number(b.dataset.reflection));b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});
 }
@@ -346,7 +346,7 @@ desertSelect.innerHTML=DESERT_VARIANTS.map(v=>`<option value="${v.id}">${v.name}
 function updateDesertOptions(){
  $('#desert-share-status').textContent='';$('#desert-share-text').hidden=true;
  const profile=DESERT_VARIANTS.find(v=>v.id===desertOptions.variant);desertSelect.value=profile.id;desertSeed.value=desertOptions.seed;
- $('#desert-generator').hidden=profile.id!=='random'&&!profile.hard;$('#desert-description').textContent=profile.description;$('#desert-driving-hint').textContent=profile.hard?msg("main.steep_demanding_dunes_use_lo_or"):msg("main.yellow_flags_mark_take_off_green");
+ $('#desert-generator').hidden=profile.id!=='random'&&!profile.hard&&!profile.jumpy;$('#desert-description').textContent=profile.description;$('#desert-driving-hint').textContent=profile.hard?msg("main.steep_demanding_dunes_use_lo_or"):profile.jumpy?msg("desert.jumpy_hint"):msg("main.yellow_flags_mark_take_off_green");
  try{localStorage.setItem('dust-runner-desert-v1',JSON.stringify(desertOptions));}catch{}
 }
 function applyDesertOptions(options){const next=normalizeDesertOptions(options);if(next.seed!==desertOptions.seed||next.variant!==desertOptions.variant){sharedState=null;routeHistory.clear();minimap.setRoute([]);$('#desert-import-status').textContent='';}desertOptions=next;updateDesertOptions();if(freeRide)rebuildTrack();}
@@ -639,7 +639,7 @@ new ResizeObserver(resize).observe(game);reset();resize();try{const selected=loc
  rebuildTrack();updateEngineMenu();drivePanel.update();transmissionPanel.update();handlingPanel.update();
  const included=[sharedState.m?msg("main.vehicle_model"):null,sharedState.s?msg("main.vehicle_and_physics_settings"):null,sharedState.p?msg("desert_share.starting_position"):null,sharedState.r?msg("main.cyan_route_guide"):null].filter(Boolean);
  $('#desert-import-status').textContent=(msg("main.from_invitation")+" ")+included.join(', ')+'. Ustawienia zastosowano do tej sesji.';
- $('#message p').textContent+=' Zaproszenie: '+included.join(', ')+'.';
+ $('#message p').textContent+=' '+msg('desert_share.included')+' '+included.join(', ')+'.';
 }
 if(shareImportError){$('#desert-import-status').textContent=shareImportError;$('#message p').textContent+=' '+shareImportError;}
 let lastHudPaint=0;

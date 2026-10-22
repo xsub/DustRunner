@@ -1,8 +1,9 @@
 import {t as msg} from './i18n.js';
 import {createHardDesertHeight,HARD_DESERT_REGIONS} from './desert-hard.js';
-import {gridHeight} from './grid-height.js';
+import {refineJumpMesh} from './refine-jump-mesh.js';
 import {desertJumps,shapeDesertJump,jumpPoint,jumpEnd} from './desert-jumps.js';
 import {desertRockFeatures,shapeRockFeatures,rockCoverage} from './desert-rocks.js';
+import {createJumpyDunes} from './jumpy-dunes.js';
 import {sandWaveHeight} from './sand-waves.js';
 export const DESERT_WIDTH=2400,DESERT_DEPTH=1200;
 export const DESERT_BOUNDS={min:{x:-DESERT_WIDTH/2,z:-DESERT_DEPTH/2},max:{x:DESERT_WIDTH/2,z:DESERT_DEPTH/2}};
@@ -13,6 +14,7 @@ export const DESERT_VARIANTS=[
  {id:'ridges',name:msg("desert.rally_dunes"),description:msg("desert.flat_ruts_rolling_dunes_prepared_jumps"),amplitude:1,width:1.1,count:96,defaultSeed:1947},
  {id:'stars',name:msg("desert.dune_sea"),description:msg("desert.broad_dunes_gentle_climbs_long_descents"),amplitude:1.15,width:1.3,count:80,defaultSeed:8671},
  {id:'random',name:msg("desert.random_expedition"),description:msg("desert.a_seeded_mix_of_flat_sand"),amplitude:1.05,width:1.2,count:112,defaultSeed:43210},
+ {id:'jumpy',name:msg('desert.jumpy_dunes'),description:msg('desert.jumpy_description'),jumpy:true,defaultSeed:20261022},
  {id:'hard',name:msg("desert.hard_dunes"),description:msg("desert.the_original_steep_terrain_high_dunes"),hard:true,defaultSeed:1947},
 ];
 export function normalizeDesertOptions(options={}){
@@ -23,6 +25,7 @@ const samplers=new Map();
 export function createDesertHeight(options={}){
  const normalized=normalizeDesertOptions(options),profile=DESERT_VARIANTS.find(v=>v.id===normalized.variant),key=profile.id+':'+normalized.seed;
  if(samplers.has(key))return samplers.get(key);
+ if(profile.jumpy){const field=createJumpyDunes(normalized.seed),rocks=desertRockFeatures(normalized.seed);const height=(x,z)=>{let h=field.heightAt(x,z);for(const ramp of rocks.ramps)h=shapeDesertJump(ramp,x,z,h);const edge=Math.max(0,(Math.abs(x)-1165)/35,(Math.abs(z)-565)/35);return h+18*edge*edge;};if(samplers.size>=12)samplers.delete(samplers.keys().next().value);samplers.set(key,height);return height;}
  if(profile.hard){const height=createHardDesertHeight(normalized.seed,{width:DESERT_WIDTH,depth:DESERT_DEPTH,spawn:DESERT_SPAWN});if(samplers.size>=12)samplers.delete(samplers.keys().next().value);samplers.set(key,height);return height;}
  let seed=normalized.seed;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
  const phase=profile.id==='random'?random()*20:0;
@@ -78,12 +81,13 @@ export function createDesertHeight(options={}){
 }
 export function desertHeight(x,z,options={}){return createDesertHeight(options)(x,z);}
 export function buildDesert(options={}){
- const configuration=normalizeDesertOptions(options),baseHeight=createDesertHeight(configuration),jumps=configuration.variant==='hard'?[]:desertJumps(configuration.seed);
- const rocks=configuration.variant==='hard'?{ramps:[],formations:[],stones:[]}:desertRockFeatures(configuration.seed);
- const protectedAreas=[DESERT_SPAWN,...[...jumps,...rocks.ramps].flatMap(jump=>Array.from({length:Math.ceil((jump.approach+jumpEnd(jump))/12)+1},(_,i)=>[-jump.halfWidth,0,jump.halfWidth].map(side=>jumpPoint(jump,-jump.approach+i*12,side))).flat())];
+ const configuration=normalizeDesertOptions(options),baseHeight=createDesertHeight(configuration),jumps=['hard','jumpy'].includes(configuration.variant)?[]:desertJumps(configuration.seed);
+ const rocks=configuration.variant==='hard'?{ramps:[],formations:[],stones:[]}:{...desertRockFeatures(configuration.seed)};
+ if(configuration.variant==='jumpy'){rocks.formations=[];rocks.stones=rocks.stones.filter(s=>Math.abs(s.x)>45);}
+ const protectedAreas=[DESERT_SPAWN,...(configuration.variant==='jumpy'?Array.from({length:95},(_,i)=>({x:0,z:-560+i*12})):[]),...[...jumps,...rocks.ramps].flatMap(jump=>Array.from({length:Math.ceil((jump.approach+jumpEnd(jump))/12)+1},(_,i)=>[-jump.halfWidth,0,jump.halfWidth].map(side=>jumpPoint(jump,-jump.approach+i*12,side))).flat())];
  const sampleHeight=(x,z)=>{const base=baseHeight(x,z),wave=sandWaveHeight(x,z);return base+(wave?wave*(1-rockCoverage(rocks,x,z))*smooth((Math.hypot(x-DESERT_SPAWN.x,z-DESERT_SPAWN.z)-8)/28):0);};
  const step=2.5,cols=DESERT_WIDTH/step,rows=DESERT_DEPTH/step,count=(cols+1)*(rows+1);
- const vertices=new Float32Array(count*3),triangles=new Uint32Array(cols*rows*6),uv=new Float32Array(count*2),colors=new Float32Array(count*3),rockMask=new Float32Array(count);
+ const vertices=new Float32Array(count*3),uv=new Float32Array(count*2),colors=new Float32Array(count*3),rockMask=new Float32Array(count);
  for(let z=0;z<=rows;z++)for(let x=0;x<=cols;x++){
   const i=z*(cols+1)+x,wx=DESERT_BOUNDS.min.x+x*step,wz=DESERT_BOUNDS.min.z+z*step;
   vertices.set([wx,sampleHeight(wx,wz),wz],i*3);uv.set([wx/12,wz/12],i*2);
@@ -98,8 +102,7 @@ export function buildDesert(options={}){
   const rock=rockCoverage(rocks,vertices[i*3],vertices[i*3+2]),layer=1+rock*.08*Math.sin(h*2.6);rockMask[i]=rock;
   colors.set([tone*(1-rock*.28)*layer,Math.min(1.15,tone+.035)*(1-rock*.42)*layer,Math.min(1.1,tone+.055)*(1-rock*.48)*layer],i*3);
  }
- for(let z=0;z<rows;z++)for(let x=0;x<cols;x++){
-  const a=z*(cols+1)+x,b=a+cols+1;triangles.set([a,b,a+1,a+1,b,b+1],(z*cols+x)*6);
- }
- return {positions:vertices,indices:triangles,uv,colors,heightAt:gridHeight(vertices,cols,rows,step,DESERT_BOUNDS.min.x,DESERT_BOUNDS.min.z),bounds:DESERT_BOUNDS,regions:configuration.variant==='hard'?HARD_DESERT_REGIONS:DESERT_REGIONS,jumps,rockRamps:rocks.ramps,rockFormations:rocks.formations,smallRocks:rocks.stones,rockMask,protectedAreas,configuration};
+
+ const refined=refineJumpMesh({positions:vertices,uv,colors,rockMask,cols,rows,step,minX:DESERT_BOUNDS.min.x,minZ:DESERT_BOUNDS.min.z,sampleHeight,ramps:[...jumps,...rocks.ramps]});
+ return {...refined,coarseVertexCount:count,coarseTriangleCount:cols*rows*2,heightAt:refined.heightAt,bounds:DESERT_BOUNDS,regions:configuration.variant==='hard'?HARD_DESERT_REGIONS:configuration.variant==='jumpy'?[{x:0,z:0,label:msg('desert.jump_line')},{x:-500,z:0,label:msg('desert.jumpy_dunes')}]:DESERT_REGIONS,jumps,rockRamps:rocks.ramps,rockFormations:rocks.formations,smallRocks:rocks.stones,protectedAreas,configuration};
 }

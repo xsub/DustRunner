@@ -1,6 +1,6 @@
 # Desert rock park
 
-The normal dune variants have three rock formations with traversable ascent routes, three pairs of solid sandstone takeoff/landing ramps, and 48 clusters containing over 1,200 additional low rocks. The historical Hard Dunes generator remains unchanged.
+The normal dune variants have three rock formations with traversable ascent routes, three pairs of solid sandstone takeoff/landing ramps, and 48 clusters containing over 1,200 additional low rocks. The historical Hard Dunes generator remains unchanged. Ramp dimensions and landing profiles have since been rebuilt; see [Jumpy Dunes and rebuilt jump pairs](jumpy-dunes.md).
 
 The first rock pair starts at x=95, z=145: northeast of the default spawn. Other pairs are at (-240, 310) and (520, -60). Yellow flags mark takeoffs and green flags mark landing ramps; the minimap includes the extra jump markers and rock districts.
 

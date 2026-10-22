@@ -32,7 +32,7 @@ test('all static source bindings resolve and no Polish copy remains in shipped i
  const files=[...readdirSync(new URL('../src/',import.meta.url)).filter(n=>n.endsWith('.js')).map(n=>'src/'+n),'index.html','garage.html','gallery.html'];
  for(const file of files){
   const source=readFileSync(new URL('../'+file,import.meta.url),'utf8');
-  assert.ok(!/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]|\/kl\.| wid\.|['"]Tryb |['"]Zapisano /.test(source),file+' contains Polish copy');
+  assert.ok(!/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]|\/kl\.| wid\.|Zaproszenie:|['"]Tryb |['"]Zapisano /.test(source),file+' contains Polish copy');
   for(const match of source.matchAll(/\b(?:msg|msgHTML|t|tx)\(["']([^"']+)["']/g)){
    // Dynamic family keys such as ai.<skill> are checked below.
    if(match[1].endsWith('.'))continue;

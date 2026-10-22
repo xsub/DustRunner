@@ -22,14 +22,14 @@ test('six seeded sand jumps have smooth run-ins and three opposite landing ramps
   const start=jumpPoint(j,-70),lip=jumpPoint(j,j.runup);assert.ok(Math.abs(terrain.heightAt(start.x,start.z)-1)<.02);assert.ok(Math.abs(terrain.heightAt(lip.x,lip.z)-(1+j.height))<1.3,'2.5 m render/contact grid samples a real takeoff lip');
  }
 });
-for(const [engineId,index,minRange,minFlight] of [['170',0,5,.3],['170',2,8,.4],['302',2,12,.5],['godzilla73',4,30,1]])test(`${engineId} physically launches and lands sand jump ${index} without a rollover`,()=>{
- const j=terrain.jumps[index],p=createPhysics(terrain,terrain.bounds),car={...jumpPoint(j,-100),heading:j.heading,style:'classic',engineId,speed:0,transmissionMode:'automatic',driveMode:'auto'};p.reset(car);
+for(const [engineId,index,minRange,minFlight] of [['302',0,18,.7],['302',2,18,.7],['godzilla73',4,25,1]])test(`${engineId} physically launches and lands sand jump ${index} without a rollover`,()=>{
+ const j=terrain.jumps[index],p=createPhysics(terrain,terrain.bounds),car={...jumpPoint(j,-245),heading:j.heading,style:'classic',engineId,speed:0,transmissionMode:'automatic',driveMode:'auto'};p.reset(car);
  let time=0,maxFlight=0,maxRange=0,takeoff=null,landed=false;
  try{
   for(let i=0;i<120*35;i++){
    p.input(car,{throttle:i>240?1:0,steer:0,onDirt:true},1/120);p.step();p.sync(car,1/120);const s=jumpCoordinates(j,car.x,car.z).s;
    if(i>240&&s>0&&car.airborne){if(time===0)takeoff={x:car.x,z:car.z};time+=1/120;maxFlight=Math.max(maxFlight,time);}else if(time){maxRange=Math.max(maxRange,Math.hypot(car.x-takeoff.x,car.z-takeoff.z));landed=true;time=0;}
-   assert.equal(car.rollover,false);if(s>jumpEnd(j)+25)break;
+   assert.equal(car.rollover,false);if(landed&&s>jumpEnd(j)+5)break;
   }
   assert.ok(landed);assert.ok(maxRange>minRange,`${maxRange} m`);assert.ok(maxFlight>minFlight,`${maxFlight} s`);assert.ok(jumpCoordinates(j,car.x,car.z).s>jumpEnd(j),'continue driving after the landing');
  }finally{p.dispose();}

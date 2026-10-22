@@ -2,132 +2,51 @@
 
 # Dust Runner
 
-**Small trucks. Big dirt energy.** A browser 4×4 arcade racer with dune jumps, articulated suspension, engine-specific gearboxes and a whole desert to explore.
+**Relaksująca podróż przez świat miniaturowych wyścigów pustynnych i swobodnego błądzenia po pustkowiach.** Wybierasz mały, stylizowany model z rodziny **Ford Bronco®** i ruszasz: na wyścig, podjazd, skok z wydmy albo po prostu przed siebie.
 
-**[PLAY NOW ↗](https://xsub.github.io/DustRunner/)** · [Explore a shared random desert](https://xsub.github.io/DustRunner/?mode=desert&dunes=random&seed=20261020) · [Engine & sound notes](ENGINE_NOTES.md)
+To gra pisana dla siebie, z zajawki do terenówek, fizyki i dłubania w szczegółach. Dla osób, które lubią miniaturowe samochody, odkrywanie terenu i eksperymentowanie z napędem 4×4. Lekka forma i tryby Arcade spotykają się tu z rozbudowaną symulacją jazdy w fizycznym świecie 3D.
 
-![Heritage truck airborne over a desert dune](docs/screenshots/dune-jump.jpg)
+**[ZAGRAJ W PRZEGLĄDARCE ↗](https://xsub.github.io/DustRunner/)** · **[OBEJRZYJ GARAŻ 3D](https://xsub.github.io/DustRunner/garage.html)** · [Przykładowa losowa pustynia](https://xsub.github.io/DustRunner/?mode=desert&dunes=random&seed=20261020)
 
-*An actual Free Ride jump in Burzowe Grzbiety, seed 1947. Captured in-game with the default arcade gravity; no staged vehicle poses.*
+![Skok miniaturowego Bronco na pustyni — zrzut z gry](docs/screenshots/dune-jump.jpg)
 
-## Pick your playground
+## Co tu znajdziesz
 
-- **Race:** 16 dirt circuits, each with four mirror layouts — 64 configurations. Every circuit has **4–10 ramps in three height classes** (default 0.65 / 2.075 / 3.5 m above the local road), with room for takeoff and landing. Choose 0–11 AI opponents (five by default, six cars total), each with an individual Amateur, Advanced, Seasoned, Pro or Master skill. Race through ramps, split landings, whoops, banks and winding terrain.
-- **Free Ride:** a 2,400 × 1,200 m desert (2.88 km², four times the original area) with flat curb-height ruts, many approachable medium dunes, two broad giant dunes for long descents, and six engineered sand jumps (three with opposite landing ramps). Three accessible seeded terrain styles let you climb, jump and find your own route; **TRUDNE WYDMY** separately restores the previous steep, high-dune generator. Four-wheel trails follow the terrain in Free Ride and races, including all AI cars, with tread impressions and stronger marks under braking or sideways slip.
-- **Choose your truck:** seven selectable procedural SUV bodies inspired by classic Bronco® shapes, from emerald/ivory Heritage and open-top crawlers to brown Classic ’78 and the Godzilla ’78 restomod.
-- **Build your drivetrain:** 12 inline-six and V8 profiles, including the 7.3 L Godzilla swap. Each engine has a fixed gearbox profile; choose arcade shifting, full automatic or sequential manual control.
-- **Drive it like a 4×4:** HI/LO ranges, crawler mode, front/rear differential locks, hill-descent control (independent of the Arcade/Classic steering profile), progressive braking and optional held-angle steering.
-- **Explore beyond the track:** broad irregular sandy hills, hollows and scattered small dunes share their visible geometry with collision. Fine sand grain replaces repetitive surface stripes.
-- **Feel the terrain:** four spring/damper wheel contacts, axle articulation, tire slip, mass distribution, jumps, collisions and rollovers. Recovery searches for a safe, flatter footprint.
-- **Keep driving after the finish:** medal-colored confetti celebrates the result while you continue victory laps. End the race when ready, or stop for the result screen.
+- **Wyścigi i eksplorację:** 16 tras, lustrzane warianty, generator kolejnych i rywali AI o pięciu poziomach umiejętności. Obok wyścigów — swobodna jazda po pustyni bez limitu czasu.
+- **Zróżnicowany teren:** 2,88 km² pustyni, koleiny, wydmy, skalne podjazdy i pary ramp do skoku i lądowania. Różne generatory oraz osobny tryb **Trudne wydmy**.
+- **Garaż Bronco:** 20 proceduralnych modeli i 12 profili silników, w tym Godzilla 7.3 V8. Indywidualne masy, większe koła i lift wpływają na prowadzenie.
+- **Napęd 4×4:** automat domyślnie, ręczna zmiana biegów, skrzynie przypisane do silników, HI/LO, pełzanie, blokady obu mostów, HDC i ręczny. Prowadzenie Arcade lub Classic.
+- **Odczuwalną fizykę:** pracę zawieszenia i kół, przyczepność, poślizg, rozkład masy, skoki, lądowania, zderzenia i wywrotki. Ślady opon, kurz, wydech i dźwięk reagują na jazdę.
+- **Wspólne odkrywanie:** generuj pustynie i kopiuj zaproszenia z linkiem, aby znajomi trafili na ten sam teren.
+- **Mnóstwo detali:** konfigurowalne zegary, kompas, nachylenie zbocza, animowane przekroje silnika i zawieszenia, telemetrię i strojenie fizyki. Klawiaturę na komputerze, dotyk i gesty kamery na telefonie.
 
-![Four trucks racing on the dirt circuit, including the brown Classic ’78](docs/screenshots/dirt-race.jpg)
+## Jak zacząć
 
-*Four-car racing on Dustbowl, with Classic ’78 Copper as the player truck.*
+Otwórz grę, wybierz wyścig lub **Free Ride** i jedź. Menu pozwala zmienić samochód, silnik, teren, przeciwników i ustawienia. Dźwięk włączysz ikoną głośnika. Na telefonie wygodnie gra się poziomo; przeciąganie po terenie obraca kamerę, a dwa palce sterują zoomem.
 
-## Optional “Ruffles” sand
+[Pełna lista skrótów](docs/controls.md) · [Sterowanie mobilne](docs/mobile-controls.md)
 
-In **Menu → PIASEK · OPCJONALNE FALE „RUFFLES”**, enable regular waves, set their spacing (16–120 m) and trough-to-crest height (0–3 m), then choose **ZASTOSUJ FALE · RESTART**. The option adds visible bands and actual terrain waves in races and Free Ride; racing shoulders and the Free Ride spawn remain clear. It is off by default, preserving the irregular desert hills. Applying restarts the current session.
+## Jak to działa
 
-The same controls live in **DEV → Piasek · Ruffles**, are included in tuning JSON/presets and save in browser-local active settings. Shared desert links carry the seed/variant; use the same wave settings to reproduce optional Ruffles relief.
+**Three.js / WebGL** rysuje proceduralny świat, **Rapier 3D / WebAssembly** liczy fizykę przy 120 Hz, a własny model napędu przekłada pracę silnika i skrzyni na siły na kołach. Widoczny teren i kontakt korzystają ze wspólnej geometrii. Pozostały stack: **JavaScript, Web Audio / AudioWorklet, HTML/CSS, Canvas i Vite**; testy i publikacja przez **GitHub Actions / Pages**.
 
-## Generate a race circuit
+To symulacja nastawiona na frajdę z jazdy: masy customów, charakterystyki silników i część mechaniki są kalibracjami gry, a nie danymi homologacyjnymi. Postęp i ustawienia zapisują się lokalnie w przeglądarce; link do pustyni odtwarza teren, nie przenosi osobistych ustawień.
 
-Open **Menu → WYŚCIG → GENERATOR LOSOWYCH TRAS** below the circuit cards. Use **LOSUJ NOWĄ TRASĘ** for a fresh layout, or enter an unsigned 32-bit seed and choose **GENERUJ Z ZIARNA**. The generated circuit appears as a selected seventeenth card; start the race with **START RACE**. It has 4–10 ramps in all three heights, rolling terrain and a straight opening runway. Both mirror toggles work on generated circuits, too. The most recently entered seed is kept in browser storage; regenerate it to return to that layout.
+## Uruchomienie lokalne
 
-The same seed and simulation tuning recreate the same track. Generating replaces the temporary random circuit, while keeping the 16 presets available. Ramp locations are chosen for clear spacing and gentler approach/landing direction changes; the main canyon jump keeps its split landing. Small triangles on the minimap identify ramp takeoffs.
-
-## Share your desert
-
-Open **Menu → FREE RIDE → LOSOWA EKSPEDYCJA**, generate a landscape, then press **UDOSTĘPNIJ TĘ PUSTYNIĘ · KOPIUJ ZAPROSZENIE**. Paste the invitation into a message: the public game link contains the dune variant and exact generator seed, so your friend can load the same terrain. If clipboard access is unavailable, the game selects the invitation for manual copying.
-
-Shared links recreate the landscape. Personal tuning, upgrades and local progress stay in your browser.
-
-## Under the hood
-
-| Technology | What it does |
-| --- | --- |
-| **Three.js / WebGL** | Procedural vehicles and scenery, lighting, paint and chrome, instanced vegetation and markers, chunked terrain and visibility culling. Adaptive rendering aims to preserve smooth play. |
-| **Rapier 3D / WebAssembly** | Fixed 120 Hz rigid-body simulation, raycast wheel contacts, spring/damper suspension, impacts and rollovers. Rendered terrain and collision surfaces share their triangle geometry. |
-| **Custom powertrain model** | Engine torque maps, RPM/load response, transmission ratios, shifting, low range and differential-lock behavior feed vehicle forces and sound. |
-| **Web Audio / AudioWorklet** | RPM-driven sustained engine loops, load/overrun mixing and procedural cylinder-pulse synthesis. Recording sources and licenses are in the [audio credits](public/audio/CREDITS.md). |
-| **Canvas 2D + HTML/CSS** | Minimap, telemetry, animated vehicle/engine cutaways, HUD, menus and confetti. |
-| **Vanilla JavaScript + Vite** | Modular game code and a static production build. Node’s test runner checks physics, terrain, drivetrain, racing rules and UI support logic. |
-| **GitHub Actions + GitHub Pages** | Tests, build and deployment on pushes to `main`. No game server or account is needed. |
-
-The target is **60 FPS or better**, with physics and rendering budgets focused on nearby gameplay. Actual performance depends on the device, browser and scene. The game uses visible-prop motion quotas and shared/instanced geometry to control CPU and draw-call costs.
-
-This is an arcade simulation: engine curves, loaded masses and performance are game calibrations, rather than factory-certified dynamometer results. Live-axle articulation is an approximation, not a complete mechanical linkage simulation. See [engine model, gearbox choices and sources](ENGINE_NOTES.md).
-
-![Godzilla 7.3 L V8 animated OHV cutaway and in-game telemetry](docs/screenshots/engine-cutaway.jpg)
-
-*The live engine view follows actual engine RPM, with slowed mechanical animation for readability: crankshaft, pistons, connecting rods, camshaft and valves.*
-
-## Controls
-
-| Key | Action |
-| --- | --- |
-| W / ↑ | Accelerate |
-| S / ↓ | Progressive brake; hold after stopping for reverse in automatic modes |
-| A / D or ← / → | Steer |
-| C | Center steering |
-| Space | Rechargeable nitro |
-| Shift / HB | Momentary rear handbrake while held. |
-| , (comma) / handbrake HUD | Toggle the parking brake immediately. |
-| . (period) / engine HUD | Start or stop the engine; stopping requires a stationary, grounded truck. |
-| 1 / 2 / 3 / 4 | AUTO / HI / LO / 4×4 crawler |
-| Z / X | Front / rear differential lock in crawler mode |
-| H | Hill-descent control |
-| Q / E | Downshift / upshift in full manual mode |
-| B | Neutral in full manual mode; shift below neutral for reverse |
-| F | Recover to safe terrain |
-| P / Escape | Pause |
-| N | Restart level |
-| R (hold) | Two-tone horn (Sound ON) |
-| Enter | Start / race again |
-
-Touch controls are available on touch devices. The compact handbrake HUD shows its latched state; pausing preserves a latched brake, while recovery or reset releases it. Engines start running by default. Ignition adds a timed starter, shutdown, zero torque/RPM when off, and matching sound transitions. Coasting keeps the engine audible with reduced load. Soft pooled exhaust particles originate at the rendered tailpipes, follow vehicle attitude, and respond to throttle, gear changes and startup. Enable sound with **♪ ON** or in the menu. The menu also contains truck selection, engine hot-swaps, the five-generation history guide, tuning and display options.
-
-## Tuning and telemetry
-
-Open **DEV** to adjust simulation and camera parameters, save named “tunning” presets, or copy/import JSON. Drag, collapse or hide the FPS window and the vehicle diagnostics panel. Vehicle cutaways visualize wheel travel, steering, wheel speeds, body attitude and forces; the engine tab shows an OHV schematic.
-
-Presets and progress use **localStorage**, on this browser and site only. Saving a tune does not write to GitHub. Clearing site data removes local saves; exported JSON is the portable backup. Localhost and GitHub Pages have separate storage.
-
-## Run locally
-
-Requires Node.js **20.19+ or 22.12+**.
+Node.js 22.12+:
 
 ```sh
 npm install
 npm run dev
+npm test
+npm run build -- --base=/DustRunner/
 ```
 
-Open the address printed by Vite. Useful commands:
+Szczegóły: [silniki i źródła](ENGINE_NOTES.md) · [modele i fizyka](docs/vehicle-dynamics.md) · [sterowanie mobilne](docs/mobile-controls.md) · [strojenie i rozwój](docs/DEVELOPMENT.md) · [protokół pomiarów wydajności](docs/performance-benchmark.md).
 
-```sh
-npm test                           # automated checks
-npm run build                     # static site → dist/
-npm run preview                   # preview the production build
-npm run build -- --base=/DustRunner/ # GitHub Pages repository path
-```
+## Autorstwo i marki
 
-Pushes to `main` run [.github/workflows/pages.yml](.github/workflows/pages.yml), test the code and publish the built site. Longer implementation history and tuning details are preserved in [development notes](docs/DEVELOPMENT.md).
+**© 2026 Puffy Clouds · Created by Puffy Clouds using AI.**
 
-## Credits and rights
-
-**© 2026 PUFFY CLOUDS — USING AI TECHNOLOGY.** Original game code and procedural artwork are credited to Puffy Clouds.
-
-**Ford® and Bronco® are registered trademarks of Ford Motor Company.** Ford names, emblems and vehicle marks belong to Ford Motor Company. Copyright in Ford reference materials remains with Ford Motor Company or its licensors; this project claims no rights to those materials. Dust Runner is an independent project and is not affiliated with, sponsored by, or endorsed by Ford Motor Company.
-
-See [rights and third-party notices](NOTICE.md) and [engine recording credits](public/audio/CREDITS.md). Screenshots above show actual gameplay from this project.
-
-### Six-car performance test
-
-Menu → **BENCHMARK · 6 AUT · WSZYSTKIE TRASY** prepares a fixed-resolution, two-pass run on all 16 circuits and one seeded random circuit. It starts only when explicitly requested. See [the benchmark protocol](docs/performance-benchmark.md) for timings, validity rules and reported metrics. This feature is measurement infrastructure, not evidence that every track sustains 60 FPS.
-
-### Reference build collection
-
-The garage now contains **20 selectable procedural vehicles**, including **12 new builds inspired by the supplied photographs**: Black Cage roadster, Ruby half-cab, Ember overlander, Mocha High Roller, Turf Giant, orange/cream Ranger, Indigo Soft Trail, two Bullnose variants, Forest Safari, Desert Beast and Cobalt High Rider. Open [the 3D garage](https://xsub.github.io/DustRunner/garage.html) for front/rear views. Lifted builds share tire radius, wheelbase, track and suspension attachment data with Rapier; their larger tires also affect gearing. These are stylized game models, not exact factory replicas. [Model notes and references](docs/reference-models.md).
-
-![Twelve new photograph-inspired procedural Bronco builds](docs/screenshots/reference-models.jpg)
+**Ford® i Bronco® są znakami towarowymi Ford Motor Company.** Dust Runner jest niezależnym projektem, niepowiązanym z Fordem i przez niego niesponsorowanym. Prawa do materiałów referencyjnych należą do ich właścicieli. [Informacje o prawach i komponentach](NOTICE.md) · [Źródła i licencje nagrań](public/audio/CREDITS.md).

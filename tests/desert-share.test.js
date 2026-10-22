@@ -12,5 +12,5 @@ test('shared invitation uses the public playable site and contains the exact ran
  }
 });
 test('preset dunes can also be shared and do not leak unrelated browser parameters',()=>{
- for(const variant of ['ridges','stars']){const link=new URL(desertInvitation({variant,seed:71}).url);assert.deepEqual([...link.searchParams.keys()],['mode','dunes','seed']);assert.equal(link.searchParams.get('dunes'),variant);}
+ for(const variant of ['ridges','stars','hard']){const link=new URL(desertInvitation({variant,seed:71}).url);assert.deepEqual([...link.searchParams.keys()],['mode','dunes','seed']);assert.equal(link.searchParams.get('dunes'),variant);}
 });

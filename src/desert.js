@@ -1,3 +1,4 @@
+import {createHardDesertHeight,HARD_DESERT_REGIONS} from './desert-hard.js';
 import {gridHeight} from './grid-height.js';
 import {desertJumps,shapeDesertJump,jumpPoint,jumpEnd} from './desert-jumps.js';
 import {sandWaveHeight} from './sand-waves.js';
@@ -10,6 +11,7 @@ export const DESERT_VARIANTS=[
  {id:'ridges',name:'RAJDOWE WYDMY',description:'Płaskie koleiny, średnie wydmy, usypane skocznie i długa wielka wydma',amplitude:1,width:1.1,count:96,defaultSeed:1947},
  {id:'stars',name:'MORZE WIELKICH WYDM',description:'Szerokie wydmy i łagodne podjazdy, duże zjazdy oraz skocznie',amplitude:1.15,width:1.3,count:80,defaultSeed:8671},
  {id:'random',name:'LOSOWA EKSPEDYCJA',description:'Losowa mieszanka płaskiego piasku, średnich wydm i skoczni',amplitude:1.05,width:1.2,count:112,defaultSeed:43210},
+ {id:'hard',name:'TRUDNE WYDMY',description:'Poprzedni stromy teren: wysokie wydmy, ostre grzbiety i głębokie siodła. Bez przygotowanych skoczni. Zalecany reduktor LO / 4×4.',hard:true,defaultSeed:1947},
 ];
 export function normalizeDesertOptions(options={}){
  const variant=DESERT_VARIANTS.find(v=>v.id===options.variant)??DESERT_VARIANTS[0];
@@ -19,6 +21,7 @@ const samplers=new Map();
 export function createDesertHeight(options={}){
  const normalized=normalizeDesertOptions(options),profile=DESERT_VARIANTS.find(v=>v.id===normalized.variant),key=profile.id+':'+normalized.seed;
  if(samplers.has(key))return samplers.get(key);
+ if(profile.hard){const height=createHardDesertHeight(normalized.seed,{width:DESERT_WIDTH,depth:DESERT_DEPTH,spawn:DESERT_SPAWN});if(samplers.size>=12)samplers.delete(samplers.keys().next().value);samplers.set(key,height);return height;}
  let seed=normalized.seed;const random=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
  const phase=profile.id==='random'?random()*20:0;
  const jumps=desertJumps(normalized.seed);
@@ -73,7 +76,7 @@ export function createDesertHeight(options={}){
 }
 export function desertHeight(x,z,options={}){return createDesertHeight(options)(x,z);}
 export function buildDesert(options={}){
- const configuration=normalizeDesertOptions(options),baseHeight=createDesertHeight(configuration),jumps=desertJumps(configuration.seed);
+ const configuration=normalizeDesertOptions(options),baseHeight=createDesertHeight(configuration),jumps=configuration.variant==='hard'?[]:desertJumps(configuration.seed);
  const protectedAreas=[DESERT_SPAWN,...jumps.flatMap(jump=>Array.from({length:Math.ceil((jump.approach+jumpEnd(jump))/12)+1},(_,i)=>[-jump.halfWidth,0,jump.halfWidth].map(side=>jumpPoint(jump,-jump.approach+i*12,side))).flat())];
  const sampleHeight=(x,z)=>baseHeight(x,z)+sandWaveHeight(x,z)*smooth((Math.hypot(x-DESERT_SPAWN.x,z-DESERT_SPAWN.z)-8)/28);
  const step=2.5,cols=DESERT_WIDTH/step,rows=DESERT_DEPTH/step,count=(cols+1)*(rows+1);
@@ -94,5 +97,5 @@ export function buildDesert(options={}){
  for(let z=0;z<rows;z++)for(let x=0;x<cols;x++){
   const a=z*(cols+1)+x,b=a+cols+1;triangles.set([a,b,a+1,a+1,b,b+1],(z*cols+x)*6);
  }
- return {positions:vertices,indices:triangles,uv,colors,heightAt:gridHeight(vertices,cols,rows,step,DESERT_BOUNDS.min.x,DESERT_BOUNDS.min.z),bounds:DESERT_BOUNDS,regions:DESERT_REGIONS,jumps,protectedAreas,configuration};
+ return {positions:vertices,indices:triangles,uv,colors,heightAt:gridHeight(vertices,cols,rows,step,DESERT_BOUNDS.min.x,DESERT_BOUNDS.min.z),bounds:DESERT_BOUNDS,regions:configuration.variant==='hard'?HARD_DESERT_REGIONS:DESERT_REGIONS,jumps,protectedAreas,configuration};
 }

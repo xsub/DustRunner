@@ -21,3 +21,7 @@ Physical regression runs at 120 Hz, default gravity 20, full automatic gearbox, 
 | Godzilla 7.3 | Large pair | 1.27 s | 41.5 m | Lands and continues, no rollover |
 
 These are specific scripted trials, not guarantees for every speed, body, tune or approach line. Tests also verify rut relief, giant-dune descent, slope distribution, reproducible placement, run-in continuity, mesh interpolation and collision support across all three variants. The in-browser check exercises the first jump approach and landing with the 302; no console errors were reported.
+
+## Optional original challenge terrain
+
+Menu → PUSTYNIA → TRUDNE WYDMY (`dunes=hard`) restores the original steep ridge generator from af792eb, at 2400 × 1200 m. Default seed is 1947; custom seeds and share links are supported. It has the old FALE / GRZBIETY / WYSOKIE districts and no engineered jump corridors or flags. This does not replace the accessible default. Numerical fixtures verify the historical height field rather than merely amplifying the new moderate dunes.

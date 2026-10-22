@@ -42,7 +42,7 @@ test('dune districts have distinct, non-repeating heights and traversable slopes
 
 test('desert variants remain distinct and reproducible with moderate central terrain',()=>{
  const signatures=[];
- for(const variant of DESERT_VARIANTS){
+ for(const variant of DESERT_VARIANTS.filter(v=>!v.hard)){
   const sample=createDesertHeight({variant:variant.id}),repeat=createDesertHeight({variant:variant.id});let peak=0,low=Infinity;const signature=[];
   for(let z=-200;z<=200;z+=20)for(let x=-520;x<=520;x+=20){const h=sample(x,z);assert.equal(h,repeat(x,z));peak=Math.max(peak,h);low=Math.min(low,h);signature.push(h.toFixed(2));}
   assert.ok(peak-low>5&&peak-low<30,`${variant.id}: ${peak-low} meters of elevation`);assert.equal(sample(DESERT_SPAWN.x,DESERT_SPAWN.z),1);signatures.push(signature.join(','));

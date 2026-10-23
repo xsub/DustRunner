@@ -2,7 +2,7 @@ import {gridHeight} from './grid-height.js';
 import {jumpCoordinates,jumpEnd} from './desert-jumps.js';
 // Spend triangles on narrow ramp decks, not on the entire 2.88 km² desert.
 // Boundary samples follow the neighboring coarse triangle edge, avoiding cracks.
-export function refineJumpMesh({positions,uv,colors,rockMask,cols,rows,step,minX,minZ,sampleHeight,ramps}){
+export function refineJumpMesh({positions,uv,colors,rockMask,cols,rows,step,minX,minZ,sampleHeight,ramps,areas=[]}){
  const selected=new Set(),cells=new Map(),sub=5;
  for(const ramp of ramps){
   const radius=Math.hypot(jumpEnd(ramp)+8,ramp.halfWidth+ramp.edgeWidth+5);
@@ -10,9 +10,10 @@ export function refineJumpMesh({positions,uv,colors,rockMask,cols,rows,step,minX
   const loZ=Math.max(0,Math.floor((ramp.z-radius-minZ)/step)),hiZ=Math.min(rows-1,Math.ceil((ramp.z+radius-minZ)/step));
   for(let iz=loZ;iz<=hiZ;iz++)for(let ix=loX;ix<=hiX;ix++){
    const {s,side}=jumpCoordinates(ramp,minX+(ix+.5)*step,minZ+(iz+.5)*step);
-   if(s> -5&&s<jumpEnd(ramp)+5&&Math.abs(side)<ramp.halfWidth+ramp.edgeWidth+3)selected.add(iz*cols+ix);
+   if(s> -5&&s<jumpEnd(ramp)+5&&Math.abs(side)<ramp.halfWidth+Math.min(8,ramp.edgeWidth)+3)selected.add(iz*cols+ix);
   }
  }
+ for(const area of areas)for(let iz=Math.max(0,Math.floor((area.z-(area.halfZ??area.half)-minZ)/step));iz<=Math.min(rows-1,Math.ceil((area.z+(area.halfZ??area.half)-minZ)/step));iz++)for(let ix=Math.max(0,Math.floor((area.x-(area.halfX??area.half)-minX)/step));ix<=Math.min(cols-1,Math.ceil((area.x+(area.halfX??area.half)-minX)/step));ix++)selected.add(iz*cols+ix);
  const p=[...positions],u=[...uv],c=[...colors],r=[...rockMask],indices=[],coarse=gridHeight(positions,cols,rows,step,minX,minZ);
  for(let iz=0;iz<rows;iz++)for(let ix=0;ix<cols;ix++){
   const id=iz*cols+ix,a=iz*(cols+1)+ix,b=a+cols+1;

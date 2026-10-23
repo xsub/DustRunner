@@ -24,7 +24,7 @@ test('seeded desert adds paired rock ramps, accessible rock formations and low b
 });
 test('visible sandstone uses the actual contact triangles and bounded geometry',()=>{
  const mesh=createDesertRockMesh(ground),a=mesh.geometry.attributes.position;
- try{assert.ok(a.count>1000&&a.count<200000);for(let i=0;i<a.count;i+=31)assert.ok(Math.abs(a.getY(i)-ground.heightAt(a.getX(i),a.getZ(i))-.018)<.0002);}
+ try{assert.ok(a.count>1000&&a.count<400000);for(let i=0;i<a.count;i+=31)assert.ok(Math.abs(a.getY(i)-ground.heightAt(a.getX(i),a.getZ(i))-.018)<.0002);}
  finally{mesh.geometry.dispose();mesh.material.dispose();}
 });
 for(const jump of ground.rockRamps)test(`matched engine drives the smooth run-in, jumps and lands rock pair ${jump.id}`,()=>{

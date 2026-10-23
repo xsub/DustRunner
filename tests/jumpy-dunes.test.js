@@ -30,9 +30,9 @@ for(const seed of [20261022,17,123456])for(const engineId of ['170','302'])test(
 });
 test('refined ramp geometry keeps exact contact sampling, no seam holes and compact jump dimensions',()=>{
  const g=buildDesert(),ramps=[...g.jumps,...g.rockRamps];
- assert.ok(g.indices.length/3<1150000,'local detail stays below a 25% triangle increase');
+ assert.ok(g.indices.length/3<1300000,'widened banks and freestyle features keep local detail bounded');
  for(const r of ramps){
-  assert.ok(r.halfWidth*2>=4&&r.halfWidth*2<=6);assert.ok(r.gap/5.08>=3&&r.gap/5.08<=5);assert.ok(r.height>=5.4);
+  assert.ok(r.halfWidth*2>=8&&r.halfWidth*2<=10);assert.ok(r.gap/5.08>=3&&r.gap/5.08<=5);assert.ok(r.height>=5.4);
   for(let s=0;s<=r.runup+r.gap+r.landing;s+=.5){const p=jumpPoint(r,s);assert.ok(g.heightAt(p.x,p.z)>=.99,'no -0.25 holes at exact grid boundaries');}
   const lip=jumpPoint(r,r.runup);assert.ok(Math.abs(g.heightAt(lip.x,lip.z)-1-r.height)<.35,'half-metre mesh preserves the narrow lip');
  }

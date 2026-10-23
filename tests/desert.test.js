@@ -6,7 +6,7 @@ import {jumpCoordinates,jumpEnd} from '../src/desert-jumps.js';
 import {initPhysics,createPhysics} from '../src/physics.js';
 const ground=buildDesert();
 test('desert has a full 2400 × 1200 m rectangular contact mesh and varied dunes with a calm spawn',()=>{
- assert.equal(ground.coarseVertexCount,961*481);assert.equal(ground.coarseTriangleCount,960*480*2);assert.ok(ground.indices.length/3<1150000);
+ assert.equal(ground.coarseVertexCount,961*481);assert.equal(ground.coarseTriangleCount,960*480*2);assert.ok(ground.indices.length/3<1300000);
  assert.equal(desertHeight(DESERT_SPAWN.x,DESERT_SPAWN.z),1);
  let min=Infinity,max=-Infinity;for(let z=-250;z<=250;z+=10)for(let x=-550;x<=550;x+=10){const h=ground.heightAt(x,z);assert.ok(Number.isFinite(h)&&h>=1);min=Math.min(min,h);max=Math.max(max,h);}
  assert.ok(max-min>20);assert.deepEqual(ground.bounds,DESERT_BOUNDS);assert.ok(ground.heightAt(1199,0)>18);assert.ok(ground.heightAt(0,599)>18);
@@ -49,7 +49,7 @@ test('desert variants remain distinct and reproducible with moderate central ter
   assert.ok(peak-low>5&&peak-low<30,`${variant.id}: ${peak-low} meters of elevation`);assert.equal(sample(DESERT_SPAWN.x,DESERT_SPAWN.z),1);signatures.push(signature.join(','));
  }
  assert.equal(new Set(signatures).size,DESERT_VARIANTS.filter(v=>!v.hard).length);
- const a=createDesertHeight({variant:'random',seed:123}),b=createDesertHeight({variant:'random',seed:456});assert.notEqual(a(100,50),b(100,50));assert.equal(a(100,50),createDesertHeight({variant:'random',seed:123})(100,50));
+ const a=createDesertHeight({variant:'random',seed:123}),b=createDesertHeight({variant:'random',seed:456});assert.notDeepEqual([-900,300,850].map(x=>a(x,-400)),[-900,300,850].map(x=>b(x,-400)));assert.equal(a(100,50),createDesertHeight({variant:'random',seed:123})(100,50));
  assert.equal(normalizeDesertOptions({variant:'random',seed:0}).seed,0);assert.equal(normalizeDesertOptions({variant:'random',seed:-1}).seed,43210);
 });
 

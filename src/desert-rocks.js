@@ -5,8 +5,8 @@ const cache=new Map();
 export function desertRockFeatures(seed=1947){
  seed>>>=0;if(cache.has(seed))return cache.get(seed);
  let state=seed;const random=()=>{state=(1664525*state+1013904223)>>>0;return state/4294967296;};
- const ramps=[[95,145,0,7.2],[-240,310,-Math.PI/2,10.5],[520,-60,Math.PI/2,15]].map(([x,z,heading,height],id)=>pairedJump({id:'rock-'+id,x,z,heading,height,runup:height*4.5,paired:true,label:(msg("desert_rocks.rock_pair")+" ")+(id+1),halfWidth:2,edgeWidth:4,approach:260,rock:true}));
- const formations=[{x:230,z:-70,rx:65,rz:95,height:11},{x:-500,z:-280,rx:85,rz:110,height:15},{x:930,z:320,rx:90,rz:100,height:18}];
+ const ramps=[[95,145,0,7.2],[-240,310,-Math.PI/2,10.5],[520,-60,Math.PI/2,15]].map(([x,z,heading,height],id)=>pairedJump({id:'rock-'+id,x,z,heading,height,runup:height*4.5,paired:true,label:(msg("desert_rocks.rock_pair")+" ")+(id+1),halfWidth:4,edgeWidth:Math.max(12,height*2.5),approach:260,rock:true}));
+ const formations=[{x:230,z:-220,rx:65,rz:95,height:11},{x:-500,z:-280,rx:85,rz:110,height:15},{x:930,z:320,rx:90,rz:100,height:18}];
  const stones=[];
  for(let cluster=0;cluster<48;cluster++){
   const cx=cluster===0?55:-1100+random()*2200,cz=cluster===0?205:-500+random()*1000;

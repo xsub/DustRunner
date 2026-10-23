@@ -35,7 +35,7 @@ Browser-emulated phone layout, 390 × 777. All screenshots and clips come from t
 ## Explore and drive
 
 - **Racing and free ride:** 16 tracks, mirrored variants, a random track generator, and 0–11 AI rivals across five skill levels. Explore the desert without a time limit.
-- **Varied terrain:** 2.88 km² of desert, tire ruts, dunes, rock climbs, and paired takeoff/landing ramps. Multiple generators include dense **Jumpy Dunes** for repeated jumps and a separate **Hard Dunes** mode.
+- **Varied terrain:** 2.88 km² of desert, tire ruts, dunes, rock climbs, wider bidirectional ramp pairs with cross approaches, a four-way pyramid, and low suspension rollers. Multiple generators include dense **Jumpy Dunes** for repeated jumps and a separate **Hard Dunes** mode.
 - **The Bronco garage:** 20 procedural vehicle models and 12 engine profiles, including the Godzilla 7.3 V8. Model-specific mass, larger tires, and suspension lifts affect handling.
 - **4×4 controls:** automatic transmission by default, manual shifting, engine-matched gearboxes, HI/LO transfer ranges, crawl mode, front/rear differential locks, HDC, and a parking brake. Choose Arcade or Classic handling.
 - **Responsive physics:** suspension travel, wheel contact, grip, sliding, weight distribution, jumps, landings, collisions, and rollovers. Tire tracks, dust, exhaust, and sound respond to driving.

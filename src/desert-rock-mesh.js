@@ -5,6 +5,11 @@ export function createDesertRockMesh(ground){
  const positions=[],colors=[],uv=[],source=ground.positions,mask=ground.rockMask;
  for(let i=0;i<ground.indices.length;i+=3){
   const ids=[ground.indices[i],ground.indices[i+1],ground.indices[i+2]];
+  // Retain readable bank directions under the bright desert lighting.
+  const [a,b,c]=ids.map(id=>source.subarray(id*3,id*3+3));
+  const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
+  const nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx,length=Math.hypot(nx,ny,nz)||1;
+  const bankShade=Math.max(.45,Math.min(1.2,.92-.8*nx/length+.6*nz/length));
   const polygon=ids.map(id=>({x:source[id*3],y:source[id*3+1],z:source[id*3+2],mask:mask[id]}));
   // Clip the material boundary inside each contact triangle rather than
   // exposing a staircase of whole grid cells along the sandstone edges.
@@ -15,7 +20,7 @@ export function createDesertRockMesh(ground){
    if(inside!==next){const t=(.09-a.mask)/(b.mask-a.mask);clipped.push({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:a.z+(b.z-a.z)*t});}
   }
   for(let j=1;j+1<clipped.length;j++)for(const {x,y,z} of [clipped[0],clipped[j],clipped[j+1]]){
-   const band=.90+.025*Math.sin(y*.9)+.018*Math.sin(x*.06+z*.08);
+   const band=(.90+.025*Math.sin(y*.9)+.018*Math.sin(x*.06+z*.08))*bankShade;
    positions.push(x,y+.018,z);uv.push(x/8,z/8);colors.push(band,band*.97,band*.88);
   }
  }

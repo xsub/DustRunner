@@ -132,15 +132,25 @@ function makeDesertWorld(){
  for(const side of [-1,1])for(const axis of ['x','z']){const halfX=DESERT_BOUNDS.max.x,halfZ=DESERT_BOUNDS.max.z,x=axis==='x'?side*(halfX+1):0,z=axis==='z'?side*(halfZ+1):0;physics.addBoundary(x,z,axis==='x'?1:halfX+2,axis==='z'?1:halfZ+2,45);}
  // Sand jumps are part of the real terrain. Small flags mark the takeoff
  // and paired landing edges without placing rocks or plants in the lane.
- const launchFlag=mat('#e7b742'),landingFlag=mat('#83ad72'),pole=mat('#5c5944');
+ const launchFlag=mat('#e7b742'),landingFlag=mat('#83ad72'),sideFlag=mat('#85bbcf'),pole=mat('#5c5944'),flagGroup=new THREE.Group();world.add(flagGroup);
  for(const jump of [...ground.jumps,...ground.rockRamps])for(const [s,material] of [[jump.runup,launchFlag],...(jump.paired?[[jump.runup+jump.gap+3,landingFlag]]:[])])for(const side of [-1,1]){
   const point=jumpPoint(jump,s,side*(jump.halfWidth-1)),y=heightAt(point.x,point.z);
-  cylinder(.055,2.5,pole,point.x,y+1.25,point.z);
-  const flag=box(.85,.45,.04,material,point.x,y+2.2,point.z);flag.rotation.y=-jump.heading;
+  cylinder(.055,2.5,pole,point.x,y+1.25,point.z,flagGroup);
+  const flag=box(.85,.45,.04,material,point.x,y+2.2,point.z,flagGroup);flag.rotation.y=-jump.heading;
  }
+ for(const p of ground.freestyle.pyramids)for(const x of [-1,1])for(const z of [-1,1]){
+  const wx=p.x+x*(p.top+2),wz=p.z+z*(p.top+2),y=heightAt(wx,wz);
+  cylinder(.05,1.5,pole,wx,y+.75,wz,flagGroup);box(.35,.25,.1,launchFlag,wx,y+1.4,wz,flagGroup);
+ }
+ for(const jump of [...ground.jumps,...ground.rockRamps])for(const side of [-1,1])for(const offset of [-4,4]){
+  const point=jumpPoint(jump,jump.runup*(jump.id==='rock-1'?.8:.85)+offset,side*(jump.halfWidth+jump.edgeWidth+5)),y=heightAt(point.x,point.z);
+  cylinder(.045,1.5,pole,point.x,y+.75,point.z,flagGroup);box(.45,.3,.05,sideFlag,point.x,y+1.4,point.z,flagGroup);
+ }
+ batchRigidMeshes(flagGroup);flagGroup.traverse(o=>{o.matrixAutoUpdate=false;});
+ const jumpMarkers=[...ground.jumps,...ground.rockRamps].flatMap(jump=>[{...jump,...jumpPoint(jump,jump.runup)},...(jump.paired?[{...jump,...jumpPoint(jump,jump.runup+jump.gap+(jump.landingNose??2.5)),heading:jump.heading+Math.PI}]:[])]);
  drawSharedRoute();
  minimap.setRoute(sharedState?.r??[]);
- minimap.setDesert({...ground,jumps:[...ground.jumps,...ground.rockRamps],regions:[...ground.regions,...ground.rockFormations.map(f=>({x:f.x,z:f.z,label:msg("main.rocks")}))]});
+ minimap.setDesert({...ground,jumps:jumpMarkers,regions:[...ground.regions,...ground.rockFormations.map(f=>({x:f.x,z:f.z,label:msg("main.rocks")}))]});
 }
 function drawSharedRoute(){
  const route=sharedState?.r;if(!freeRide||!route?.length)return;

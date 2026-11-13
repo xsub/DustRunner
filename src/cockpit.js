@@ -9,9 +9,11 @@ import {batchRigidMeshes} from './mesh-batching.js';
 const DIAL_START=Math.PI*.78,DIAL_SWEEP=Math.PI*1.44;
 export const dialAngle=(value,max)=>DIAL_START+DIAL_SWEEP*Math.max(0,Math.min(1,value/max));
 export const STEERING_RATIO=7.5;
+// The mirror stalk starts this far above the mirror's centre, inside its housing.
+export const STALK_FOOT=.02;
 // Canvas layout in pixels. Each region has the same aspect as the plane it is
 // mapped onto, so circles drawn here stay round on the dash.
-export const GAUGE_CANVAS={width:1024,height:256,binnacle:768,speedMax:240};
+export const GAUGE_CANVAS={width:1024,height:256,binnacle:768,speedMax:280};
 
 function drawDial(ctx,x,y,radius,{value,max,major,minor,label,unit,redFrom=Infinity,format=v=>v}){
  ctx.save();ctx.translate(x,y);
@@ -61,8 +63,8 @@ export function createCockpit({halfFloat=false}={}){
  const region=(geometry,u0,u1)=>{const uv=geometry.attributes.uv;for(let i=0;i<uv.count;i++)uv.setX(i,u0+(u1-u0)*uv.getX(i));return geometry;};
  const split=GAUGE_CANVAS.binnacle/GAUGE_CANVAS.width;
  const binnacle=new THREE.Group();binnacle.rotation.x=GAUGE_FACE.tilt;rig.add(binnacle);
- add(new THREE.BoxGeometry(.3,.115,.09),black,binnacle,0,-.006,-.05);
- const brow=add(new THREE.BoxGeometry(.315,.014,.12),black,binnacle,0,.056,-.012);brow.castShadow=true;
+ add(new THREE.BoxGeometry(GAUGE_FACE.width+.036,GAUGE_FACE.height+.027,.09),black,binnacle,0,-.006,-.05);
+ const brow=add(new THREE.BoxGeometry(GAUGE_FACE.width+.051,.014,.12),black,binnacle,0,GAUGE_FACE.height/2+.012,-.012);brow.castShadow=true;
  add(region(new THREE.PlaneGeometry(GAUGE_FACE.width,GAUGE_FACE.height),0,split),gaugeMaterial,binnacle);
  const pod=new THREE.Group();pod.rotation.set(-.3,-.62,0,'YXZ');rig.add(pod);
  add(new THREE.BoxGeometry(.135,.135,.06),black,pod,0,0,-.034);
@@ -73,10 +75,11 @@ export function createCockpit({halfFloat=false}={}){
  const target=new THREE.WebGLRenderTarget(512,144,halfFloat?{depthBuffer:true,type:THREE.HalfFloatType}:{depthBuffer:true,colorSpace:THREE.SRGBColorSpace});
  const mirror=new THREE.Group();mirror.rotation.set(-.05,MIRROR.yaw,0,'YXZ');rig.add(mirror);
  add(new THREE.BoxGeometry(MIRROR.width+.012,MIRROR.height+.011,.02),black,mirror,0,0,-.012);
- const stalk=add(new THREE.CylinderGeometry(.007,.007,.074,8),black,mirror,0,.065,-.012);
+ // Unit-height stalk: attach() stretches it from inside the housing to the layout's length.
+ const stalk=add(new THREE.CylinderGeometry(.007,.007,1,8),black,mirror,0,.06,-.012);
  const glass=add(region(new THREE.PlaneGeometry(MIRROR.width,MIRROR.height),1,0),new THREE.MeshBasicMaterial({map:target.texture}),mirror);
  const mirrorCamera=new THREE.PerspectiveCamera(20,512/144,.5,2400),back=new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),Math.PI);
- const mirrorStats={calls:0,triangles:0};
+ const mirrorStats={calls:0,triangles:0,every:2};
  let attached=null,seated=false,open=false,lastPaint=-Infinity,painted='',frame=0;
  const showFurniture=()=>{binnacle.visible=pod.visible=mirror.visible=seated;gloves.visible=seated&&!open;};
  showFurniture();
@@ -107,9 +110,9 @@ export function createCockpit({halfFloat=false}={}){
    car.mesh.add(rig);attached=car;open=Boolean(car.cabin?.open);painted='';
    column.position.set(layout.column.x,layout.column.y,layout.column.z);binnacle.position.set(layout.binnacle.x,layout.binnacle.y,layout.binnacle.z);
    pod.position.set(layout.pod.x,layout.pod.y,layout.pod.z);mirror.position.set(layout.mirror.x,layout.mirror.y,layout.mirror.z);
-   // Open trucks have no headliner to hang from, and already seat a suited
-   // driver whose own gloves hold the wheel.
-   stalk.visible=layout.stalk>0;showFurniture();
+   stalk.scale.y=layout.stalk;stalk.position.y=STALK_FOOT+layout.stalk/2;
+   // Open trucks already seat a suited driver whose own gloves hold the wheel.
+   showFurniture();
   },
   // Call before disposing the truck's own meshes: the rig outlives every body swap.
   detach(){rig.removeFromParent();attached=null;},
@@ -132,6 +135,7 @@ export function createCockpit({halfFloat=false}={}){
   },
   // Call before the main pass: reuses the previous frame's shadow maps.
   renderMirror(renderer,scene,every=2){
+   mirrorStats.every=every;
    if(!seated||!attached||frame++%every)return false;
    glass.getWorldPosition(mirrorCamera.position);attached.mesh.getWorldQuaternion(mirrorCamera.quaternion).multiply(back);mirrorCamera.updateMatrixWorld();
    const previous=renderer.getRenderTarget(),auto=renderer.shadowMap.autoUpdate;

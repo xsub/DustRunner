@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {VIEW_MODES,DEFAULT_VIEW,normalizeView,nextView,isPerspective,eyePoint,HeadLook,LOOK_LIMITS,povFov,headSpringStep,horizonStabilization,chaseStep,showcaseOrbit,viewWedge,cockpitLayout,WHEEL,GAUGE_FACE,MIRROR,markerView,MARKER_NEAR,MARKER_FAR} from '../src/pov-view.js';
+import {VIEW_MODES,DEFAULT_VIEW,normalizeView,nextView,isPerspective,eyePoint,HeadLook,LOOK_LIMITS,povFov,COCKPIT_FOV_FLOOR,headSpringStep,horizonStabilization,chaseStep,showcaseOrbit,viewWedge,cockpitLayout,WHEEL,GAUGE_FACE,MIRROR,markerView,MARKER_NEAR,MARKER_FAR} from '../src/pov-view.js';
 import {BRONCO_STYLES,cabinEnvelope} from '../src/vehicle.js';
 import {TIME_PRESETS} from '../src/time-of-day.js';
 import en from '../src/locales/en.js';
@@ -31,9 +31,9 @@ test('the seated eye is on the driver side, under every headliner and behind the
   assert.equal(eye.y,Math.min(2.1,cabin.roofY-.25),style+' eye height');assert.ok(eye.y<=cabin.roofY-.065-.18,style+' head clears the roof underside');
   assert.ok(Math.abs(eye.z-.07*cabin.wheelbase)<1e-9,style+' eye sits over the seat');
   assert.ok(eye.z>(cabin.front-.015)*cabin.wheelbase+.3,style+' eye is well behind the windshield top');
-  assert.ok(eye.pitch<0&&eye.pitch>-.15,style+' looks slightly down the hood');
+  assert.ok(Math.abs(eye.pitch+.085)<.011,style+' looks about five degrees down the hood');
   const hood=eyePoint('hood',cabin);
-  assert.equal(hood.x,0);assert.ok(hood.z<-.51*cabin.wheelbase-.25,style+' bonnet camera is ahead of the windshield base');assert.ok(hood.y>1.9&&hood.y<2.1,style+' bonnet camera height');
+  assert.equal(hood.x,0);assert.ok(hood.z<-.51*cabin.wheelbase-.25,style+' bonnet camera is ahead of the windshield base');assert.ok(hood.y>=2&&hood.y<2.1,style+' bonnet camera height');assert.ok(Math.abs(hood.pitch+.05)<.02,style+' bonnet camera pitch');
  }
 });
 
@@ -53,6 +53,10 @@ test('head look: keys, clamps, zoom direction and return to the road',()=>{
  // The same glance takes the same time at 30 and 120 frames per second.
  const sweep=hz=>{const l=new HeadLook(),k=new Set(['KeyJ']);for(let i=0;i<hz/2;i++)l.step(k,1/hz);return l.yaw;};
  assert.ok(Math.abs(sweep(30)-sweep(120))<1e-9);
+ assert.ok(Math.abs(sweep(60)-1.3)<.03,'a glance turns at about 150 degrees a second');
+ const nod=new HeadLook(),up=new Set(['KeyI']);for(let i=0;i<12;i++)nod.step(up,1/60);assert.ok(Math.abs(nod.pitch-.26)<.02,'and tilts at half that');
+ // The driver can look over a shoulder, but not at the roof or into the footwell.
+ assert.ok(LOOK_LIMITS.yaw>1.9&&LOOK_LIMITS.yaw<2.5);assert.ok(LOOK_LIMITS.up>.3&&LOOK_LIMITS.up<=.6);assert.ok(LOOK_LIMITS.down>.4&&LOOK_LIMITS.down<=.8);
 });
 
 test('a drag keeps its angle while the pointer is down and recentres only after release',()=>{
@@ -75,6 +79,9 @@ test('field of view: fixed horizontal sweep, widens with speed either way, usabl
  assert.ok(Math.abs(povFov(16/9,38)-wide-7)<1e-9&&Math.abs(povFov(16/9,400)-wide-7)<1e-9,'up to seven degrees');
  assert.ok(povFov(16/9,19)>wide&&povFov(16/9,19)<wide+7);
  assert.equal(povFov(9/19.5,0),84,'portrait is capped');assert.equal(povFov(4,0),50,'ultrawide keeps a floor');
+ // The seated view never drops below 60° vertically, so ultrawide screens see what 16:9 sees.
+ assert.equal(COCKPIT_FOV_FLOOR,60);assert.equal(povFov(21/9,0,1,COCKPIT_FOV_FLOOR),60);assert.equal(povFov(32/9,0,1,COCKPIT_FOV_FLOOR),60);
+ assert.equal(povFov(16/9,0,1,COCKPIT_FOV_FLOOR),wide,'16:9 is unchanged by the floor');assert.ok(povFov(21/9,0)<52,'other views keep the 92° horizontal sweep');
  assert.ok(Math.abs(povFov(16/9,0,.62)-wide*.62)<1e-9);
  for(const aspect of [.3,.5,1,1.33,1.78,2.4,4])for(const zoom of [LOOK_LIMITS.zoomIn,1,LOOK_LIMITS.zoomOut]){const fov=povFov(aspect,30,zoom);assert.ok(fov>=28&&fov<=100,`aspect ${aspect} zoom ${zoom}`);}
 });
@@ -93,14 +100,15 @@ test('the head spring moves the way a body would, stays bounded and settles',()=
 });
 
 test('horizon stabilization holds about a fifth of the tilt and fades out in a rollover',()=>{
- assert.ok(Math.abs(horizonStabilization(1)-.22)<1e-9);assert.ok(horizonStabilization(.6)>0&&horizonStabilization(.6)<.22);
+ assert.ok(Math.abs(horizonStabilization(1)-.22)<1e-9);assert.ok(Math.abs(horizonStabilization(.6)-.22*.25/.45)<1e-9,'fades between 35 and 80 percent upright');assert.equal(horizonStabilization(.8),.22);
  assert.equal(horizonStabilization(.3),0);assert.equal(horizonStabilization(-1),0);
 });
 
 test('chase camera trails the heading, looks past the truck and never sinks into a dune',()=>{
  const target={x:10,y:2,z:-5,heading:0,speed:0};
  let state=chaseStep({},target,0,true);
- assert.ok(state.z>target.z+8&&Math.abs(state.x-target.x)<1e-9,'starts directly behind (front is −Z)');assert.ok(state.y>target.y+2);
+ assert.ok(Math.abs(state.z-target.z-9.2)<1e-9&&Math.abs(state.x-target.x)<1e-9,'starts 9.2 m directly behind (front is −Z)');assert.ok(Math.abs(state.y-target.y-3.3)<1e-9,'3.3 m above the truck');
+ assert.ok(Math.abs(state.look.y-target.y-1.5)<1e-9,'aimed at the roof line');
  const beyond=(state.look.x-target.x)*(state.x-target.x)+(state.look.z-target.z)*(state.z-target.z);
  assert.ok(beyond<0,'the look point is on the far side of the truck');
  const turned={...target,heading:Math.PI/2};state=chaseStep(state,turned,1/60);
@@ -133,25 +141,37 @@ test('minimap wedge opens ahead of the driver',()=>{
 test('cabin layout: road, then dials, then the wheel rim, for every roof height and wheelbase',()=>{
  for(const style of Object.keys(BRONCO_STYLES)){
   const cabin=cabinEnvelope(style),layout=cockpitLayout(cabin),{eye}=layout;
+  // Wheel and dials sit straight ahead of the driver, at fixed distances down the cabin.
+  assert.equal(layout.column.x,eye.x,style+': wheel in front of the driver');assert.equal(layout.binnacle.x,eye.x,style+': dials in front of the driver');
+  assert.ok(Math.abs(layout.column.z+.14*cabin.wheelbase)<1e-9&&Math.abs(layout.binnacle.z+.33*cabin.wheelbase)<1e-9,style+': reach');
+  assert.ok(Math.abs(layout.column.y-(eye.y-.291))<1e-9&&Math.abs(layout.binnacle.y-(eye.y-.152))<1e-9&&Math.abs(layout.pod.y-(eye.y-.18))<1e-9,style+': heights follow the eye');
   // Angle below the horizontal, seen from the eye in the truck's vertical mid-plane.
   const below=(y,z)=>Math.atan2(eye.y-y,eye.z-z);
   const rimTop={y:layout.column.y+WHEEL.radius*Math.cos(WHEEL.rake),z:layout.column.z+WHEEL.radius*Math.sin(WHEEL.rake)};
   const tube=Math.atan(WHEEL.tube/Math.hypot(eye.y-rimTop.y,eye.z-rimTop.z));
   const half=GAUGE_FACE.height/2,faceBottom={y:layout.binnacle.y-half*Math.cos(GAUGE_FACE.tilt),z:layout.binnacle.z-half*Math.sin(GAUGE_FACE.tilt)},faceTop={y:layout.binnacle.y+half*Math.cos(GAUGE_FACE.tilt),z:layout.binnacle.z+half*Math.sin(GAUGE_FACE.tilt)};
-  assert.ok(degrees(below(rimTop.y,rimTop.z)-tube-below(faceBottom.y,faceBottom.z))>1.5,style+': the rim clears the bottom of the dial face');
+  assert.ok(degrees(below(rimTop.y,rimTop.z)-tube-below(faceBottom.y,faceBottom.z))>1.2,style+': the rim clears the bottom of the dial face');
+  // At rest at least seven degrees of the wheel show above the bottom edge of a 16:9 screen.
+  assert.ok(povFov(16/9,0,1,COCKPIT_FOV_FLOOR)/2-degrees(eye.pitch)-degrees(below(rimTop.y,rimTop.z)-tube)>7,style+': a good part of the wheel is on screen');
   // The hood's far edge is 16–17° down; the dial face must not rise above it into the road.
   assert.ok(degrees(below(faceTop.y,faceTop.z))>14,style+': dials stay below the road');
   // The rim's top edge is still on screen at rest on a 16:9 display.
-  assert.ok(degrees(below(rimTop.y,rimTop.z))-degrees(tube)<povFov(16/9,0)/2-degrees(eye.pitch),style+': the rim shows at the bottom of the screen');
-  assert.ok(layout.binnacle.y-.075>1.755,style+': the binnacle sits above the dash top');
+  for(const aspect of [16/9,21/9,32/9])assert.ok(degrees(below(rimTop.y,rimTop.z))+degrees(tube)<povFov(aspect,0,1,COCKPIT_FOV_FLOOR)/2-degrees(eye.pitch),style+': the whole rim top shows at the bottom of a '+aspect.toFixed(2)+' screen');
+  assert.ok(layout.binnacle.y-GAUGE_FACE.height/2-.03>1.755,style+': the binnacle sits above the dash top');
   // Inclinometer and mirror are inside a 92° horizontal view.
   const azimuth=p=>degrees(Math.atan2(p.x-eye.x,eye.z-p.z));
   assert.ok(azimuth(layout.pod)>20&&azimuth(layout.pod)<41,style+': inclinometer azimuth '+azimuth(layout.pod).toFixed(1));
   assert.ok(azimuth({x:layout.mirror.x+MIRROR.width/2*Math.cos(MIRROR.yaw),z:layout.mirror.z-MIRROR.width/2*Math.sin(MIRROR.yaw)})<44,style+": the mirror's far edge is in view");
   assert.ok(layout.mirror.z>(cabin.front-.015)*cabin.wheelbase+.04,style+': the mirror is inside the windshield');
-  assert.ok(Math.abs(layout.mirror.y+MIRROR.height/2+layout.stalk-(cabin.roofY-.065))<.04||cabin.open,style+': the stalk reaches the headliner');
-  assert.equal(layout.stalk>0,!cabin.open,style+': open bodies have nothing to hang a stalk from');
+  assert.equal(layout.mirror.x<-.2,cabin.front>-.3,style+': only a raked windshield slides the mirror toward the driver');
+  assert.ok(layout.stalk>=.08&&layout.stalk<=.095,style+': a stalk long enough to reach the roof or roll cage');assert.equal(layout.stalk>.085,cabin.bimini,style+': longer under the thinner bimini slab');
  }
+});
+
+test('cabin proportions: raked wheel, tilted dial face, mirror as wide as its render target',()=>{
+ assert.ok(WHEEL.rake<-.35&&WHEEL.rake>-.45);assert.ok(WHEEL.radius>.14&&WHEEL.radius<.16&&WHEEL.tube<.02);
+ assert.ok(GAUGE_FACE.tilt<-.42&&GAUGE_FACE.tilt>-.5,'the face is tilted up toward the eye');assert.ok(Math.abs(GAUGE_FACE.width/GAUGE_FACE.height-3)<1e-9);
+ assert.ok(Math.abs(MIRROR.width/MIRROR.height-512/144)<.01);assert.ok(MIRROR.yaw<-.3&&MIRROR.yaw>-.5,'turned toward the driver');
 });
 
 test('markers stay simulated around the truck even where the driver cannot see the ground',()=>{
@@ -162,4 +182,6 @@ test('markers stay simulated around the truck even where the driver cannot see t
  assert.equal(seen({x:100,z:-50-MARKER_FAR-1}),false,'in view but too far to matter');
  assert.equal(markerView(player,()=>1)({x:100,z:-50-MARKER_FAR+1}),true,'the frustum test may return a truthy value');
  player.x=500;assert.equal(seen({x:100,z:-47}),false,'the region follows the live player position');
+ // Board-sized surroundings, and a view range that keeps the marker count bounded.
+ assert.ok(MARKER_NEAR>=40&&MARKER_NEAR<=50);assert.ok(MARKER_FAR>=100&&MARKER_FAR<=200);
 });

@@ -22,17 +22,17 @@ The performance benchmark always runs in board view at midday, and records both 
 - The eye rides the display-interpolated chassis pose. Pitch, roll, bumps, and landings come from the 120 Hz suspension model, not from scripted shake.
 - A spring moves the head against acceleration, braking, cornering, and landing loads (`headSpringStep`).
 - The eyes follow about four fifths of the body's pitch and roll, as a real driver's head does. Upside down, the view simply follows the cabin (`horizonStabilization`).
-- Field of view holds roughly 92° horizontally on wide screens and widens by up to 7° at speed (`povFov`).
+- Field of view holds roughly 92° horizontally on wide screens and widens by up to 7° at speed (`povFov`). The seated view never drops below 60° vertically, so ultrawide monitors and phones in landscape still show the dials and the top of the wheel.
 - The player's window glass becomes nearly clear from inside. Rival trucks keep their tint.
 
 ## Cabin furniture
 
-`cockpitLayout` places everything relative to the seated eye, so low-roofed bodies keep the same sight lines: road, then the dials, then the top of the wheel rim.
+`cockpitLayout` places everything relative to the seated eye, so low-roofed bodies keep the same sight lines: road, then the dials, then the top of the wheel rim. About a quarter of the rim and the driver's gloves are on screen at rest.
 
 - **Steering wheel and column:** part of the player's truck in every view. The wheel follows the steering rack.
-- **Dials:** speedometer to 240 km/h and tachometer with the engine's own redline, plus gear, drive range, and nitro.
+- **Dials:** speedometer to 280 km/h (above the fastest engine with every upgrade, high range, and nitro) and tachometer with the engine's own redline, plus gear, drive range, and nitro.
 - **Inclinometer:** the body's own roll and pitch, so it also reads in the air and on its side. The compass bearing is beside it.
-- **Mirror:** a 512×144 second render of the world, hung behind the top of the windshield.
+- **Mirror:** a 512×144 second render of the world, hung behind the top of the windshield. Its stalk reaches the roof, or the roll-cage header on open bodies.
 
 ## World beyond the playground
 
@@ -40,7 +40,7 @@ The performance benchmark always runs in board view at midday, and records both 
 
 - **Sky:** one shader dome with a zenith-to-horizon gradient, sun disc and glow, drifting clouds, and stars. Its horizon band is the scene's fog color, blended after tone mapping the same way fog is applied to the land, so the two meet without a seam.
 - **Far land:** a single non-uniform grid, 24 m cells beside the playable edge and kilometers wide at the rim. Along the seam it hangs just below the lowest real terrain between neighbouring grid lines, so it can never rise through the real edge. Beyond that it rolls into dunes and distant ranges.
-- **Buttes:** 22 instanced sandstone mesas placed around the compass from a per-track seed. Each stands on the lowest ground under its whole footprint, and sites that would bury too much of it are re-rolled.
+- **Buttes:** 22 instanced sandstone mesas placed around the compass from a per-track seed. Each stands on the exact lowest point of the far land under its whole footprint, and sites that would bury too much of it are re-rolled.
 
 Fog switches from the board's short linear fog to exponential haze. Circuits now have a solid outer edge where the collidable dunes end, as the desert always had.
 
@@ -59,7 +59,8 @@ Cones and tire stacks only simulate while they count as seen. In the driver's vi
 
 ## Performance
 
-- The mirror renders every other frame, reuses the frame's shadow maps, and drops to every fourth frame when the adaptive resolution is under load. Its shader variants are compiled when a world loads in cockpit view, not on the first driven frame.
+- The mirror renders every other frame, reuses the frame's shadow maps, and drops to every fourth frame when the adaptive resolution is under load. The stats overlay adds the mirror pass to its draw-call and triangle figures in cockpit view.
+- Shader variants for the mirror and for the night light set are compiled when a world loads, not on the first driven frame or the first switch to night.
 - Scenery animation uses a 280 m view frustum rather than the full horizon.
 - The headlight exists only at night, so daytime shaders carry no spot light.
 

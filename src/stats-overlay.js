@@ -12,7 +12,7 @@ export function createStatsOverlay({game,toggle,getDiagnostics,onInteract}){
  function place(){
   if(panel.hidden)return;
   const maxX=Math.max(0,game.clientWidth-panel.offsetWidth),maxY=Math.max(0,game.clientHeight-panel.offsetHeight);
-  panel.style.right='auto';panel.style.left=Math.round(position?position.x*maxX:Math.max(0,maxX-(game.clientWidth<=720?12:18)))+'px';panel.style.top=Math.round(position?position.y*maxY:Math.min(maxY,game.clientWidth<=720?57:64))+'px';
+  panel.style.right='auto';panel.style.left=Math.round(position?position.x*maxX:Math.max(0,maxX-(game.clientWidth<=720?12:18)))+'px';panel.style.top=Math.round(position?position.y*maxY:Math.min(maxY,game.clientWidth<=720?86:64))+'px';
  }
  function updateVisibility(){panel.hidden=!visible;panel.classList.toggle('stats-collapsed',collapsed);$('#stats-details').hidden=collapsed;$('#stats-collapse').textContent=collapsed?'+':'−';$('#stats-collapse').setAttribute('aria-label',collapsed?msg("stats_overlay.expand_statistics"):msg("stats_overlay.collapse_statistics"));$('#stats-collapse').setAttribute('aria-expanded',String(!collapsed));toggle.checked=visible;place();}
  $('#stats-collapse').onclick=()=>{collapsed=!collapsed;updateVisibility();persist();onInteract();};

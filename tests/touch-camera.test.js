@@ -25,3 +25,17 @@ test('disabled gestures reject new touches and release captures during menu or b
  const t=setup();t.fire('pointerdown',1);t.disable();t.fire('pointermove',1,200,300);
  assert.equal(t.orbit.manual,false);assert.equal(t.captured.size,0);t.fire('pointerdown',2);assert.equal(t.captured.size,0);
 });
+test('the binding reports how many pointers are down, once per change and on every exit path',()=>{
+ const listeners={},captured=new Set(),counts=[];let enabled=true;
+ const canvas={addEventListener:(name,handler)=>listeners[name]=handler,setPointerCapture:id=>captured.add(id),releasePointerCapture:id=>captured.delete(id),hasPointerCapture:id=>captured.has(id),getBoundingClientRect:()=>({width:400,height:800})};
+ const controls=bindTouchCamera(canvas,{orbit:new CameraOrbit(),enabled:()=>enabled,onPointers:count=>counts.push(count)}),fire=(name,id,x=100,y=100)=>listeners[name]({pointerId:id,clientX:x,clientY:y,preventDefault(){}});
+ fire('pointerdown',1);assert.deepEqual(counts,[1]);fire('pointermove',1,150,150);assert.deepEqual(counts,[1],'moving reports nothing');
+ fire('pointerdown',2,200,100);assert.deepEqual(counts,[1,2]);
+ // A release arrives as pointerup followed by lostpointercapture: one report, not two.
+ fire('pointerup',2);fire('lostpointercapture',2);assert.deepEqual(counts,[1,2,1]);
+ fire('pointercancel',1);assert.deepEqual(counts,[1,2,1,0]);
+ fire('pointerdown',3);controls.clear();assert.deepEqual(counts,[1,2,1,0,1,0],'clear() releases the hold');
+ // A menu opens mid-drag: the next move sees the gesture disabled and lets go.
+ fire('pointerdown',4);enabled=false;fire('pointermove',4,300,300);assert.equal(counts.at(-1),0);
+ enabled=false;fire('pointerdown',5);assert.equal(counts.at(-1),0,'a rejected touch is never counted');
+});

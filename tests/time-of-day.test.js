@@ -18,6 +18,7 @@ test('midday reproduces the original board lighting exactly',()=>{
 });
 
 test('every preset is complete, cycles both ways and keeps the sun above the horizon',()=>{
+ assert.equal(DEFAULT_TIME,'golden','the driver\'s views open at golden hour');assert.ok(SHADOW_MIN_ELEVATION>=10&&SHADOW_MIN_ELEVATION<=20,'shadows stay readable at dusk');
  assert.equal(timePreset('unknown').id,DEFAULT_TIME);assert.equal(timePreset(undefined).id,DEFAULT_TIME);
  let id=DEFAULT_TIME;const seen=new Set();for(let i=0;i<TIME_PRESETS.length;i++){seen.add(id);id=nextTime(id);}
  assert.equal(seen.size,TIME_PRESETS.length);assert.equal(id,DEFAULT_TIME);

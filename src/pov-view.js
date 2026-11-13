@@ -21,7 +21,7 @@ export function eyePoint(view,cabin={}){
 // Cabin furniture, placed relative to the seated eye so every roof height keeps
 // the same sight lines: road, then dials, then the top of the wheel rim.
 export const WHEEL={radius:.15,tube:.0135,rake:-.4};
-export const GAUGE_FACE={width:.264,height:.088,tilt:-.46};
+export const GAUGE_FACE={width:.222,height:.074,tilt:-.46};
 export const MIRROR={width:.16,height:.045,yaw:-.42};
 export function cockpitLayout(cabin={}){
  const eye=eyePoint('cockpit',cabin),wheelbase=cabin.wheelbase??1,roofY=cabin.roofY??2.36,front=cabin.front??-.35;
@@ -29,12 +29,13 @@ export function cockpitLayout(cabin={}){
  const reach=MIRROR.width/2,mirrorZ=(front+.05)*wheelbase,mirrorX=Math.min(-.2,eye.x+.9*(eye.z-mirrorZ+reach*Math.sin(MIRROR.yaw))-reach*Math.cos(MIRROR.yaw));
  return {
   eye,
-  column:{x:eye.x,y:eye.y-.31,z:-.14*wheelbase},
-  binnacle:{x:eye.x,y:eye.y-.16,z:-.33*wheelbase},
-  pod:{x:-.1,y:eye.y-.22,z:-.34*wheelbase},
-  // Just behind the windshield's top edge; the stalk reaches the headliner.
+  column:{x:eye.x,y:eye.y-.291,z:-.14*wheelbase},
+  binnacle:{x:eye.x,y:eye.y-.152,z:-.33*wheelbase},
+  pod:{x:-.1,y:eye.y-.18,z:-.34*wheelbase},
+  // Just behind the windshield's top edge. The stalk runs from inside the housing up
+  // into the roof slab (thinner on bimini tops) or, on open bodies, the roll-cage header.
   mirror:{x:mirrorX,y:roofY-.165,z:mirrorZ},
-  stalk:cabin.open?0:.07,
+  stalk:cabin.bimini?.089:.084,
  };
 }
 
@@ -72,9 +73,12 @@ export class HeadLook{
 
 // Vertical field of view: a steady ~92° horizontal sweep on wide screens,
 // widening slightly with speed. Portrait phones keep a usable vertical range.
-export function povFov(aspect,speed=0,zoom=1){
+// `floor` is the least vertical angle: the seated view needs 60° so the wheel rim
+// and the dials stay on screen on ultrawide monitors and phones in landscape.
+export const COCKPIT_FOV_FLOOR=60;
+export function povFov(aspect,speed=0,zoom=1,floor=50){
  const horizontal=92*Math.PI/180,vertical=2*Math.atan(Math.tan(horizontal/2)/Math.max(.3,aspect))*180/Math.PI;
- return clamp((clamp(vertical,50,84)+7*clamp(Math.abs(speed)/38,0,1))*zoom,28,100);
+ return clamp((clamp(vertical,floor,84)+7*clamp(Math.abs(speed)/38,0,1))*zoom,28,100);
 }
 
 // The driver's head lags behind hard acceleration, braking and landings.

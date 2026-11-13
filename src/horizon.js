@@ -82,18 +82,37 @@ export function buildFarLand(bounds,heightAt,cell=FAR_CELL){
   const h00=heights[j*nx+i],h10=heights[j*nx+i+1],h01=heights[(j+1)*nx+i],h11=heights[(j+1)*nx+i+1];
   return u+v<=1?h00+u*(h10-h00)+v*(h01-h00):h11+(1-u)*(h01-h11)+(1-v)*(h10-h11);
  };
- // Lowest far-land vertex within `radius` of a point (the surface is piecewise linear).
- const lowestVertexWithin=(x,z,radius)=>{
-  let low=Infinity;
-  for(let j=cellIndex(zs,z-radius);j<=Math.min(zs.length-1,cellIndex(zs,z+radius)+1);j++)for(let i=cellIndex(xs,x-radius);i<=Math.min(nx-1,cellIndex(xs,x+radius)+1);i++)
-   if(Math.hypot(xs[i]-x,zs[j]-z)<=radius)low=Math.min(low,heights[j*nx+i]);
+ // Exact lowest point of the rendered surface under an ellipse (radii rx, rz, turned by yaw).
+ // The surface is piecewise linear, so the minimum is at a grid vertex inside the ellipse,
+ // where the outline crosses a cell side or diagonal, or where a triangle's plane is
+ // lowest on the outline.
+ const lowestUnder=(x,z,rx,rz,yaw=0)=>{
+  const r=Math.max(rx,rz),cos=Math.cos(yaw),sin=Math.sin(yaw);let low=Infinity;
+  const unit=(i,j)=>{const dx=xs[i]-x,dz=zs[j]-z;return [(dx*cos-dz*sin)/rx,(dx*sin+dz*cos)/rz,heights[j*nx+i]];};
+  const edge=(a,b)=>{
+   const ex=b[0]-a[0],ez=b[1]-a[1],qa=ex*ex+ez*ez,qb=2*(a[0]*ex+a[1]*ez),disc=qb*qb-4*qa*(a[0]*a[0]+a[1]*a[1]-1);if(disc<0||qa<1e-18)return;
+   const root=Math.sqrt(disc);for(const t of [(-qb-root)/(2*qa),(-qb+root)/(2*qa)])if(t>=0&&t<=1)low=Math.min(low,a[2]+t*(b[2]-a[2]));
+  };
+  const triangle=(a,b,c)=>{
+   const det=(b[0]-a[0])*(c[1]-a[1])-(c[0]-a[0])*(b[1]-a[1]);if(Math.abs(det)<1e-18)return;
+   const gu=((b[2]-a[2])*(c[1]-a[1])-(c[2]-a[2])*(b[1]-a[1]))/det,gv=((b[0]-a[0])*(c[2]-a[2])-(c[0]-a[0])*(b[2]-a[2]))/det,g=Math.hypot(gu,gv);if(g<1e-12)return;
+   const pu=-gu/g,pv=-gv/g,u=((pu-a[0])*(c[1]-a[1])-(c[0]-a[0])*(pv-a[1]))/det,v=((b[0]-a[0])*(pv-a[1])-(pu-a[0])*(b[1]-a[1]))/det;
+   if(u>=0&&v>=0&&u+v<=1)low=Math.min(low,a[2]+gu*(pu-a[0])+gv*(pv-a[1]));
+  };
+  for(let j=cellIndex(zs,z-r);j<=cellIndex(zs,z+r);j++)for(let i=cellIndex(xs,x-r);i<=cellIndex(xs,x+r);i++){
+   const p00=unit(i,j),p10=unit(i+1,j),p01=unit(i,j+1),p11=unit(i+1,j+1);
+   for(const p of [p00,p10,p01,p11])if(p[0]*p[0]+p[1]*p[1]<=1)low=Math.min(low,p[2]);
+   edge(p00,p10);edge(p00,p01);edge(p10,p01);edge(p10,p11);edge(p01,p11);triangle(p00,p10,p01);triangle(p11,p01,p10);
+  }
   return low;
  };
- return {geometry,heightAt:sample,lowestVertexWithin,xs,zs};
+ return {geometry,heightAt:sample,lowestUnder,xs,zs};
 }
 
 // Unit butte: base radius up to BUTTE_FOOT (talus plus weathering), height 1.
-export const BUTTE_FOOT=1.34,BUTTE_COUNT=22;
+export const BUTTE_FOOT=1.34,BUTTE_COUNT=22,BUTTE_MARGIN=60;
+// Scale that keeps a butte's talus BUTTE_MARGIN meters outside the playable rectangle.
+export const butteFit=(width,depth,outside)=>Math.min(1,Math.max(0,outside-BUTTE_MARGIN)/(BUTTE_FOOT*Math.max(width,depth)));
 // Sandstone buttes spread around the compass, 0.6–3.4 km beyond the edge. Each
 // one stands on the lowest ground under its whole footprint, and sites where
 // that would bury too much of it are re-rolled, so none hovers or drowns.
@@ -108,13 +127,8 @@ export function placeButtes(bounds,far,seed=1,count=BUTTE_COUNT){
    const x=centerX+Math.sin(angle)*reach,z=centerZ+Math.cos(angle)*reach,height=110+random()*230+outside*.035,yaw=random()*Math.PI*2;
    let depth=(130+random()*250)*(.6+outside/2600),width=depth*(.75+random()*.6);
    // Never let the talus reach into the playable rectangle.
-   const fit=Math.min(1,(outside-60)/(BUTTE_FOOT*Math.max(width,depth)));width*=fit;depth*=fit;
-   const cos=Math.cos(yaw),sin=Math.sin(yaw);let low=far.lowestVertexWithin(x,z,BUTTE_FOOT*Math.max(width,depth));
-   for(const ring of [.5,1])for(let k=0;k<32;k++){
-    const a=k/32*Math.PI*2,lx=Math.cos(a)*BUTTE_FOOT*ring*width,lz=Math.sin(a)*BUTTE_FOOT*ring*depth;
-    low=Math.min(low,far.heightAt(x+lx*cos+lz*sin,z-lx*sin+lz*cos));
-   }
-   const center=far.heightAt(x,z),buried=(center-low)/height,site={x,y:Math.min(low,center)-2,z,yaw,width,height,depth,buried};
+   const fit=butteFit(width,depth,outside);width*=fit;depth*=fit;
+   const center=far.heightAt(x,z),low=Math.min(center,far.lowestUnder(x,z,BUTTE_FOOT*width,BUTTE_FOOT*depth,yaw)),buried=(center-low)/height,site={x,y:low-2,z,yaw,width,height,depth,buried};
    if(!best||buried<best.buried)best=site;
    if(buried<.16)break;
   }

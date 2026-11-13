@@ -259,3 +259,10 @@
 @media(orientation:portrait){#game.mobile-layout:not(.prestart) #view-toast{top:calc(var(--edge-top) + 188px)}}
 @media(orientation:portrait) and (max-width:359px){#game.mobile-layout.prestart .game-tools #view-toggle,#game.mobile-layout.prestart .game-tools #time-toggle{position:absolute;top:52px;width:44px;min-width:44px;height:44px;padding:0}#game.mobile-layout.prestart .game-tools #view-toggle{right:0}#game.mobile-layout.prestart .game-tools #time-toggle{right:48px}}
 @media(max-width:720px) and (max-height:450px){#game:not(.mobile-layout) .minimap{top:86px}}
+/* Short portrait phones: the lowered toast would sit on the countdown, so it goes just under it.
+   Very narrow phones before the start: below the second-row buttons. */
+@media(orientation:portrait) and (max-height:561px){#game.mobile-layout:not(.prestart) #view-toast{top:calc(45% + 40px)}}
+@media(orientation:portrait) and (max-width:359px){#game.mobile-layout.prestart #view-toast{top:calc(var(--edge-top) + 112px)}}
+/* Narrow desktop windows: the collapsed stats pill now starts below the second-row buttons,
+   so the minimap steps down under it instead of being covered. */
+@media(max-width:720px){#game:not(.mobile-layout):has(#performance-stats.stats-collapsed:not([hidden])) .minimap{top:124px}}

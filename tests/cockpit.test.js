@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import {createCockpit,dialAngle,GAUGE_CANVAS,STEERING_RATIO,STALK_FOOT} from '../src/cockpit.js';
+import {createCockpit,dialAngle,GAUGE_CANVAS,READOUT,GLOVE,STEERING_RATIO,STALK_FOOT} from '../src/cockpit.js';
 import {createBronco,BRONCO_STYLES,cabinEnvelope} from '../src/vehicle.js';
 import {eyePoint,povFov,cockpitLayout,COCKPIT_FOV_FLOOR,GAUGE_FACE,MIRROR,WHEEL} from '../src/pov-view.js';
 import {DRIVE_MODES} from '../src/drive-modes.js';
@@ -36,24 +36,33 @@ test('dials are drawn round and the speedometer covers every reachable speed',()
  assert.equal(dialAngle(-5,100),dialAngle(0,100));assert.equal(dialAngle(500,100),dialAngle(100,100));
 });
 
-test('from the seated eye the steering wheel never hides the readouts, on any body',()=>withDocument(()=>{
- const raycaster=new THREE.Raycaster(),direction=new THREE.Vector3(),point=new THREE.Vector3();
+test('from the seated eye neither the wheel nor a glove hides a readout, at any steering angle, on any body',()=>withDocument(()=>{
+ const raycaster=new THREE.Raycaster(),direction=new THREE.Vector3(),point=new THREE.Vector3(),eyeWorld=new THREE.Vector3();
  // Readout boxes on the gauge canvas, in pixels: speed digits, gear, range and nitro, both needle hubs.
- const boxes={speed:[150,184,234,222],gear:[534,184,618,222],range:[344,188,424,248],speedHub:[180,116,204,140],revHub:[564,116,588,140]};
+ const boxes={speed:[150,184,234,222],gear:[534,184,618,222],range:[READOUT.x,READOUT.y,READOUT.x+READOUT.width,READOUT.y+READOUT.height],speedHub:[180,116,204,140],revHub:[564,116,588,140]};
+ const lock=DEFAULT_TUNING.steerLow*STEERING_RATIO;assert.ok(lock>3,'the wheel turns more than half a turn each way');
  for(const style of ENVELOPES){
-  const {cockpit,eyeWorld}=seated(style),face=cockpit.parts.binnacle.children.find(mesh=>mesh.geometry.type==='PlaneGeometry'),occluders=[];
-  cockpit.parts.column.traverse(object=>{if(object.isMesh&&object.visible)occluders.push(object);});
-  assert.ok(face&&occluders.length>5,style);
-  for(const [name,[x0,y0,x1,y1]] of Object.entries(boxes)){
-   let hidden=0,total=0;
-   for(let px=x0;px<=x1;px+=6)for(let py=y0;py<=y1;py+=6){
-    point.set((px/GAUGE_CANVAS.binnacle-.5)*GAUGE_FACE.width,(.5-py/GAUGE_CANVAS.height)*GAUGE_FACE.height,0).applyMatrix4(face.matrixWorld);
-    const reach=point.distanceTo(eyeWorld);raycaster.set(eyeWorld,direction.copy(point).sub(eyeWorld).normalize());raycaster.far=reach-.002;
-    total++;if(raycaster.intersectObjects(occluders,false).length)hidden++;
+  const {car,cockpit,eye}=seated(style),{parts}=cockpit,face=parts.binnacle.children.find(mesh=>mesh.geometry.type==='PlaneGeometry');
+  parts.gloves.visible=true; // closed bodies show them; test the worst case on open bodies too
+  // The eye at rest, and dipped three centimeters by the head spring on a firm landing.
+  for(const dip of [0,-.03])for(let turn=-lock;turn<=lock+1e-9;turn+=.1){
+   cockpit.update(0,turn/STEERING_RATIO,()=>({}));car.mesh.updateMatrixWorld(true);
+   eyeWorld.set(eye.x,eye.y+dip,eye.z).applyMatrix4(car.mesh.matrixWorld);
+   const occluders=[];parts.column.traverse(object=>{if(object.isMesh)occluders.push(object);});
+   assert.ok(face&&occluders.length>5,style);
+   for(const [name,[x0,y0,x1,y1]] of Object.entries(boxes)){
+    let hidden=0,total=0;
+    for(let px=x0;px<=x1;px+=8)for(let py=y0;py<=y1;py+=8){
+     point.set((px/GAUGE_CANVAS.binnacle-.5)*GAUGE_FACE.width,(.5-py/GAUGE_CANVAS.height)*GAUGE_FACE.height,0).applyMatrix4(face.matrixWorld);
+     const reach=point.distanceTo(eyeWorld);raycaster.set(eyeWorld,direction.copy(point).sub(eyeWorld).normalize());raycaster.far=reach-.002;
+     total++;if(raycaster.intersectObjects(occluders,false).length)hidden++;
+    }
+    assert.equal(hidden,0,`${style}, wheel turned ${turn.toFixed(1)} rad, eye ${dip}: ${hidden}/${total} samples of the ${name} readout are hidden`);
    }
-   assert.equal(hidden,0,`${style}: ${hidden}/${total} samples of the ${name} readout are behind the wheel`);
   }
  }
+ // The range and nitro box sits in the gap between the two dial circles.
+ for(const y of [READOUT.y,READOUT.y+READOUT.height])for(const [centre,x] of [[192,READOUT.x],[576,READOUT.x+READOUT.width]])assert.ok(Math.hypot(x-centre,y-128)>112+4,'clear of the dial at '+centre);
 }));
 
 test('mirror and inclinometer are in a 16:9 view, and the mirror hangs inside the cabin',()=>withDocument(()=>{
@@ -74,6 +83,8 @@ test('mirror and inclinometer are in a 16:9 view, and the mirror hangs inside th
    // The wheel hub is straight ahead of the driver and the top of the rim is on screen.
    const hub=project(cockpit.parts.column,0,0),rim=project(cockpit.parts.column,0,WHEEL.radius+WHEEL.tube),rimLower=project(cockpit.parts.column,0,WHEEL.radius-WHEEL.tube);
    assert.ok(Math.abs(hub.x)<.02,`${label}: hub at x ${hub.x.toFixed(3)}`);assert.ok(rim.y>-1&&rimLower.y>-1,`${label}: rim top at y ${rimLower.y.toFixed(2)}`);
+   // The tops of both gloves show at rest (hands at eleven and one).
+   for(const side of [-1,1]){const angle=Math.PI/2+side*GLOVE.angle,top=project(cockpit.parts.column,Math.cos(angle)*(WHEEL.radius+.015),Math.sin(angle)*(WHEEL.radius+.015));assert.ok(Math.abs(top.x)<1&&top.y>-1,`${label}: glove top at ${top.x.toFixed(2)}, ${top.y.toFixed(2)}`);}
   }
   // Windshield plane from its bottom edge to its top edge, in the truck's own units.
   const bottom={y:1.65,z:-.51*cabin.wheelbase},top={y:cabin.roofY-.1,z:(cabin.front-.015)*cabin.wheelbase},inverse=car.mesh.matrixWorld.clone().invert();
@@ -93,10 +104,13 @@ test('the mirror stalk reaches the roof, or the roll cage on open bodies',()=>wi
   const {car,cockpit}=seated(style),{stalk,mirror}=cockpit.parts,length=cockpitLayout(car.cabin).stalk,solids=[];
   assert.equal(stalk.visible,true,style);assert.ok(Math.abs(stalk.scale.y-length)<1e-9,style+': the mesh uses the layout length');
   car.chassis.traverse(object=>{if(object.isMesh&&!object.material.transparent)solids.push(object);});
-  // From the stalk's lower end, along the stalk, to the first opaque part of the truck above it.
-  foot.set(0,STALK_FOOT,stalk.position.z).applyMatrix4(mirror.matrixWorld);up.set(0,1,0).transformDirection(mirror.matrixWorld);
+  // The drawn stalk starts inside the mirror housing...
+  const housing=mirror.children.find(mesh=>mesh.geometry.type==='BoxGeometry'),{width,height,depth}=housing.geometry.parameters,bottom=stalk.position.y-stalk.scale.y/2;
+  assert.ok(Math.abs(stalk.position.x)<=width/2&&Math.abs(bottom-STALK_FOOT)<1e-9&&bottom<height/2&&bottom>-height/2&&Math.abs(stalk.position.z-housing.position.z)<=depth/2,style+': stalk foot is inside the housing');
+  // ...and from its own lower end, along its own axis, the first opaque part of the truck is at or below its own top.
+  foot.set(0,-.5,0).applyMatrix4(stalk.matrixWorld);up.set(0,.5,0).applyMatrix4(stalk.matrixWorld);const reach=foot.distanceTo(up);up.sub(foot).normalize();
   raycaster.set(foot,up);raycaster.far=1;
-  const hit=raycaster.intersectObjects(solids,false)[0],reach=length*car.mesh.scale.x;
+  const hit=raycaster.intersectObjects(solids,false)[0];assert.ok(Math.abs(reach-length*car.mesh.scale.x)<1e-9,style+': drawn length');
   assert.ok(hit,style+': something to hang from');assert.ok(hit.distance<=reach+.0015,`${style}: stalk stops ${(hit.distance-reach).toFixed(4)} m short of the roof`);
   assert.ok(reach-hit.distance<.06,`${style}: stalk does not poke far through: ${(reach-hit.distance).toFixed(3)} m`);
  }
@@ -108,6 +122,8 @@ test('the player truck keeps its steering wheel in every view; only the seat sho
   cockpit.attach(car);
   assert.equal(cockpit.visible,false);assert.equal(cockpit.rig.visible,true,'wheel and column are part of the truck');assert.equal(cockpit.rig.parent,car.mesh);
   assert.equal(parts.column.visible,true);assert.deepEqual([parts.binnacle.visible,parts.pod.visible,parts.mirror.visible,parts.gloves.visible],[false,false,false,false]);
+  // The rig applies the proportions the layout promises: raked wheel, face tilted up, mirror turned to the driver.
+  assert.equal(parts.column.rotation.x,WHEEL.rake);assert.equal(parts.binnacle.rotation.x,GAUGE_FACE.tilt);assert.equal(parts.mirror.rotation.y,MIRROR.yaw);
   cockpit.setVisible(true);assert.equal(cockpit.visible,true);
   assert.deepEqual([parts.binnacle.visible,parts.pod.visible,parts.mirror.visible],[true,true,true]);assert.equal(parts.gloves.visible,!open,'open bodies seat a driver with their own gloves');
   cockpit.setVisible(false);assert.deepEqual([parts.binnacle.visible,parts.gloves.visible,cockpit.rig.visible],[false,false,true]);
@@ -155,6 +171,9 @@ test('what is painted: round dials in their own regions, the right scale, roll t
  for(const arc of of('arc'))assert.ok(arc[3]<=118,'every circle fits its 256 px tall region');
  assert.ok(texts.includes(String(GAUGE_CANVAS.speedMax))&&texts.includes('40')&&!texts.includes('20'),'speed ticks are numbered every 40 up to the maximum');
  assert.ok(texts.includes('88')&&texts.includes('A3')&&texts.includes('HI')&&texts.includes('NE 45°')&&texts.includes('km/h'));
+ const rangeLabel=of('fillText').find(call=>call[1]==='HI'),nitro=of('strokeRect')[0];
+ assert.ok(rangeLabel[2]>READOUT.x&&rangeLabel[2]<READOUT.x+READOUT.width&&rangeLabel[3]>READOUT.y&&rangeLabel[3]<READOUT.y+READOUT.height,'range label inside its box');
+ assert.ok(nitro[1]>=READOUT.x&&nitro[1]+nitro[3]<=READOUT.x+READOUT.width&&nitro[2]>=READOUT.y&&nitro[2]+nitro[4]<=READOUT.y+READOUT.height,'nitro bar inside its box');
  assert.ok(texts.includes('+10°  ·  -4°'),'roll then pitch, as labelled');
  // The silhouette leans the way the body rolls: a positive roll turns the canvas counter-clockwise.
  assert.ok(of('rotate').some(call=>Math.abs(call[1]+10*Math.PI/180)<1e-12));

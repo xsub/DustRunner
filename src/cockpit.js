@@ -9,11 +9,15 @@ import {batchRigidMeshes} from './mesh-batching.js';
 const DIAL_START=Math.PI*.78,DIAL_SWEEP=Math.PI*1.44;
 export const dialAngle=(value,max)=>DIAL_START+DIAL_SWEEP*Math.max(0,Math.min(1,value/max));
 export const STEERING_RATIO=7.5;
+// Glove spheres: angle from the top of the rim, radius, and how far they are squashed toward the rim.
+export const GLOVE={angle:.7,radius:.03,radial:.8};
 // The mirror stalk starts this far above the mirror's centre, inside its housing.
 export const STALK_FOOT=.02;
 // Canvas layout in pixels. Each region has the same aspect as the plane it is
 // mapped onto, so circles drawn here stay round on the dash.
 export const GAUGE_CANVAS={width:1024,height:256,binnacle:768,speedMax:280};
+// Range label and nitro bar, in canvas pixels, in the gap between the two dials.
+export const READOUT={x:344,y:98,width:80,height:60};
 
 function drawDial(ctx,x,y,radius,{value,max,major,minor,label,unit,redFrom=Infinity,format=v=>v}){
  ctx.save();ctx.translate(x,y);
@@ -51,8 +55,11 @@ export function createCockpit({halfFloat=false}={}){
  const horn=add(new THREE.CylinderGeometry(.03,.03,.034,20),chrome,solid);horn.rotation.x=Math.PI/2;
  batchRigidMeshes(solid);
  const gloves=new THREE.Group();wheel.add(gloves);
+ // Hands at eleven and one, flattened against the rim so that, as the wheel turns and a
+ // glove passes over the top, it stays within the rim's own outline and off the dials.
  for(const side of [-1,1]){
-  const angle=Math.PI/2+side*.95,hand=add(new THREE.SphereGeometry(.032,12,10),leather,gloves,Math.cos(angle)*WHEEL.radius,Math.sin(angle)*WHEEL.radius,.006);hand.scale.set(1.15,.95,1.25);
+  const angle=Math.PI/2+side*GLOVE.angle,reach=WHEEL.radius-.007,hand=add(new THREE.SphereGeometry(GLOVE.radius,12,10),leather,gloves,Math.cos(angle)*reach,Math.sin(angle)*reach,.006);
+  hand.rotation.z=angle-Math.PI/2;hand.scale.set(1.15,GLOVE.radial,1.25);
   const thumb=add(new THREE.CapsuleGeometry(.011,.03,4,8),leather,gloves,Math.cos(angle)*.125,Math.sin(angle)*.125+.012,.016);thumb.rotation.z=angle+Math.PI/2;
  }
 
@@ -89,8 +96,9 @@ export function createCockpit({halfFloat=false}={}){
   drawDial(ctx,192,128,112,{value:r.speedKmh,max:GAUGE_CANVAS.speedMax,major:40,minor:20,label:String(Math.round(r.speedKmh)),unit:'km/h'});
   const top=Math.ceil(r.redline/1000)+1;
   drawDial(ctx,576,128,112,{value:r.rpm/1000,max:top,major:1,minor:.5,label:r.gear,unit:'×1000 rpm',redFrom:r.redline/1000});
-  ctx.fillStyle='#0d110d';ctx.fillRect(344,188,80,60);ctx.fillStyle='#a7b196';ctx.font='700 17px sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(r.range,384,211);
-  ctx.fillStyle=r.nitro>15?'#58c7d8':'#e0523a';ctx.fillRect(352,224,64*Math.max(0,Math.min(1,r.nitro/100)),10);ctx.strokeStyle='#8f8a6c';ctx.lineWidth=1;ctx.strokeRect(352,224,64,10);
+  // Range and nitro sit mid-height between the dials, above anything the wheel can pass in front of.
+  ctx.fillStyle='#0d110d';ctx.fillRect(READOUT.x,READOUT.y,READOUT.width,READOUT.height);ctx.fillStyle='#a7b196';ctx.font='700 17px sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(r.range,READOUT.x+READOUT.width/2,READOUT.y+23);
+  ctx.fillStyle=r.nitro>15?'#58c7d8':'#e0523a';ctx.fillRect(READOUT.x+8,READOUT.y+36,64*Math.max(0,Math.min(1,r.nitro/100)),10);ctx.strokeStyle='#8f8a6c';ctx.lineWidth=1;ctx.strokeRect(READOUT.x+8,READOUT.y+36,64,10);
   // Inclinometer: the rear silhouette leans with the body, the figures give roll and pitch.
   ctx.save();ctx.translate(896,128);ctx.fillStyle='#0d110d';ctx.beginPath();ctx.arc(0,0,118,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#8f8a6c';ctx.lineWidth=5;ctx.stroke();
   ctx.strokeStyle='#f0ead2';ctx.lineWidth=3;for(const deg of [-40,-30,-20,-10,0,10,20,30,40]){const a=-Math.PI/2+deg*Math.PI/180;ctx.beginPath();ctx.moveTo(Math.cos(a)*(deg%20?104:96),Math.sin(a)*(deg%20?104:96));ctx.lineTo(Math.cos(a)*112,Math.sin(a)*112);ctx.stroke();}

@@ -33,7 +33,7 @@ test('the seated eye is on the driver side, under every headliner and behind the
   assert.ok(eye.z>(cabin.front-.015)*cabin.wheelbase+.3,style+' eye is well behind the windshield top');
   assert.ok(Math.abs(eye.pitch+.085)<.011,style+' looks about five degrees down the hood');
   const hood=eyePoint('hood',cabin);
-  assert.equal(hood.x,0);assert.ok(hood.z<-.51*cabin.wheelbase-.25,style+' bonnet camera is ahead of the windshield base');assert.ok(hood.y>=2&&hood.y<2.1,style+' bonnet camera height');assert.ok(Math.abs(hood.pitch+.05)<.02,style+' bonnet camera pitch');
+  assert.equal(hood.x,0);assert.ok(hood.z<-.51*cabin.wheelbase-.25,style+' bonnet camera is ahead of the windshield base');assert.ok(Math.abs(hood.y-2.02)<.01,style+' bonnet camera height');assert.ok(Math.abs(hood.pitch+.05)<.02,style+' bonnet camera pitch');
  }
 });
 

@@ -107,11 +107,15 @@ test('buttes stand on the ground under their whole footprint, outside the playgr
  const fit=butteFit(500,300,600);assert.ok(fit<1&&Math.abs(600-BUTTE_FOOT*500*fit-BUTTE_MARGIN)<1e-9);assert.equal(butteFit(100,100,30),0,'nothing fits inside the margin');
 });
 
-test('at a corner the far land hangs from the lower of the two edges',()=>{
- // High along the −Z edge, low along the −X edge, meeting at the (−X, −Z) corner.
- const bounds={min:{x:-300,z:-200},max:{x:300,z:200}},stepped=(x,z)=>x<bounds.min.x+1?2:20,far=buildFarLand(bounds,stepped);
- assert.ok(far.heightAt(bounds.min.x,bounds.min.z)<=2-SEAM_DROP+1e-6,'corner follows the low edge');
- assert.ok(seamExcess(bounds,far,stepped)<=1e-9);
+test('at a corner the far land hangs from the lower of the two edges, whichever it is',()=>{
+ const bounds={min:{x:-300,z:-200},max:{x:300,z:200}};
+ // A low strip along one edge only, stopping short of the corner cell of the other edge.
+ const lowAlongX=(x,z)=>x<bounds.min.x+1&&z>bounds.min.z+1?2:20,lowAlongZ=(x,z)=>z<bounds.min.z+1&&x>bounds.min.x+1?2:20;
+ for(const [name,terrain] of [['−X',lowAlongX],['−Z',lowAlongZ]]){
+  const far=buildFarLand(bounds,terrain);
+  assert.ok(far.heightAt(bounds.min.x,bounds.min.z)<=2-SEAM_DROP+1e-6,`corner follows the low ${name} edge`);
+ }
+ const far=buildFarLand(bounds,lowAlongX);
  assert.ok(Math.abs(far.heightAt(0,bounds.min.z)-(20-SEAM_DROP))<1e-4,'away from the corner the seam is back at the high edge');
 });
 

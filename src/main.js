@@ -253,7 +253,8 @@ function mountPlayerExtras(){
 function unmountPlayerExtras(){cockpit.detach();headlight.removeFromParent();headlight.target.removeFromParent();}
 // Compile shader variants before they are first drawn, so they cannot stall a drive: the
 // mirror renders to a target that needs its own programs, and switching the headlight on
-// or off changes every lit program. `bothLightSets` is for moments when a menu is on screen.
+// or off changes every lit program. Each view has its own fog type and so its own programs,
+// which is why a view change warms both light sets again (cheap once they are cached).
 function warmShaders(bothLightSets=false){
  const lit=headlight.visible,mirror=effectiveView()==='cockpit';
  try{
@@ -279,7 +280,7 @@ function viewToast(text){const toast=document.querySelector('#view-toast');if(!t
 function setView(mode,announce=true){
  viewMode=normalizeView(mode);headLook.reset();syncHeld();headState={};chaseState={};
  try{localStorage.setItem(VIEW_KEY,viewMode);}catch{}
- syncView();updateCamera(0,true);warmShaders();if(announce)viewToast(msg('view.'+viewMode)+' · V');
+ syncView();updateCamera(0,true);warmShaders(true);if(announce)viewToast(msg('view.'+viewMode)+' · V');
 }
 function applyTime(id,{announce=false,persist=false}={}){
  const preset=timePreset(id),shadow=shadowDirection(preset),{reach,far,normalBias}=shadowSetup(preset),slope=sandSlopeLight(preset);timeId=preset.id;

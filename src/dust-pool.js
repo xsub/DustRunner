@@ -17,7 +17,7 @@ export function createDustPool(scene,capacity=384){
  };
  const mesh=new THREE.InstancedMesh(geometry,material,capacity);mesh.count=0;mesh.frustumCulled=false;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);scene.add(mesh);
  mesh.name=msg("dust_pool.wheel_contact_dust");
- const particles=[],free=Array.from({length:capacity},()=>({})),matrix=new THREE.Object3D(),color=new THREE.Color(),contact={x:0,y:0,z:0};let histories=new WeakMap(),emitted=0;
+ const particles=[],free=Array.from({length:capacity},()=>({})),matrix=new THREE.Object3D(),color=new THREE.Color(),tint=new THREE.Color(1,1,1),contact={x:0,y:0,z:0};let histories=new WeakMap(),emitted=0;
  return {
   reset(){free.push(...particles);particles.length=0;mesh.count=0;histories=new WeakMap();emitted=0;},
   breakTrail(car){histories.delete(car);},
@@ -43,15 +43,18 @@ export function createDustPool(scene,capacity=384){
     }
    }
   },
+  // Unlit sprites: the tint dims and colours them with the time of day.
+  setTint(value){tint.set(value);},
   update(dt,camera){
-   if(dt<=0)return;
+   // Paused (dt 0): nothing moves, but the sprites keep facing a camera that can still look around.
+   if(dt<0||(dt===0&&!particles.length))return;
    const damping=Math.exp(-dt*1.2);
-   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.age+=dt;if(p.age>=p.life){free.push(p);particles[i]=particles.at(-1);particles.pop();continue;}
+   if(dt>0)for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.age+=dt;if(p.age>=p.life){free.push(p);particles[i]=particles.at(-1);particles.pop();continue;}
     p.x+=(p.vx+.3)*dt;p.z+=(p.vz+.1)*dt;p.y+=p.vy*dt;p.vx*=damping;p.vz*=damping;p.vy*=Math.exp(-dt*.4);
    }
    matrix.quaternion.copy(camera.quaternion);
    particles.forEach((p,i)=>{matrix.position.set(p.x,p.y,p.z);matrix.scale.setScalar(p.size+p.age*p.growth);matrix.updateMatrix();mesh.setMatrixAt(i,matrix.matrix);
-    mesh.setColorAt(i,color.setHex(p.sand?0xb69b70:0xe0c39a));const t=p.age/p.life;alpha.setX(i,p.opacity*Math.min(1,t*12)*(1-t)**1.3);
+    mesh.setColorAt(i,color.setHex(p.sand?0xb69b70:0xe0c39a).multiply(tint));const t=p.age/p.life;alpha.setX(i,p.opacity*Math.min(1,t*12)*(1-t)**1.3);
    });
    mesh.count=particles.length;if(mesh.count){mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;alpha.needsUpdate=true;}
   },

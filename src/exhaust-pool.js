@@ -14,11 +14,14 @@ export function createExhaustPool(scene,capacity=192){
   shader.fragmentShader='varying float vSmokeAlpha;\n'+shader.fragmentShader.replace('#include <color_fragment>','#include <color_fragment>\ndiffuseColor.a *= vSmokeAlpha;');
  };
  const mesh=new THREE.InstancedMesh(geometry,material,capacity);mesh.count=0;mesh.frustumCulled=false;mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);scene.add(mesh);
- const particles=[],free=Array.from({length:capacity},()=>({})),matrix=new THREE.Object3D(),position=new THREE.Vector3(),direction=new THREE.Vector3(),color=new THREE.Color();let histories=new WeakMap();
+ const particles=[],free=Array.from({length:capacity},()=>({})),matrix=new THREE.Object3D(),position=new THREE.Vector3(),direction=new THREE.Vector3(),color=new THREE.Color(),tint=new THREE.Color(1,1,1);let histories=new WeakMap();
  return {reset(){free.push(...particles);particles.length=0;mesh.count=0;histories=new WeakMap();},
+  // Unlit sprites: the tint dims and colours them with the time of day.
+  setTint(value){tint.set(value);},
   update(dt,cars,camera,emit=true){
-   if(dt<=0)return;
-   if(emit)for(const car of cars){
+   // Paused (dt 0): nothing moves, but the sprites keep facing a camera that can still look around.
+   if(dt<0||(dt===0&&!particles.length))return;
+   if(dt>0&&emit)for(const car of cars){
     let history=histories.get(car);if(!history){history={credit:0};histories.set(car,history);}
     const settings=exhaustEmission(car,history,dt),outlets=car.exhausts??[];
     history.credit=settings.rate?Math.min(5,history.credit+settings.rate*dt):0;
@@ -32,9 +35,9 @@ export function createExhaustPool(scene,capacity=192){
      }
     }
    }
-   for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.age+=dt;if(p.age>=p.life){free.push(p);particles[i]=particles.at(-1);particles.pop();continue;}p.x+=(p.vx+.2)*dt;p.z+=p.vz*dt;p.y+=(p.vy+p.age*.45)*dt;p.vx*=Math.exp(-dt*.7);p.vz*=Math.exp(-dt*.7);}
+   if(dt>0)for(let i=particles.length-1;i>=0;i--){const p=particles[i];p.age+=dt;if(p.age>=p.life){free.push(p);particles[i]=particles.at(-1);particles.pop();continue;}p.x+=(p.vx+.2)*dt;p.z+=p.vz*dt;p.y+=(p.vy+p.age*.45)*dt;p.vx*=Math.exp(-dt*.7);p.vz*=Math.exp(-dt*.7);}
    matrix.quaternion.copy(camera.quaternion);
-   particles.forEach((p,i)=>{matrix.position.set(p.x,p.y,p.z);matrix.scale.setScalar(p.size+p.age*.8);matrix.updateMatrix();mesh.setMatrixAt(i,matrix.matrix);mesh.setColorAt(i,color.setRGB(p.shade,p.shade,p.shade*.96));const t=p.age/p.life;alpha.setX(i,p.opacity*Math.min(1,t*8)*(1-t)**1.5);});
+   particles.forEach((p,i)=>{matrix.position.set(p.x,p.y,p.z);matrix.scale.setScalar(p.size+p.age*.8);matrix.updateMatrix();mesh.setMatrixAt(i,matrix.matrix);mesh.setColorAt(i,color.setRGB(p.shade,p.shade,p.shade*.96).multiply(tint));const t=p.age/p.life;alpha.setX(i,p.opacity*Math.min(1,t*8)*(1-t)**1.5);});
    mesh.count=particles.length;if(mesh.count){mesh.instanceMatrix.needsUpdate=true;mesh.instanceColor.needsUpdate=true;alpha.needsUpdate=true;}
   },getStats:()=>({particles:particles.length,capacity})};
 }

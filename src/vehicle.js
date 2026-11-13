@@ -20,6 +20,12 @@ export const BRONCO_STYLES={
  ...REFERENCE_MODELS
 };
 
+// Cabin envelope in model units: roof height, windshield top edge (`front`), half
+// width and wheelbase scale. The driver's-seat camera and its tests read the same numbers.
+export function cabinEnvelope(style='classic'){
+ const spec=BRONCO_STYLES[style]??BRONCO_STYLES.classic,later=spec.lights==='square';
+ return {roofY:style==='sunset'?2.29:later?2.33:2.36,front:style==='sunset'?-.29:-.35,width:spec.width,wheelbase:vehicleProfile(style).wheelbase,open:isOpenBody(style),bimini:isBiminiBody(style)};
+}
 // Original procedural bodies inspired by the supplied classic / two-tone / sunset references.
 // Wheelbase, track, lift and tire sizes are shared with the physical vehicle profiles.
 export function createBronco(style='classic',number='07',{driverSeat=false}={}){
@@ -77,11 +83,10 @@ export function createBronco(style='classic',number='07',{driverSeat=false}={}){
  }
  if(!halfCab)round(1.4,.37,.23,.05,seat,0,1.67,1.21);
  box(w*1.8,.19,.23,trim,0,1.66,-.32);
- // The player's truck gets a full-size animated wheel from the cockpit rig instead.
- if(!driverSeat){const steering=part(new THREE.TorusGeometry(.14,.015,6,20),trim,-.39,1.82,-.12);steering.rotation.x=-.4;}
- rod([-.39,1.65,-.29],[-.39,1.82,-.12],.025,trim);
+ // The player's truck gets a full-size animated wheel and column from the cockpit rig instead.
+ if(!driverSeat){const steering=part(new THREE.TorusGeometry(.14,.015,6,20),trim,-.39,1.82,-.12);steering.rotation.x=-.4;rod([-.39,1.65,-.29],[-.39,1.82,-.12],.025,trim);}
  // Roof and posts frame real glass openings; the rear cap is narrower at the top.
- const roofY=style==='sunset'?2.29:later?2.33:2.36,front=style==='sunset'?-.29:-.35,back=1.49,rearTop=style==='sunset'?1.31:1.45;
+ const {roofY,front}=cabinEnvelope(style),back=1.49,rearTop=style==='sunset'?1.31:1.45;
  if(!open&&!bimini)round(w*2+.07,.13,halfCab?.92:1.91,spec.rounded,ivory,0,roofY,halfCab?.06:.59);
  if(halfCab){box(w*2,.16,1.02,trim,0,1.36,.96);box(w*2,.20,.07,body,0,1.61,.49);pane([[-w+.12,1.73,.535],[-w+.12,roofY-.12,.535],[w-.12,roofY-.12,.535],[w-.12,1.73,.535]]);for(const side of [-1,1]){rod([side*(w-.1),1.53,.60],[side*(w-.1),2.18,.60],.045,trim);rod([side*(w-.1),2.18,.60],[side*(w-.1),1.53,1.35],.045,trim);}rod([-(w-.1),2.18,.60],[w-.1,2.18,.60],.045,trim);}
  if(bimini){
@@ -230,9 +235,11 @@ export function createBronco(style='classic',number='07',{driverSeat=false}={}){
  });
  batchRigidMeshes(chassis);
  for(const axle of axles)batchRigidMeshes(axle.group);
+ // Driver's-seat views need the cabin envelope, the window tint and the tip of
+ // the nose (bumper, bull bar or winch) so the headlight starts ahead of it.
+ const frontZ=new THREE.Box3().setFromObject(chassis).min.z;
  mesh.scale.setScalar(VEHICLE_SCALE);mesh.userData.style=style;
- // Driver's-seat views need the cabin envelope and the window tint.
- return {mesh,chassis,body,wheels,axles,exhausts,glass,lamps:light,cabin:{roofY,width:w,wheelbase:profile.wheelbase,open,bimini},dispose(){
+ return {mesh,chassis,body,wheels,axles,exhausts,glass,lamps:light,cabin:{...cabinEnvelope(style),frontZ},dispose(){
   const geometries=new Set(),materials=new Set(),textures=new Set([texture]);mesh.traverse(o=>{if(o.userData.sharedWheel)return;if(o.geometry)geometries.add(o.geometry);if(o.material){materials.add(o.material);if(o.material.map)textures.add(o.material.map);}});
   geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());
  }};

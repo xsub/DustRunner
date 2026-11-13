@@ -8,16 +8,17 @@ export function createSandTrails(scene,capacity=8192){
  const geometry=new THREE.BufferGeometry();
  const position=new THREE.BufferAttribute(positions,3).setUsage(THREE.DynamicDrawUsage),uv=new THREE.BufferAttribute(uvs,2).setUsage(THREE.DynamicDrawUsage),strength=new THREE.BufferAttribute(strengths,1).setUsage(THREE.DynamicDrawUsage);
  geometry.setAttribute('position',position);geometry.setAttribute('uv',uv);geometry.setAttribute('strength',strength);
- const material=new THREE.ShaderMaterial({transparent:true,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1,
+ const tint={value:new THREE.Color(1,1,1)};
+ const material=new THREE.ShaderMaterial({uniforms:{tint},transparent:true,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-1,polygonOffsetUnits:-1,
   vertexShader:`attribute float strength; varying vec2 vUv; varying float vStrength;
    void main(){vUv=uv;vStrength=strength;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}`,
-  fragmentShader:`varying vec2 vUv; varying float vStrength;
+  fragmentShader:`uniform vec3 tint; varying vec2 vUv; varying float vStrength;
    void main(){
     float edge=smoothstep(0.0,0.12,vUv.x)*smoothstep(0.0,0.12,1.0-vUv.x);
     float tread=1.0-smoothstep(0.25,0.47,abs(fract(vUv.y*5.5+abs(vUv.x-0.5)*1.7)-0.5));
     float groove=1.0-smoothstep(0.27,0.46,abs(vUv.x-0.5));
     float ridge=smoothstep(0.32,0.45,abs(vUv.x-0.5));
-    vec3 color=mix(vec3(0.16,0.078,0.021),vec3(0.48,0.30,0.095),ridge);
+    vec3 color=mix(vec3(0.16,0.078,0.021),vec3(0.48,0.30,0.095),ridge)*tint;
     gl_FragColor=vec4(color,edge*(0.17+groove*0.14+tread*0.10)*vStrength);
     #include <tonemapping_fragment>
     #include <colorspace_fragment>
@@ -38,6 +39,8 @@ export function createSandTrails(scene,capacity=8192){
  }
  return {
   mesh,
+  // Unlit ruts: the tint dims and colours them with the time of day.
+  setTint(value){tint.value.set(value);},
   get count(){return count;},
   breakTrail(car){trails.delete(car);},
   reset(){trails=new WeakMap();cursor=count=0;geometry.setDrawRange(0,0);},

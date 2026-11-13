@@ -18,11 +18,42 @@ export function eyePoint(view,cabin={}){
  return {x:-.39,y:Math.min(2.1,roofY-.25),z:.07*wheelbase,pitch:-.085};
 }
 
+// Cabin furniture, placed relative to the seated eye so every roof height keeps
+// the same sight lines: road, then dials, then the top of the wheel rim.
+export const WHEEL={radius:.15,tube:.0135,rake:-.4};
+export const GAUGE_FACE={width:.264,height:.088,tilt:-.46};
+export const MIRROR={width:.16,height:.045,yaw:-.42};
+export function cockpitLayout(cabin={}){
+ const eye=eyePoint('cockpit',cabin),wheelbase=cabin.wheelbase??1,roofY=cabin.roofY??2.36,front=cabin.front??-.35;
+ // A raked windshield brings the mirror closer; slide it toward the driver so its far edge stays in view.
+ const reach=MIRROR.width/2,mirrorZ=(front+.05)*wheelbase,mirrorX=Math.min(-.2,eye.x+.9*(eye.z-mirrorZ+reach*Math.sin(MIRROR.yaw))-reach*Math.cos(MIRROR.yaw));
+ return {
+  eye,
+  column:{x:eye.x,y:eye.y-.31,z:-.14*wheelbase},
+  binnacle:{x:eye.x,y:eye.y-.16,z:-.33*wheelbase},
+  pod:{x:-.1,y:eye.y-.22,z:-.34*wheelbase},
+  // Just behind the windshield's top edge; the stalk reaches the headliner.
+  mirror:{x:mirrorX,y:roofY-.165,z:mirrorZ},
+  stalk:cabin.open?0:.07,
+ };
+}
+
+// Trackside cones and tyre stacks only simulate while they are "seen". From the
+// driver's seat the ground just ahead of the bumper is below the windshield, so
+// the truck's own surroundings always count as seen, exactly as on the board.
+export const MARKER_NEAR=45,MARKER_FAR=140;
+export function markerView(player,inFrustum,{near=MARKER_NEAR,far=MARKER_FAR}={}){
+ return position=>{
+  const dx=position.x-player.x,dz=position.z-player.z,distance=dx*dx+dz*dz;
+  return distance<near*near||(distance<far*far&&Boolean(inFrustum(position)));
+ };
+}
+
 export const LOOK_LIMITS={yaw:2.25,up:.5,down:.62,zoomIn:.62,zoomOut:1.2};
 // Glance with IJKL or a drag; the head eases back to the road when released.
 export class HeadLook{
  constructor(){this.reset();this.zoom=1;}
- reset(){this.yaw=0;this.pitch=0;this.hold=0;}
+ reset(){this.yaw=0;this.pitch=0;this.hold=0;this.held=false;}
  adjust(yaw=0,pitch=0,zoom=1){
   this.yaw=clamp(this.yaw+yaw,-LOOK_LIMITS.yaw,LOOK_LIMITS.yaw);
   this.pitch=clamp(this.pitch+pitch,-LOOK_LIMITS.down,LOOK_LIMITS.up);
@@ -33,7 +64,8 @@ export class HeadLook{
   const horizontal=Number(keys.has('KeyJ'))-Number(keys.has('KeyL')),vertical=Number(keys.has('KeyI'))-Number(keys.has('KeyK'));
   const zoom=Number(keys.has('Minus')||keys.has('NumpadSubtract'))-Number(keys.has('Equal')||keys.has('NumpadAdd'));
   if(horizontal||vertical){this.adjust(horizontal*dt*2.6,vertical*dt*1.3);this.hold=.12;}
-  else if((this.hold-=dt)<=0){const keep=Math.exp(-dt*6);this.yaw*=keep;this.pitch*=keep;this.hold=0;}
+  // `held` is set while a mouse button or finger is down: a steady drag keeps its angle.
+  else if(!this.held&&(this.hold-=dt)<=0){const keep=Math.exp(-dt*6);this.yaw*=keep;this.pitch*=keep;this.hold=0;}
   if(zoom)this.adjust(0,0,Math.exp(zoom*dt*.8));
  }
 }

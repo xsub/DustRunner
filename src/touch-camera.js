@@ -1,11 +1,11 @@
 // Only the world canvas receives gestures; driving buttons keep their own pointers.
-export function bindTouchCamera(canvas,{orbit,enabled,onChange=()=>{}}){
+export function bindTouchCamera(canvas,{orbit,enabled,onChange=()=>{},onPointers=()=>{}}){
  const pointers=new Map();
  const distance=()=>{const [a,b]=[...pointers.values()];return b?Math.hypot(b.x-a.x,b.y-a.y):0;};
- function clear(){const ids=[...pointers.keys()];pointers.clear();for(const id of ids)if(canvas.hasPointerCapture(id))canvas.releasePointerCapture(id);}
+ function clear(){const ids=[...pointers.keys()];pointers.clear();for(const id of ids)if(canvas.hasPointerCapture(id))canvas.releasePointerCapture(id);onPointers(0);}
  canvas.addEventListener('pointerdown',event=>{
   if(!enabled()||pointers.size>=2)return;
-  event.preventDefault();pointers.set(event.pointerId,{x:event.clientX,y:event.clientY});canvas.setPointerCapture(event.pointerId);
+  event.preventDefault();pointers.set(event.pointerId,{x:event.clientX,y:event.clientY});canvas.setPointerCapture(event.pointerId);onPointers(pointers.size);
  });
  canvas.addEventListener('pointermove',event=>{
   const previous=pointers.get(event.pointerId);if(!previous)return;
@@ -18,7 +18,8 @@ export function bindTouchCamera(canvas,{orbit,enabled,onChange=()=>{}}){
   onChange();
  });
  for(const name of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(name,event=>{
-  pointers.delete(event.pointerId);if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
+  const tracked=pointers.delete(event.pointerId);if(canvas.hasPointerCapture(event.pointerId))canvas.releasePointerCapture(event.pointerId);
+  if(tracked)onPointers(pointers.size);
  });
  return {clear};
 }

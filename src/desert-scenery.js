@@ -55,9 +55,10 @@ export function createSandMaterial(){
   shader.vertexShader='varying vec3 vSandWorld;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvSandWorld=(modelMatrix*vec4(transformed,1.0)).xyz;');
   shader.fragmentShader='uniform float sandRuffles; uniform float sandWaveSize; uniform vec2 sandSun; uniform float sandDetail; varying vec3 vSandWorld;\nfloat sandHash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}\n'+shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
    vec2 p=vSandWorld.xz;
-   // Per-pixel ground footprint: fine detail fades out before it can shimmer in perspective.
+   // Per-pixel ground footprint: in the driver's views (sandDetail 1) fine detail fades out
+   // before it can shimmer in perspective. The board view keeps the original grain exactly.
    float footprint=max(length(dFdx(p)),length(dFdy(p)));
-   float grain=mix(.5,sandHash(floor(p*38.0)),1.0-smoothstep(.07,.3,footprint));
+   float grain=mix(.5,sandHash(floor(p*38.0)),1.0-sandDetail*smoothstep(.07,.3,footprint));
    // Wind ripples a hand-span apart, visible only from the driver's seat.
    float ripple=sandDetail*(1.0-smoothstep(.03,.14,footprint))*sin(dot(p,vec2(.93,.37))*46.0+1.8*sin(p.x*2.7+p.y*1.9));
    float mottling=sandHash(floor(p*.6));
@@ -83,12 +84,15 @@ export function createDesertWind({world,heightAt,anchors,random}){
   }
  }
  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(twigs,3));
- const tumbleweed=new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({color:'#685036'}));tumbleweed.visible=false;world.add(tumbleweed);
+ const twigColor=new THREE.Color('#685036'),tumbleweed=new THREE.LineSegments(geometry,new THREE.LineBasicMaterial({color:twigColor.clone()}));tumbleweed.visible=false;world.add(tumbleweed);
  const sandGeometry=new THREE.BufferGeometry(),positions=new Float32Array(48*3);sandGeometry.setAttribute('position',new THREE.BufferAttribute(positions,3).setUsage(THREE.DynamicDrawUsage));
- const sandMaterial=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{opacity:{value:0}},vertexShader:'void main(){vec4 p=modelViewMatrix*vec4(position,1.0);gl_Position=projectionMatrix*p;gl_PointSize=9.0;}',fragmentShader:'uniform float opacity; void main(){float r=length(gl_PointCoord-vec2(.5));gl_FragColor=vec4(.72,.57,.32,opacity*(1.0-smoothstep(.05,.5,r)));}'});
+ const sandMaterial=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{opacity:{value:0},tint:{value:new THREE.Color(1,1,1)}},vertexShader:'void main(){vec4 p=modelViewMatrix*vec4(position,1.0);gl_Position=projectionMatrix*p;gl_PointSize=9.0;}',fragmentShader:'uniform float opacity; uniform vec3 tint; void main(){float r=length(gl_PointCoord-vec2(.5));gl_FragColor=vec4(vec3(.72,.57,.32)*tint,opacity*(1.0-smoothstep(.05,.5,r)));}'});
  const sand=new THREE.Points(sandGeometry,sandMaterial);sand.frustumCulled=false;sand.visible=false;world.add(sand);
  let time=0,last=0,next=18+random()*22,event=null;
- return {update(dt,isVisible,allow=true){
+ return {
+  // Unlit gust and tumbleweed: the tint dims and colours them with the time of day.
+  setTint(value){sandMaterial.uniforms.tint.value.set(value);tumbleweed.material.color.copy(twigColor).multiply(sandMaterial.uniforms.tint.value);},
+  update(dt,isVisible,allow=true){
   if(dt<=0)return;time+=dt;
   if(!allow){sand.visible=false;tumbleweed.visible=false;return;}
   if(time-last<1/20)return;last=time;

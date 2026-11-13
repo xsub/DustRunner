@@ -47,22 +47,27 @@ export function combineGround(a,b){
 }
 export function createSandMaterial(){
  const material=new THREE.MeshStandardMaterial({color:'#96713e',roughness:1,polygonOffset:true,polygonOffsetFactor:1,polygonOffsetUnits:1});
- const waves={sandRuffles:{value:tuning.sandRuffles},sandWaveSize:{value:tuning.sandWaveSize}};
+ const waves={sandRuffles:{value:tuning.sandRuffles},sandWaveSize:{value:tuning.sandWaveSize},sandSun:{value:new THREE.Vector2(-.8,.55)},sandDetail:{value:0}};
+ material.userData.sandSun=waves.sandSun;material.userData.sandDetail=waves.sandDetail;
  material.userData.updateWaves=()=>{waves.sandRuffles.value=tuning.sandRuffles;waves.sandWaveSize.value=tuning.sandWaveSize;};
  material.onBeforeCompile=shader=>{
   Object.assign(shader.uniforms,waves);
   shader.vertexShader='varying vec3 vSandWorld;\n'+shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\nvSandWorld=(modelMatrix*vec4(transformed,1.0)).xyz;');
-  shader.fragmentShader='uniform float sandRuffles; uniform float sandWaveSize; varying vec3 vSandWorld;\nfloat sandHash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}\n'+shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+  shader.fragmentShader='uniform float sandRuffles; uniform float sandWaveSize; uniform vec2 sandSun; uniform float sandDetail; varying vec3 vSandWorld;\nfloat sandHash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}\n'+shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
    vec2 p=vSandWorld.xz;
-   float grain=sandHash(floor(p*38.0));
+   // Per-pixel ground footprint: fine detail fades out before it can shimmer in perspective.
+   float footprint=max(length(dFdx(p)),length(dFdy(p)));
+   float grain=mix(.5,sandHash(floor(p*38.0)),1.0-smoothstep(.07,.3,footprint));
+   // Wind ripples a hand-span apart, visible only from the driver's seat.
+   float ripple=sandDetail*(1.0-smoothstep(.03,.14,footprint))*sin(dot(p,vec2(.93,.37))*46.0+1.8*sin(p.x*2.7+p.y*1.9));
    float mottling=sandHash(floor(p*.6));
    float broad=sin(p.x*.037+sin(p.y*.041))*sin(p.y*.061);
    float ruffles=sandRuffles*sin((dot(p,vec2(.77,.64))+5.0*sin(p.y*.025))*6.28318530718/sandWaveSize);
 
    vec3 duneNormal=inverseTransformDirection(normalize(vNormal),viewMatrix);
-   float slopeLight=clamp(-duneNormal.x*.8+duneNormal.z*.55,-.22,.22);
+   float slopeLight=clamp(dot(duneNormal.xz,sandSun),-.22,.22);
    float reliefTone=smoothstep(-.25,14.0,vSandWorld.y);
-   diffuseColor.rgb*=.76+reliefTone*.22+broad*.05+grain*.10+mottling*.025+slopeLight+ruffles*.10;
+   diffuseColor.rgb*=.76+reliefTone*.22+broad*.05+grain*.10+mottling*.025+slopeLight+ruffles*.10+ripple*.035;
   `);
  };
  return material;

@@ -25,6 +25,17 @@ Browser-emulated phone layout, 390 × 777. All screenshots and clips come from t
 
 </details>
 
+## Driver's seat (branch `3D`)
+
+The miniature board is now a full-scale world you can drive from inside the truck. Press **V** to cycle **cockpit**, **hood**, **chase**, and the classic **board** view; press **T** to change the time of day.
+
+- **Cockpit:** a seated eye point behind a working steering wheel, lit speedometer and tachometer, a dash inclinometer, and a live rear-view mirror. The driver's head lags behind acceleration, braking, and landings.
+- **A world with a horizon:** shader sky with sun, drifting clouds, and stars; kilometers of rolling far desert; sandstone buttes and distant ranges around every track and desert.
+- **Light and air:** morning, midday, golden hour, dusk, and a moonlit night with headlights. Windblown sand streams past at speed, and sand ripples appear up close.
+- **Same physics, same terrain:** every view shares the 120 Hz simulation, so each bump and jump you feel is the real suspension.
+
+Open a view directly with `?view=cockpit|hood|chase|board` and `?time=morning|day|golden|dusk|night`. Details: [driver's-seat views](docs/drivers-seat.md).
+
 ## What's new in 1.1
 
 - **A clearer Pit Stop:** Play, Tracks & terrain, Vehicles, Simulation, Stats, Bronco history, and Community. Player/Developer and Performance switches keep advanced tools within reach.

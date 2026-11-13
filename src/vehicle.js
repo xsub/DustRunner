@@ -22,7 +22,7 @@ export const BRONCO_STYLES={
 
 // Original procedural bodies inspired by the supplied classic / two-tone / sunset references.
 // Wheelbase, track, lift and tire sizes are shared with the physical vehicle profiles.
-export function createBronco(style='classic',number='07'){
+export function createBronco(style='classic',number='07',{driverSeat=false}={}){
  const spec=BRONCO_STYLES[style]??BRONCO_STYLES.classic,later=spec.lights==='square',w=spec.width,open=isOpenBody(style),bimini=isBiminiBody(style),utility=style==='expedition'||style==='crawler'||style==='godzilla78'||spec.bullbar,halfCab=spec.bodyType==='halfCab',softtop=spec.bodyType==='softtop',bullnose=spec.era>=1980,profile=vehicleProfile(style);
  const mesh=new THREE.Group(),chassis=new THREE.Group(),wheels=[],axles=[];mesh.add(chassis);chassis.scale.z=profile.wheelbase;
  const material=(color,extra={})=>new THREE.MeshStandardMaterial({color,roughness:.55,...extra});
@@ -77,7 +77,8 @@ export function createBronco(style='classic',number='07'){
  }
  if(!halfCab)round(1.4,.37,.23,.05,seat,0,1.67,1.21);
  box(w*1.8,.19,.23,trim,0,1.66,-.32);
- const steering=part(new THREE.TorusGeometry(.14,.015,6,20),trim,-.39,1.82,-.12);steering.rotation.x=-.4;
+ // The player's truck gets a full-size animated wheel from the cockpit rig instead.
+ if(!driverSeat){const steering=part(new THREE.TorusGeometry(.14,.015,6,20),trim,-.39,1.82,-.12);steering.rotation.x=-.4;}
  rod([-.39,1.65,-.29],[-.39,1.82,-.12],.025,trim);
  // Roof and posts frame real glass openings; the rear cap is narrower at the top.
  const roofY=style==='sunset'?2.29:later?2.33:2.36,front=style==='sunset'?-.29:-.35,back=1.49,rearTop=style==='sunset'?1.31:1.45;
@@ -230,7 +231,8 @@ export function createBronco(style='classic',number='07'){
  batchRigidMeshes(chassis);
  for(const axle of axles)batchRigidMeshes(axle.group);
  mesh.scale.setScalar(VEHICLE_SCALE);mesh.userData.style=style;
- return {mesh,chassis,body,wheels,axles,exhausts,dispose(){
+ // Driver's-seat views need the cabin envelope and the window tint.
+ return {mesh,chassis,body,wheels,axles,exhausts,glass,lamps:light,cabin:{roofY,width:w,wheelbase:profile.wheelbase,open,bimini},dispose(){
   const geometries=new Set(),materials=new Set(),textures=new Set([texture]);mesh.traverse(o=>{if(o.userData.sharedWheel)return;if(o.geometry)geometries.add(o.geometry);if(o.material){materials.add(o.material);if(o.material.map)textures.add(o.material.map);}});
   geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());
  }};

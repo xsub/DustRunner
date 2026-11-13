@@ -1032,5 +1032,20 @@ export default {
   "stats.marker_counts": "{moving} / {limit} · {visible} visible",
   "raceSetup.applyAndStart": "APPLY & START RACE ↗",
   "raceSetup.applyAndRestart": "APPLY & RESTART RACE ↗",
-  "raceSetup.pending": "Rival changes are ready. Apply them to start a new race."
+  "raceSetup.pending": "Rival changes are ready. Apply them to start a new race.",
+  "view.cockpit": "COCKPIT",
+  "view.hood": "HOOD",
+  "view.chase": "CHASE",
+  "view.board": "BOARD",
+  "view.title": "Change view (V)",
+  "view.change_plain": "Change view",
+  "view.change": "Change view (V). Current view: {v0}",
+  "view.hint_view": "VIEW",
+  "time.title": "Time of day (T)",
+  "time.change": "Time of day (T): {v0}",
+  "time.morning": "MORNING",
+  "time.day": "MIDDAY",
+  "time.golden": "GOLDEN HOUR",
+  "time.dusk": "DUSK",
+  "time.night": "MOONLIT NIGHT"
 };
